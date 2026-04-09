@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-hub-bg text-hub-text antialiased;
+  }
+
+  * {
+    @apply border-hub-border;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-hub-bg;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-hub-border rounded-full;
+  }
+}
+
+@layer utilities {
+  .card {
+    @apply bg-hub-surface border border-hub-border rounded-xl p-4;
+  }
+}

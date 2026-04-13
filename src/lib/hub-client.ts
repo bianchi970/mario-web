@@ -71,32 +71,15 @@ export async function getAdapters(): Promise<{ adapters: Adapter[] }> {
 // ── Devices ─────────────────────────────────────────────────────
 
 export async function getDevices(projectId = DEFAULT_PROJECT_ID): Promise<{ devices: Device[]; project_id: string }> {
-  const parseDevices = (
-    res: HubEnvelope<{ devices: Device[]; project_id?: string; meta?: { project_id?: string } }>
+  const res = await hubFetch<
+    HubEnvelope<{ devices: Device[]; project_id?: string; meta?: { project_id?: string } }>
     | { devices: Device[]; project_id?: string; meta?: { project_id?: string } }
-  ) => {
-    const data = unwrapHubPayload(res);
+  >(`/projects/${encodeURIComponent(projectId)}/devices`);
 
-    return {
-      devices: data.devices ?? [],
-      project_id: data.project_id ?? data.meta?.project_id ?? projectId,
-    };
-  };
-
-  try {
-    const res = await hubFetch<
-      HubEnvelope<{ devices: Device[]; project_id?: string; meta?: { project_id?: string } }>
-      | { devices: Device[]; project_id?: string; meta?: { project_id?: string } }
-    >(`/projects/${encodeURIComponent(projectId)}/devices`);
-
-    return parseDevices(res);
-  } catch {
-    const res = await hubFetch<
-      HubEnvelope<{ devices: Device[]; project_id?: string; meta?: { project_id?: string } }>
-      | { devices: Device[]; project_id?: string; meta?: { project_id?: string } }
-    >(`/devices?project_id=${encodeURIComponent(projectId)}`);
-
-    return parseDevices(res);
+  const data = unwrapHubPayload(res);
+  return {
+    devices: data.devices ?? [],
+    project_id: data.project_id ?? data.meta?.project_id ?? projectId,
   };
 }
 

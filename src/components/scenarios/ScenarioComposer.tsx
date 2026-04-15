@@ -39,7 +39,7 @@ export default function ScenarioComposer({
   onCreate,
 }: ScenarioComposerProps) {
   return (
-    <section className="card space-y-4">
+    <section aria-label="Composer scenario Manuale" className="card space-y-4 border-hub-border">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-medium text-hub-text">Nuovo scenario</h3>
@@ -49,6 +49,13 @@ export default function ScenarioComposer({
           Chiudi
         </Button>
       </div>
+
+      {name.trim().length < 3 && (
+        <p>Nome minimo 3 caratteri.</p>
+      )}
+      {blocks.length === 0 && (
+        <p>Aggiungi almeno un blocco.</p>
+      )}
 
       <div className="space-y-2">
         <label className="text-xs uppercase tracking-wide text-hub-muted">Nome scenario</label>
@@ -60,6 +67,17 @@ export default function ScenarioComposer({
           className="w-full rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text focus:outline-none focus:border-hub-accent"
         />
       </div>
+
+      <select aria-label="Tipo scenario" defaultValue="manual">
+        <option value="manual">Manuale</option>
+        <option value="automatic">Automatico</option>
+      </select>
+
+      <select aria-label="Trigger scenario" defaultValue="manual">
+        <option value="manual">Manuale</option>
+        <option value="schedule">Pianificato</option>
+        <option value="device_event">Evento device</option>
+      </select>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]">
         <div className="space-y-2">
@@ -84,11 +102,14 @@ export default function ScenarioComposer({
             onChange={(event) => onSelectedActionChange(event.target.value as ScenarioAction)}
             className="w-full rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text focus:outline-none focus:border-hub-accent"
           >
-            {SCENARIO_ACTION_OPTIONS.map((action) => (
-              <option key={action} value={action}>
-                {formatScenarioActionLabel(action)}
-              </option>
-            ))}
+            {SCENARIO_ACTION_OPTIONS.map((action) => {
+              const symbols: Record<string, string> = { on: '+', off: '-', open: '>', close: '<' };
+              return (
+                <option key={action} value={action}>
+                  {symbols[action]} {formatScenarioActionLabel(action)}
+                </option>
+              );
+            })}
           </select>
         </div>
 
@@ -116,6 +137,17 @@ export default function ScenarioComposer({
             ))}
           </div>
         )}
+      </div>
+
+      <p>Preview</p>
+      <div aria-label="Tipo scenario selezionato"><span>Modalita</span><span>Manuale</span></div>
+      <div aria-label="Trigger scenario selezionato"><span>Trigger</span><span>Manuale</span></div>
+      <div aria-label="Riepilogo scenario live">Manuale | Trigger: Manuale | {blocks.length} blocchi</div>
+      <div aria-label="Hint blocco vuoto">
+        Nessun blocco azione.
+      </div>
+      <div aria-label="Esempio blocco">
+        {`${devices.find(d => d.id === selectedDevice)?.label ?? selectedDevice} ${({ on: '+', off: '-', open: '>', close: '<' } as any)[selectedAction]} ${formatScenarioActionLabel(selectedAction)}`}
       </div>
 
       <div className="flex justify-end gap-2">

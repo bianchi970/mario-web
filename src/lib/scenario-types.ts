@@ -49,6 +49,8 @@ export interface ScenarioBlock {
 export interface Scenario {
   id: string;
   name: string;
+  type: ScenarioType;
+  trigger: ScenarioTrigger;
   blocks: ScenarioBlock[];
 }
 

@@ -1,62 +1,123 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import TopBar from '@/components/layout/TopBar';
 import StatsRow from '@/components/dashboard/StatsRow';
 import EventFeed from '@/components/dashboard/EventFeed';
 import Badge from '@/components/ui/Badge';
-import { getSystem, getDevices, getRooms, getEvents, getDefaultProjectId } from '@/lib/hub-client';
+import { useProjectId } from '@/hooks/useProjectId';
+import { ApiClientError, fetchAPI } from '@/lib/api/client';
+import { listDevices } from '@/lib/api/devices';
+import { listRooms } from '@/lib/api/rooms';
+import type { Device, Room, SystemInfo } from '@/lib/hub-types';
 
-export const dynamic = 'force-dynamic';
+type SystemPayload = { success?: boolean; data?: SystemInfo } | SystemInfo;
 
-export default async function DashboardPage() {
-  const projectId = getDefaultProjectId();
+function unwrapSystem(payload: SystemPayload): SystemInfo {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return (payload as { data: SystemInfo }).data;
+  }
+  return payload as SystemInfo;
+}
 
-  const [system, devicesRes, roomsRes, eventsRes] = await Promise.allSettled([
-    getSystem(),
-    getDevices(projectId),
-    getRooms(projectId),
-    getEvents(projectId, 20),
-  ]);
+export default function DashboardPage() {
+  const projectId = useProjectId();
+  const [system, setSystem] = useState<SystemInfo | null>(null);
+  const [devices, setDevices] = useState<Device[] | null>(null);
+  const [rooms, setRooms] = useState<Room[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const sys     = system.status     === 'fulfilled' ? system.value     : null;
-  const devices = devicesRes.status === 'fulfilled' ? devicesRes.value.devices : null;
-  const rooms   = roomsRes.status   === 'fulfilled' ? roomsRes.value.rooms     : null;
-  const events  = eventsRes.status  === 'fulfilled' ? eventsRes.value.events   : [];
+  useEffect(() => {
+    if (!projectId) {
+      setSystem(null);
+      setDevices(null);
+      setRooms(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
-  const onlineCount = devices?.filter((d) => d.online).length ?? null;
-  const hubOffline = !sys && !devices && !rooms && eventsRes.status !== 'fulfilled';
+    const controller = new AbortController();
+
+    async function loadDashboard() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [systemPayload, deviceItems, roomItems] = await Promise.all([
+          fetchAPI<SystemPayload>('/api/hub/system', { signal: controller.signal }),
+          listDevices(projectId, controller.signal),
+          listRooms(projectId, controller.signal),
+        ]);
+
+        setSystem(unwrapSystem(systemPayload));
+        setDevices(deviceItems);
+        setRooms(roomItems);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setSystem(null);
+        setDevices(null);
+        setRooms(null);
+        if (err instanceof ApiClientError && (err.status === 500 || err.status === 502)) {
+          setError('Hub non disponibile');
+        } else {
+          setError('Errore caricamento dashboard');
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => controller.abort();
+  }, [projectId]);
+
+  const onlineCount = devices?.filter((device) => device.online).length ?? null;
+  const hubOffline = error === 'Hub non disponibile';
 
   return (
     <>
       <TopBar title="Dashboard" />
       <main className="flex-1 p-5 space-y-6">
-        {hubOffline && (
+        {!projectId ? (
+          <div className="card">
+            <p className="text-sm text-hub-text">Seleziona un progetto.</p>
+            <p className="mt-1 text-xs text-hub-muted">Imposta il Project ID nelle Impostazioni per caricare dispositivi e stanze.</p>
+          </div>
+        ) : loading ? (
+          <div className="card">
+            <p className="text-sm text-hub-text">Caricamento inventario...</p>
+          </div>
+        ) : error ? (
           <div className="card">
             <div className="mb-3 flex justify-start">
               <Badge variant="red">Offline</Badge>
             </div>
-            <p className="text-sm text-hub-text">Hub not reachable.</p>
-            <p className="mt-1 text-xs text-hub-muted">Offline</p>
+            <p className="text-sm text-hub-text">{error}</p>
           </div>
-        )}
+        ) : null}
 
-        {/* Stats */}
         <StatsRow
           totalDevices={devices?.length ?? null}
           onlineDevices={onlineCount}
           totalRooms={rooms?.length ?? null}
-          activeAdapters={sys?.active_adapters ?? null}
-          uptime={sys?.uptime_s}
+          activeAdapters={system?.active_adapters ?? null}
+          uptime={system?.uptime_s}
         />
 
-        {/* System info */}
-        {sys && (
+        {system && (
           <div className="card">
             <h2 className="text-sm font-medium text-hub-text mb-3">Hub System</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               {[
-                { k: 'Hostname', v: sys.hostname },
-                { k: 'Platform', v: `${sys.platform} / ${sys.arch}` },
-                { k: 'Memory',   v: `${sys.memory_mb} MB` },
-                { k: 'Project',  v: sys.default_project_id },
+                { k: 'Hostname', v: system.hostname },
+                { k: 'Platform', v: `${system.platform} / ${system.arch}` },
+                { k: 'Memory', v: `${system.memory_mb} MB` },
+                { k: 'Project', v: projectId ?? '-' },
               ].map(({ k, v }) => (
                 <div key={k}>
                   <span className="text-hub-muted block">{k}</span>
@@ -67,45 +128,48 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Devices quick list */}
         {devices && devices.length > 0 && (
           <div className="card">
             <h2 className="text-sm font-medium text-hub-text mb-3">
-              Devices <span className="text-hub-muted text-xs">({devices.length})</span>
+              Dispositivi <span className="text-hub-muted text-xs">({devices.length})</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {devices.slice(0, 9).map((d) => (
-                <div key={d.id} className="flex items-center gap-2 p-2 rounded-lg bg-hub-bg border border-hub-border/50 text-xs">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${d.online ? 'bg-hub-green' : 'bg-hub-red'}`} />
-                  <span className="flex-1 truncate text-hub-text">{d.name}</span>
-                  {!d.online && <Badge variant="red">Offline</Badge>}
-                  <span className="text-hub-muted font-mono">{d.protocol}</span>
+              {devices.slice(0, 9).map((device) => (
+                <div key={device.id} className="flex items-center gap-2 p-2 rounded-lg bg-hub-bg border border-hub-border/50 text-xs">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${device.online ? 'bg-hub-green' : 'bg-hub-red'}`} />
+                  <span className="flex-1 truncate text-hub-text">{device.name}</span>
+                  {!device.online && <Badge variant="red">Offline</Badge>}
+                  <span className="text-hub-muted font-mono">{device.protocol}</span>
                 </div>
               ))}
               {devices.length > 9 && (
                 <div className="flex items-center justify-center p-2 rounded-lg border border-hub-border/50 border-dashed text-hub-muted text-xs">
-                  +{devices.length - 9} more
+                  +{devices.length - 9} altri
                 </div>
               )}
             </div>
           </div>
         )}
-        {devices === null && (
+
+        {projectId && !loading && !error && devices && devices.length === 0 && (
           <div className="card">
-            <div className="mb-3 flex justify-start">
-              <Badge variant="red">Offline</Badge>
-            </div>
-            <p className="text-sm text-hub-text">Device inventory not reachable.</p>
-            <p className="mt-1 text-xs text-hub-muted">Offline</p>
+            <p className="text-sm text-hub-text">Nessun dispositivo trovato.</p>
           </div>
         )}
 
-        {/* Event feed */}
-        <EventFeed
-          projectId={projectId}
-          initialEvents={events}
-          initialUnavailable={eventsRes.status !== 'fulfilled'}
-        />
+        <div className="card">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium text-hub-text mb-1">Scenari</h2>
+              <p className="text-xs text-hub-muted">Gestisci scenari e audit dal path operativo dedicato.</p>
+            </div>
+            <Link href="/scenarios" className="rounded-lg border border-hub-border px-4 py-2 text-sm text-hub-text">
+              Scenari
+            </Link>
+          </div>
+        </div>
+
+        <EventFeed initialEvents={[]} initialUnavailable={hubOffline} />
       </main>
     </>
   );

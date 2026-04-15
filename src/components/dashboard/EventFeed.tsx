@@ -1,8 +1,24 @@
 'use client';
 
+import Badge from '@/components/ui/Badge';
+import { useProjectId } from '@/hooks/useProjectId';
 import { useEventStream } from '@/hooks/useEventStream';
 import type { HubEvent } from '@/lib/hub-types';
-import Badge from '@/components/ui/Badge';
+
+const EVENT_LABELS: Record<string, string> = {
+  'device.online': 'Dispositivo in linea',
+  'device.offline': 'Dispositivo fuori linea',
+  'device.state_changed': 'Stato aggiornato',
+  'device.error': 'Errore dispositivo',
+  'automation.executed': 'Automazione eseguita',
+  'automation.failed': 'Automazione fallita',
+  'motion.detected': 'Movimento rilevato',
+  'motion.cleared': 'Movimento cessato',
+};
+
+function formatEventType(type: string): string {
+  return EVENT_LABELS[type] ?? 'Sconosciuto';
+}
 
 function eventColor(type: string) {
   if (type.includes('offline') || type.includes('failed')) return 'red';
@@ -11,14 +27,14 @@ function eventColor(type: string) {
   return 'blue';
 }
 
-function formatTime(ts: string) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+function formatTime(timestamp: string) {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function EventRow({ event }: { event: HubEvent }) {
-  const label = event.type.replace(/\./g, ' ');
-  const ts = event.timestamp || '';
+  const label = formatEventType(event.type);
+  const timestamp = event.timestamp || '';
   return (
     <div className="flex items-start gap-3 py-2 border-b border-hub-border/50 last:border-0">
       <Badge variant={eventColor(event.type)} className="mt-0.5 shrink-0 font-mono text-[10px]">
@@ -29,58 +45,61 @@ function EventRow({ event }: { event: HubEvent }) {
           <span className="text-xs text-hub-muted font-mono truncate block">{event.device_id}</span>
         )}
       </div>
-      <span className="text-xs text-hub-muted shrink-0 font-mono">{ts ? formatTime(ts) : '-'}</span>
+      <span className="text-xs text-hub-muted shrink-0 font-mono">{timestamp ? formatTime(timestamp) : '-'}</span>
     </div>
   );
 }
 
-interface EventFeedProps {
-  projectId: string;
-  initialEvents?: HubEvent[];
-  initialUnavailable?: boolean;
-}
-
 export default function EventFeed({
-  projectId,
   initialEvents = [],
   initialUnavailable = false,
-}: EventFeedProps) {
+}: {
+  initialEvents?: HubEvent[];
+  initialUnavailable?: boolean;
+}) {
+  const projectId = useProjectId() ?? null;
   const { events: streamEvents, connected } = useEventStream(projectId);
 
   const all = [...streamEvents];
-  for (const e of initialEvents) {
-    const key = (e as HubEvent & { event_id?: string }).event_id || (e as HubEvent & { id?: string }).id;
+  for (const event of initialEvents) {
+    const key = (event as HubEvent & { event_id?: string }).event_id || (event as HubEvent & { id?: string }).id;
     const alreadyHave = key
-      ? all.some((x) => (x as HubEvent & { event_id?: string }).event_id === key || (x as HubEvent & { id?: string }).id === key)
+      ? all.some((item) => (item as HubEvent & { event_id?: string }).event_id === key || (item as HubEvent & { id?: string }).id === key)
       : false;
-    if (!alreadyHave) all.push(e);
+    if (!alreadyHave) all.push(event);
   }
+
   const displayed = all.slice(0, 30);
-  const offline = initialUnavailable && !connected && displayed.length === 0;
+  const offline = !!projectId && initialUnavailable && !connected && displayed.length === 0;
 
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-hub-text">Event Feed</span>
+        <span className="text-sm font-medium text-hub-text">Registro eventi</span>
         <span className={`text-xs flex items-center gap-1.5 ${offline ? 'text-hub-red' : connected ? 'text-hub-green' : 'text-hub-muted'}`}>
           <span className={`w-1.5 h-1.5 rounded-full inline-block ${offline ? 'bg-hub-red' : connected ? 'bg-hub-green animate-pulse' : 'bg-hub-muted'}`} />
-          {offline ? 'Offline' : connected ? 'live' : 'connecting...'}
+          {offline ? 'Non raggiungibile' : connected ? 'in diretta' : 'connessione...'}
         </span>
       </div>
-      {offline ? (
+      {!projectId ? (
+        <div className="py-6 text-center">
+          <p className="text-sm text-hub-text">Seleziona un progetto.</p>
+          <p className="mt-1 text-xs text-hub-muted">Il registro eventi usa il progetto selezionato.</p>
+        </div>
+      ) : offline ? (
         <div className="py-6 text-center">
           <div className="mb-3 flex justify-center">
-            <Badge variant="red">Offline</Badge>
+            <Badge variant="red">Non raggiungibile</Badge>
           </div>
-          <p className="text-sm text-hub-text">Event feed not reachable.</p>
-          <p className="mt-1 text-xs text-hub-muted">Offline</p>
+          <p className="text-sm text-hub-text">Registro eventi non raggiungibile.</p>
+          <p className="mt-1 text-xs text-hub-muted">Hub non disponibile</p>
         </div>
       ) : displayed.length === 0 ? (
-        <p className="text-hub-muted text-sm py-6 text-center">No events yet</p>
+        <p className="text-hub-muted text-sm py-6 text-center">Nessun evento registrato</p>
       ) : (
         <div className="max-h-72 overflow-y-auto space-y-0">
-          {displayed.map((e, i) => (
-            <EventRow key={(e as HubEvent & { event_id?: string }).event_id ?? i} event={e} />
+          {displayed.map((event, index) => (
+            <EventRow key={(event as HubEvent & { event_id?: string }).event_id ?? index} event={event} />
           ))}
         </div>
       )}

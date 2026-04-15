@@ -1,15 +1,16 @@
 'use client';
 
+import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
-  { href: '/', label: 'Dashboard', icon: '⬡' },
+  { href: '/', label: 'Dashboard', icon: '□' },
   { href: '/energy', label: 'Energia', icon: '⚡' },
-  { href: '/devices', label: 'Devices', icon: '◈' },
-  { href: '/rooms', label: 'Rooms', icon: '⬜' },
-  { href: '/scenarios', label: 'Scenarios', icon: '▣' },
-  { href: '/settings', label: 'Settings', icon: '⚙' },
+  { href: '/devices', label: 'Dispositivi', icon: '◈' },
+  { href: '/rooms', label: 'Stanze', icon: '⬜' },
+  { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣' },
+  { href: '/settings', label: 'Impostazioni', icon: '⚙' },
 ];
 
 export default function Sidebar() {
@@ -42,7 +43,7 @@ export default function Sidebar() {
           })}
         </nav>
         <div className="px-5 py-4 border-t border-hub-border text-xs text-hub-muted">
-          mario-hub · port 4001
+          mario-hub · porta 4001
         </div>
       </aside>
 

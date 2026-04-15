@@ -1,12 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import DashboardPage from '@/app/page';
-import {
-  getDefaultProjectId,
-  getDevices,
-  getEvents,
-  getRooms,
-  getSystem,
-} from '@/lib/hub-client';
+import { useProjectId } from '@/hooks/useProjectId';
+import { listDevices } from '@/lib/api/devices';
+import { listRooms } from '@/lib/api/rooms';
+import { ApiClientError, fetchAPI } from '@/lib/api/client';
 
 jest.mock('@/components/layout/TopBar', () => ({
   __esModule: true,
@@ -23,24 +20,39 @@ jest.mock('@/components/dashboard/EventFeed', () => ({
   default: () => <div>event-feed</div>,
 }));
 
-jest.mock('@/lib/hub-client', () => ({
-  getDefaultProjectId: jest.fn(),
-  getDevices: jest.fn(),
-  getEvents: jest.fn(),
-  getRooms: jest.fn(),
-  getSystem: jest.fn(),
+jest.mock('@/hooks/useProjectId', () => ({
+  useProjectId: jest.fn(),
 }));
 
-const mockedGetDefaultProjectId = getDefaultProjectId as jest.MockedFunction<typeof getDefaultProjectId>;
-const mockedGetDevices = getDevices as jest.MockedFunction<typeof getDevices>;
-const mockedGetEvents = getEvents as jest.MockedFunction<typeof getEvents>;
-const mockedGetRooms = getRooms as jest.MockedFunction<typeof getRooms>;
-const mockedGetSystem = getSystem as jest.MockedFunction<typeof getSystem>;
+jest.mock('@/lib/api/devices', () => ({
+  listDevices: jest.fn(),
+}));
+
+jest.mock('@/lib/api/rooms', () => ({
+  listRooms: jest.fn(),
+}));
+
+jest.mock('@/lib/api/client', () => ({
+  ApiClientError: class ApiClientError extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+      super(message);
+      this.status = status;
+    }
+  },
+  fetchAPI: jest.fn(),
+}));
+
+const mockedUseProjectId = useProjectId as jest.MockedFunction<typeof useProjectId>;
+const mockedListDevices = listDevices as jest.MockedFunction<typeof listDevices>;
+const mockedListRooms = listRooms as jest.MockedFunction<typeof listRooms>;
+const mockedFetchAPI = fetchAPI as jest.MockedFunction<typeof fetchAPI>;
 
 describe('Dashboard device inventory flow', () => {
   beforeEach(() => {
-    mockedGetDefaultProjectId.mockReturnValue('default');
-    mockedGetSystem.mockResolvedValue({
+    jest.resetAllMocks();
+    mockedUseProjectId.mockReturnValue('proj-1');
+    mockedFetchAPI.mockResolvedValue({
       hostname: 'hub-pc',
       platform: 'win32',
       arch: 'x64',
@@ -48,41 +60,44 @@ describe('Dashboard device inventory flow', () => {
       memory_mb: 1024,
       adapters: 2,
       active_adapters: 1,
-      default_project_id: 'default',
     });
-    mockedGetRooms.mockResolvedValue({ rooms: [] });
-    mockedGetEvents.mockResolvedValue({ events: [] });
-  });
-
-  afterEach(() => {
-    jest.resetAllMocks();
+    mockedListRooms.mockResolvedValue([]);
   });
 
   it('renders the device inventory when devices resolve', async () => {
-    mockedGetDevices.mockResolvedValue({
-      project_id: 'default',
-      devices: [
-        {
-          id: 'dev-1',
-          name: 'Kitchen Light',
-          protocol: 'zigbee',
-          online: true,
-        } as never,
-      ],
+    mockedListDevices.mockResolvedValue([
+      {
+        id: 'dev-1',
+        project_id: 'proj-1',
+        name: 'Kitchen Light',
+        protocol: 'zigbee',
+        online: true,
+      } as never,
+    ]);
+
+    render(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kitchen Light')).toBeInTheDocument();
     });
-
-    render(await DashboardPage());
-
-    expect(screen.getByText('Devices')).toBeInTheDocument();
-    expect(screen.getByText('Kitchen Light')).toBeInTheDocument();
-    expect(screen.queryByText('Device inventory not reachable.')).not.toBeInTheDocument();
   });
 
-  it('shows the offline inventory state only when device loading fails', async () => {
-    mockedGetDevices.mockRejectedValue(new Error('devices failed'));
+  it('blocks the dashboard when projectId is missing', () => {
+    mockedUseProjectId.mockReturnValue(undefined);
 
-    render(await DashboardPage());
+    render(<DashboardPage />);
 
-    expect(screen.getByText('Device inventory not reachable.')).toBeInTheDocument();
+    expect(screen.getByText('Seleziona un progetto.')).toBeInTheDocument();
+    expect(mockedListDevices).not.toHaveBeenCalled();
+  });
+
+  it('shows hub unavailable when inventory loading fails', async () => {
+    mockedListDevices.mockRejectedValue(new ApiClientError('hub error', 502));
+
+    render(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Hub non disponibile')).toBeInTheDocument();
+    });
   });
 });

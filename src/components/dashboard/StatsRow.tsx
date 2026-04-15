@@ -26,8 +26,8 @@ function StatCard({ label, value, sub, color = 'text-hub-accent' }: Stat) {
 export default function StatsRow({ totalDevices, onlineDevices, totalRooms, activeAdapters, uptime }: StatsRowProps) {
   const uptimeStr = uptime != null
     ? uptime < 3600
-      ? `${Math.round(uptime / 60)}m uptime`
-      : `${Math.round(uptime / 3600)}h uptime`
+      ? `${Math.round(uptime / 60)}m attivo`
+      : `${Math.round(uptime / 3600)}h attivo`
     : undefined;
 
   const devicesOffline = totalDevices == null || onlineDevices == null;
@@ -37,27 +37,27 @@ export default function StatsRow({ totalDevices, onlineDevices, totalRooms, acti
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
-        label="Devices"
-        value={devicesOffline ? 'Offline' : totalDevices}
-        sub={devicesOffline ? 'Offline' : `${onlineDevices} online`}
+        label="Dispositivi"
+        value={devicesOffline ? '–' : totalDevices}
+        sub={devicesOffline ? 'Non disponibile' : `${onlineDevices} in linea`}
         color={devicesOffline ? 'text-hub-red' : onlineDevices > 0 ? 'text-hub-text' : 'text-hub-muted'}
       />
       <StatCard
-        label="Online"
-        value={devicesOffline ? 'Offline' : onlineDevices}
-        sub={devicesOffline ? 'Offline' : `${totalDevices - onlineDevices} offline`}
+        label="In linea"
+        value={devicesOffline ? '–' : onlineDevices}
+        sub={devicesOffline ? 'Non disponibile' : `${totalDevices - onlineDevices} non in linea`}
         color={devicesOffline ? 'text-hub-red' : 'text-hub-green'}
       />
       <StatCard
-        label="Rooms"
-        value={roomsOffline ? 'Offline' : totalRooms}
-        sub={roomsOffline ? 'Offline' : 'zones configured'}
+        label="Zone"
+        value={roomsOffline ? '–' : totalRooms}
+        sub={roomsOffline ? 'Non disponibile' : 'zone configurate'}
         color={roomsOffline ? 'text-hub-red' : 'text-hub-accent'}
       />
       <StatCard
-        label="Adapters"
-        value={adaptersOffline ? 'Offline' : activeAdapters}
-        sub={adaptersOffline ? 'Offline' : uptimeStr || 'active'}
+        label="Adattatori"
+        value={adaptersOffline ? '–' : activeAdapters}
+        sub={adaptersOffline ? 'Non disponibile' : uptimeStr || 'attivi'}
         color={adaptersOffline ? 'text-hub-red' : 'text-hub-amber'}
       />
     </div>

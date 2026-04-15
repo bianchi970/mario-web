@@ -1,9 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Adapter, SystemInfo } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
+import { useProject } from '@/context/ProjectContext';
+
+function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
+  const map: Record<string, { label: string; variant: 'green' | 'red' | 'amber' | 'gray' }> = {
+    active:         { label: 'Attivo',         variant: 'green' },
+    registered:     { label: 'Registrato',     variant: 'gray'  },
+    degraded:       { label: 'Degradato',      variant: 'amber' },
+    stopped:        { label: 'Fermo',          variant: 'gray'  },
+    error:          { label: 'Errore',         variant: 'red'   },
+    bridge_offline: { label: 'Bridge offline', variant: 'red'   },
+  };
+  return map[status] ?? { label: 'Sconosciuto', variant: 'gray' };
+}
 
 interface Props {
   adapters: Adapter[];
@@ -21,24 +35,19 @@ export default function SettingsClient({
   hubDisplayUrl,
 }: Props) {
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
-  const [projectId, setProjectId] = useState('default');
-
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('mario_project_id') : null;
-    if (saved) setProjectId(saved);
-  }, []);
-
-  function saveProjectId(id: string) {
-    setProjectId(id);
-    localStorage.setItem('mario_project_id', id);
-  }
+  const { projectId, setProjectId } = useProject();
+  const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
 
   async function checkHealth() {
+    if (offlineMode) {
+      return;
+    }
+
     setHealth('checking');
     try {
       const res = await fetch('/api/hub/health');
-      const d = await res.json() as { status: string };
-      setHealth(d.status === 'ok' ? 'ok' : 'error');
+      const data = await res.json() as { status: string };
+      setHealth(data.status === 'ok' ? 'ok' : 'error');
     } catch {
       setHealth('error');
     }
@@ -49,23 +58,45 @@ export default function SettingsClient({
       <div className="card space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-medium text-hub-text">Hub Connection</h2>
-          {!systemAvailable && <Badge variant="red">Offline</Badge>}
+          <div className="flex items-center gap-2">
+            {offlineMode && <Badge variant="red">Sistema offline</Badge>}
+            {!systemAvailable && <Badge variant="red">Hub offline</Badge>}
+          </div>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-hub-muted">Hub URL</span>
           <span className="font-mono text-hub-text text-xs">{hubDisplayUrl}</span>
         </div>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <span className="text-sm text-hub-muted block">Stato offline di sistema</span>
+            <span className="text-xs text-hub-muted">Blocca davvero il runtime del Brain prima di ogni comando verso l&apos;hub.</span>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-hub-text">
+            <input
+              type="checkbox"
+              checked={offlineMode}
+              onChange={(e) => setOfflineMode(e.target.checked)}
+              aria-label="Stato offline di sistema"
+              disabled={offlineModeLoading}
+              className="h-4 w-4 accent-hub-red"
+            />
+            {offlineModeLoading ? 'Sincronizzazione...' : offlineMode ? 'Attivo' : 'Disattivo'}
+          </label>
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-hub-muted">Health check</span>
           <div className="flex items-center gap-2">
-            {!systemAvailable ? (
-              <Badge variant="red">Offline</Badge>
+            {offlineMode ? (
+              <Badge variant="red">Bloccato da sistema offline</Badge>
+            ) : !systemAvailable ? (
+              <Badge variant="red">Hub offline</Badge>
             ) : health !== 'idle' ? (
               <Badge variant={health === 'ok' ? 'green' : health === 'error' ? 'red' : 'amber'}>
                 {health === 'checking' ? 'checking...' : health}
               </Badge>
             ) : null}
-            <Button size="sm" loading={health === 'checking'} onClick={checkHealth}>
+            <Button size="sm" loading={health === 'checking'} onClick={checkHealth} disabled={offlineMode || offlineModeLoading}>
               Check
             </Button>
           </div>
@@ -82,14 +113,14 @@ export default function SettingsClient({
           <label className="text-sm text-hub-muted shrink-0">Project ID</label>
           <input
             type="text"
-            value={projectId}
-            onChange={(e) => saveProjectId(e.target.value)}
+            value={projectId ?? ''}
+            onChange={(e) => setProjectId(e.target.value)}
             className="flex-1 bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
-            placeholder="default"
+            placeholder="Project ID"
           />
         </div>
         <p className="text-xs text-hub-muted">
-          Stored in localStorage. Overrides the server default for client-side requests.
+          Salvato nel browser. E&apos; la sorgente unica per dispositivi, stanze e scenari.
         </p>
       </div>
 
@@ -104,10 +135,10 @@ export default function SettingsClient({
               ['Uptime', `${Math.round(system.uptime_s / 60)} min`],
               ['Adapters', `${system.active_adapters} / ${system.adapters} active`],
               ['Project', system.default_project_id],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <span className="text-hub-muted block">{k}</span>
-                <span className="text-hub-text font-mono">{v}</span>
+            ].map(([key, value]) => (
+              <div key={key}>
+                <span className="text-hub-muted block">{key}</span>
+                <span className="text-hub-text font-mono">{value}</span>
               </div>
             ))}
           </div>
@@ -136,17 +167,18 @@ export default function SettingsClient({
         <div className="card space-y-2">
           <h2 className="text-sm font-medium text-hub-text">Adapters ({adapters.length})</h2>
           <div className="space-y-2">
-            {adapters.map((a) => (
-              <div key={a.adapter_id} className="flex items-center justify-between text-xs p-2 bg-hub-bg rounded-lg">
+            {adapters.map((adapter) => (
+              <div key={adapter.adapter_id} className="flex items-center justify-between text-xs p-2 bg-hub-bg rounded-lg">
                 <div>
-                  <span className="text-hub-text font-mono">{a.adapter_id}</span>
-                  {a.vendor && <span className="text-hub-muted ml-2">{a.vendor}</span>}
+                  <span className="text-hub-text font-mono">{adapter.adapter_id}</span>
+                  {adapter.vendor && <span className="text-hub-muted ml-2">{adapter.vendor}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  {a.devices != null && <span className="text-hub-muted">{a.devices} dev</span>}
-                  <Badge variant={a.status === 'running' || a.status === 'active' ? 'green' : 'gray'}>
-                    {a.status}
-                  </Badge>
+                  {adapter.devices != null && <span className="text-hub-muted">{adapter.devices} dev</span>}
+                  {(() => {
+                    const status = formatAdapterStatus(adapter.status);
+                    return <Badge variant={status.variant}>{status.label}</Badge>;
+                  })()}
                 </div>
               </div>
             ))}

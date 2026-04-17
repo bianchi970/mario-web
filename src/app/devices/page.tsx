@@ -28,7 +28,7 @@ export default function DevicesPage() {
       setLoading(true);
       setError(null);
       try {
-        const items = await listDevices(projectId);
+        const items = await listDevices(projectId!);
         if (cancelled) return;
         setDevices(items);
       } catch (err) {
@@ -80,7 +80,7 @@ export default function DevicesPage() {
             <p className="text-xs mt-1">L&apos;inventory del progetto selezionato è vuoto.</p>
           </div>
         ) : (
-          <DeviceList devices={devices} projectId={projectId} />
+          <DeviceList devices={devices} />
         )}
       </main>
     </>

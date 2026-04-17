@@ -47,8 +47,8 @@ export default function DashboardPage() {
       try {
         const [systemPayload, deviceItems, roomItems] = await Promise.all([
           fetchAPI<SystemPayload>('/api/hub/system', { signal: controller.signal }),
-          listDevices(projectId, controller.signal),
-          listRooms(projectId, controller.signal),
+          listDevices(projectId!, controller.signal),
+          listRooms(projectId!, controller.signal),
         ]);
 
         setSystem(unwrapSystem(systemPayload));

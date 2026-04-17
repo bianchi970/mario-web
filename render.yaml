@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: mario-web
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HUB_URL
+        value: https://mario-hub.onrender.com
+      - key: BRAIN_URL
+        value: https://mario-brain.onrender.com
+      - key: DEFAULT_PROJECT_ID
+        value: default
+      - key: NEXT_PUBLIC_HUB_DISPLAY_URL
+        value: https://mario-hub.onrender.com
+      - key: HUB_TOKEN
+        sync: false
+      - key: BRAIN_TOKEN
+        sync: false

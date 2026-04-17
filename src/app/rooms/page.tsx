@@ -28,7 +28,7 @@ export default function RoomsPage() {
       setLoading(true);
       setError(null);
       try {
-        const items = await listRooms(projectId);
+        const items = await listRooms(projectId!);
         if (cancelled) return;
         setRooms(items);
       } catch (err) {
@@ -74,7 +74,7 @@ export default function RoomsPage() {
             <p className="text-sm text-hub-text">{error}</p>
           </div>
         ) : (
-          <RoomGrid rooms={rooms} projectId={projectId} />
+          <RoomGrid rooms={rooms} />
         )}
       </main>
     </>

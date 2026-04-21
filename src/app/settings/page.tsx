@@ -1,11 +1,12 @@
 import TopBar from '@/components/layout/TopBar';
 import SettingsClient from './SettingsClient';
-import { getAdapters, getSystem } from '@/lib/hub-client';
+import { getAdapters, getSystem, getHealth } from '@/lib/hub-client';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
-  const [adaptersRes, systemRes] = await Promise.allSettled([
+  const [healthRes, adaptersRes, systemRes] = await Promise.allSettled([
+    getHealth(),
     getAdapters(),
     getSystem(),
   ]);
@@ -13,7 +14,7 @@ export default async function SettingsPage() {
   const adapters = adaptersRes.status === 'fulfilled' ? adaptersRes.value.adapters : [];
   const system   = systemRes.status   === 'fulfilled' ? systemRes.value : null;
   const adaptersAvailable = adaptersRes.status === 'fulfilled';
-  const systemAvailable = systemRes.status === 'fulfilled';
+  const systemAvailable = healthRes.status === 'fulfilled';
 
   return (
     <>

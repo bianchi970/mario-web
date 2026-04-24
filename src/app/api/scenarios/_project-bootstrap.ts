@@ -13,20 +13,19 @@ export const AUTH_FORBIDDEN = 'AUTH_FORBIDDEN';
 export const PROJECT_LOOKUP_FAILED = 'PROJECT_LOOKUP_FAILED';
 export const UPSTREAM_UNAVAILABLE = 'UPSTREAM_UNAVAILABLE';
 
-export function requireScenarioAuthorization(req: NextRequest): string {
-  const authorization = req.headers.get('authorization');
-  if (!authorization) {
-    throw new Error(AUTH_REQUIRED);
-  }
-  return authorization;
+export function requireScenarioAuthorization(_req: NextRequest): string {
+  const token = process.env.BRAIN_TOKEN || '';
+  if (!token) throw new Error(AUTH_REQUIRED);
+  return `Bearer ${token}`;
 }
 
-export function scenarioAuthHeaders(req: NextRequest, withJson = false): HeadersInit {
-  const authorization = requireScenarioAuthorization(req);
+export function scenarioAuthHeaders(_req: NextRequest, withJson = false): HeadersInit {
+  const token = process.env.BRAIN_TOKEN || '';
+  if (!token) throw new Error(AUTH_REQUIRED);
   return {
     accept: 'application/json',
     ...(withJson ? { 'content-type': 'application/json' } : {}),
-    authorization,
+    authorization: `Bearer ${token}`,
   };
 }
 

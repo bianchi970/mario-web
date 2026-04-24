@@ -15,6 +15,11 @@ describe('scenarios upstream boundary', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.resetAllMocks();
+    process.env.BRAIN_TOKEN = 'test-brain-token';
+  });
+
+  afterEach(() => {
+    delete process.env.BRAIN_TOKEN;
   });
 
   test('GET /api/scenarios returns canonical UPSTREAM_UNAVAILABLE when Brain is down', async () => {

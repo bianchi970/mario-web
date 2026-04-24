@@ -22,10 +22,10 @@ const {
   scenarioAuthHeaders,
 } = require('@/app/api/scenarios/_project-bootstrap');
 
-function makeRequest(url = 'http://localhost:3000/api/scenarios', authorization: string | null = null) {
+function makeRequest(url = 'http://localhost:3000/api/scenarios') {
   return {
     headers: {
-      get: (key: string) => (key.toLowerCase() === 'authorization' ? authorization : null),
+      get: (_key: string) => null,
     },
     nextUrl: new URL(url),
   } as never;
@@ -34,6 +34,11 @@ function makeRequest(url = 'http://localhost:3000/api/scenarios', authorization:
 describe('scenarios project bootstrap', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    process.env.BRAIN_TOKEN = 'test-brain-token';
+  });
+
+  afterEach(() => {
+    delete process.env.BRAIN_TOKEN;
   });
 
   test('returns first project when no explicit project is provided', async () => {
@@ -42,7 +47,7 @@ describe('scenarios project bootstrap', () => {
       json: async () => [{ id: 'proj-1', name: 'Demo project' }],
     }) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), null)).resolves.toBe('proj-1');
+    await expect(resolveScenarioProjectId(makeRequest(), null)).resolves.toBe('proj-1');
   });
 
   test('throws NO_ACTIVE_PROJECT when there are no projects', async () => {
@@ -51,7 +56,7 @@ describe('scenarios project bootstrap', () => {
       json: async () => [],
     }) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), null)).rejects.toThrow(NO_ACTIVE_PROJECT);
+    await expect(resolveScenarioProjectId(makeRequest(), null)).rejects.toThrow(NO_ACTIVE_PROJECT);
   });
 
   test('keeps explicit valid project', async () => {
@@ -60,7 +65,7 @@ describe('scenarios project bootstrap', () => {
       json: async () => ({ id: 'proj-2' }),
     }) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), 'proj-2')).resolves.toBe('proj-2');
+    await expect(resolveScenarioProjectId(makeRequest(), 'proj-2')).resolves.toBe('proj-2');
   });
 
   test('throws PROJECT_NOT_FOUND for explicit invalid project', async () => {
@@ -70,17 +75,18 @@ describe('scenarios project bootstrap', () => {
       json: async () => ({ error: 'project not found' }),
     }) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), 'missing-project')).rejects.toThrow(PROJECT_NOT_FOUND);
+    await expect(resolveScenarioProjectId(makeRequest(), 'missing-project')).rejects.toThrow(PROJECT_NOT_FOUND);
   });
 
-  test('throws AUTH_REQUIRED when authorization header is missing', () => {
+  test('throws AUTH_REQUIRED when BRAIN_TOKEN is not set', () => {
+    delete process.env.BRAIN_TOKEN;
     expect(() => requireScenarioAuthorization(makeRequest())).toThrow(AUTH_REQUIRED);
   });
 
-  test('scenarioAuthHeaders forwards incoming authorization', () => {
-    expect(scenarioAuthHeaders(makeRequest(undefined, 'Bearer live-token'))).toEqual({
+  test('scenarioAuthHeaders uses server-side BRAIN_TOKEN', () => {
+    expect(scenarioAuthHeaders(makeRequest())).toEqual({
       accept: 'application/json',
-      authorization: 'Bearer live-token',
+      authorization: 'Bearer test-brain-token',
     });
   });
 
@@ -91,7 +97,7 @@ describe('scenarios project bootstrap', () => {
       json: async () => ({ error: 'missing token' }),
     }) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), null)).rejects.toThrow(AUTH_REQUIRED);
+    await expect(resolveScenarioProjectId(makeRequest(), null)).rejects.toThrow(AUTH_REQUIRED);
   });
 
   test('throws AUTH_FORBIDDEN when explicit project lookup is forbidden', async () => {
@@ -101,13 +107,13 @@ describe('scenarios project bootstrap', () => {
       json: async () => ({ error: 'forbidden' }),
     }) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), 'proj-3')).rejects.toThrow(AUTH_FORBIDDEN);
+    await expect(resolveScenarioProjectId(makeRequest(), 'proj-3')).rejects.toThrow(AUTH_FORBIDDEN);
   });
 
   test('throws UPSTREAM_UNAVAILABLE when project bootstrap fetch fails', async () => {
     global.fetch = jest.fn().mockRejectedValue(new TypeError('fetch failed')) as never;
 
-    await expect(resolveScenarioProjectId(makeRequest(undefined, 'Bearer token'), null)).rejects.toThrow(UPSTREAM_UNAVAILABLE);
+    await expect(resolveScenarioProjectId(makeRequest(), null)).rejects.toThrow(UPSTREAM_UNAVAILABLE);
   });
 
   test('maps UPSTREAM_UNAVAILABLE to 502', () => {

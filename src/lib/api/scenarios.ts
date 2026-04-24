@@ -162,3 +162,15 @@ export async function deleteScenario(
 
   return res.json().catch(() => ({ success: false, error: 'invalid_json' }));
 }
+
+export async function runScenario(
+  scenarioId: string,
+  projectId?: string
+): Promise<{ status: string; error?: string }> {
+  const qs = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+  const res = await fetch(`/api/scenarios/${encodeURIComponent(scenarioId)}/run${qs}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+  });
+  return res.json().catch(() => ({ status: 'error', error: 'invalid_json' }));
+}

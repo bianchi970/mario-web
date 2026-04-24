@@ -16,6 +16,7 @@ import {
   deleteScenario,
   listScenarios,
   listScenarioAudit,
+  runScenario,
   setScenarioEnabled,
   type ScenarioAuditItem,
   type ScenarioRecord,
@@ -100,6 +101,16 @@ export default function ScenariosPage() {
       setError(err instanceof Error ? formatScenarioError(err.message) : SCENARIO_COPY.unexpectedError);
     } finally {
       setManagementLoading(false);
+    }
+  }
+
+  async function handleRunScenario(scenarioId: string) {
+    setError(null);
+    try {
+      await runScenario(scenarioId, projectId);
+      await refreshAudit();
+    } catch (err) {
+      setError(err instanceof Error ? formatScenarioError(err.message) : SCENARIO_COPY.unexpectedError);
     }
   }
 
@@ -239,6 +250,7 @@ export default function ScenariosPage() {
           onRefresh={refreshScenarioList}
           onToggle={handleToggleScenario}
           onDelete={handleDeleteScenario}
+          onRun={handleRunScenario}
         />
 
         <ScenarioAuditList

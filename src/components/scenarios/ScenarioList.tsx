@@ -9,6 +9,7 @@ type Props = {
   onRefresh: () => Promise<void> | void;
   onToggle: (scenarioId: string, enabled: boolean) => Promise<void> | void;
   onDelete: (scenarioId: string) => Promise<void> | void;
+  onRun: (scenarioId: string) => Promise<void> | void;
 };
 
 function formatDate(value?: string | null) {
@@ -24,6 +25,7 @@ export default function ScenarioList({
   onRefresh,
   onToggle,
   onDelete,
+  onRun,
 }: Props) {
   return (
     <div className="card space-y-3">
@@ -64,6 +66,14 @@ export default function ScenarioList({
                   <td className="py-2 pr-4">{formatDate(item.updated_at)}</td>
                   <td className="py-2 pr-4">
                     <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void onRun(item.id)}
+                        disabled={loading}
+                        className="rounded-lg border border-hub-accent/60 px-3 py-1 text-sm text-hub-accent disabled:opacity-50"
+                      >
+                        Esegui
+                      </button>
                       <button
                         type="button"
                         onClick={() => void onToggle(item.id, !item.enabled)}

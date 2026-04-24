@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Badge from '@/components/ui/Badge';
 import { useProjectId } from '@/hooks/useProjectId';
 import { useEventStream } from '@/hooks/useEventStream';
@@ -57,7 +58,10 @@ export default function EventFeed({
   initialEvents?: HubEvent[];
   initialUnavailable?: boolean;
 }) {
-  const projectId = useProjectId() ?? null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const rawProjectId = useProjectId();
+  const projectId = mounted ? (rawProjectId ?? null) : null;
   const { events: streamEvents, connected } = useEventStream(projectId);
 
   const all = [...streamEvents];

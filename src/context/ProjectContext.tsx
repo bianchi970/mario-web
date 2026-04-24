@@ -17,7 +17,7 @@ function readStoredProjectId(): string | undefined {
   }
 
   const stored = window.localStorage.getItem(STORAGE_KEY)?.trim();
-  return stored ? stored : undefined;
+  return stored ? stored : (process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID || undefined);
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {

@@ -23,11 +23,14 @@ function unwrapSystem(payload: SystemPayload): SystemInfo {
 
 export default function DashboardPage() {
   const projectId = useProjectId();
+  const [mounted, setMounted] = useState(false);
   const [system, setSystem] = useState<SystemInfo | null>(null);
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [rooms, setRooms] = useState<Room[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!projectId) {
@@ -78,12 +81,13 @@ export default function DashboardPage() {
 
   const onlineCount = devices?.filter((device) => device.online).length ?? null;
   const hubOffline = error === 'Hub non disponibile';
+  const effectiveProjectId = mounted ? projectId : undefined;
 
   return (
     <>
       <TopBar title="Dashboard" />
       <main className="flex-1 p-5 space-y-6">
-        {!projectId ? (
+        {!effectiveProjectId ? (
           <div className="card">
             <p className="text-sm text-hub-text">Seleziona un progetto.</p>
             <p className="mt-1 text-xs text-hub-muted">Imposta il Project ID nelle Impostazioni per caricare dispositivi e stanze.</p>

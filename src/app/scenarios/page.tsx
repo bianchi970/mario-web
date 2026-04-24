@@ -35,7 +35,10 @@ function appendOutcomeToText(text: string, outcomeText: string) {
 }
 
 export default function ScenariosPage() {
-  const projectId = useProjectId();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const rawProjectId = useProjectId();
+  const projectId = mounted ? rawProjectId : undefined;
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export default function ScenariosPage() {
     if (!projectId) return;
     void refreshScenarioList();
     void refreshAudit();
-  }, []);
+  }, [projectId]);
 
   async function handleToggleScenario(scenarioId: string, enabled: boolean) {
     setManagementLoading(true);

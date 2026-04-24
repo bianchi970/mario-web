@@ -29,10 +29,6 @@ function upstreamUnavailableResponse() {
   );
 }
 
-function isDeviceCommandPath(path: string[]): boolean {
-  return path.length === 3 && path[0] === 'devices' && path[2] === 'command';
-}
-
 function buildHubUrl(path: string[], req: NextRequest): string {
   const joined = path.join('/');
   const search = req.nextUrl.search;
@@ -81,28 +77,13 @@ async function fetchHub(
 async function proxyRequest(req: NextRequest, path: string[]): Promise<Response> {
   const isSSE = req.headers.get('accept') === 'text/event-stream';
   const hasIncomingAuth = !!req.headers.get('authorization');
-  const requiresUserAuth = isDeviceCommandPath(path);
-
-  if (requiresUserAuth && !hasIncomingAuth) {
-    return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Non autorizzato',
-        },
-      },
-      { status: 401 },
-    );
-  }
 
   const firstAuthMode = hasIncomingAuth ? 'passthrough' : 'server';
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.from(await req.arrayBuffer());
 
   let upstreamRes = await fetchHub(req, path, firstAuthMode, body);
 
-  if (!requiresUserAuth && !hasIncomingAuth && HUB_TOKEN && (upstreamRes.status === 401 || upstreamRes.status === 403)) {
+  if (!hasIncomingAuth && HUB_TOKEN && (upstreamRes.status === 401 || upstreamRes.status === 403)) {
     upstreamRes = await fetchHub(req, path, 'none', body);
   }
 

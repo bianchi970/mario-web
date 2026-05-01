@@ -7,6 +7,7 @@ import StatsRow from '@/components/dashboard/StatsRow';
 import EventFeed from '@/components/dashboard/EventFeed';
 import Badge from '@/components/ui/Badge';
 import { useProjectId } from '@/hooks/useProjectId';
+import { useProject } from '@/context/ProjectContext';
 import { ApiClientError, fetchAPI } from '@/lib/api/client';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
@@ -23,6 +24,8 @@ function unwrapSystem(payload: SystemPayload): SystemInfo {
 
 export default function DashboardPage() {
   const projectId = useProjectId();
+  const { setProjectId } = useProject();
+  const [searchInput, setSearchInput] = useState('');
   const [mounted, setMounted] = useState(false);
   const [system, setSystem] = useState<SystemInfo | null>(null);
   const [devices, setDevices] = useState<Device[] | null>(null);
@@ -90,7 +93,23 @@ export default function DashboardPage() {
         {!effectiveProjectId ? (
           <div className="card">
             <p className="text-sm text-hub-text">Seleziona un progetto.</p>
-            <p className="mt-1 text-xs text-hub-muted">Imposta il Project ID nelle Impostazioni per caricare dispositivi e stanze.</p>
+            <p className="mt-1 text-xs text-hub-muted">Inserisci il nome del progetto per caricare dispositivi e stanze.</p>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && searchInput.trim()) setProjectId(searchInput.trim()); }}
+                placeholder="Nome progetto..."
+                className="flex-1 rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text placeholder:text-hub-muted focus:outline-none focus:ring-1 focus:ring-hub-accent"
+              />
+              <button
+                onClick={() => { if (searchInput.trim()) setProjectId(searchInput.trim()); }}
+                className="rounded-lg border border-hub-border px-4 py-2 text-sm text-hub-text hover:bg-hub-border/30 transition-colors"
+              >
+                Cerca
+              </button>
+            </div>
           </div>
         ) : loading ? (
           <div className="card">

@@ -117,8 +117,14 @@ export default function DashboardPage() {
           </div>
         ) : error ? (
           <div className="card">
-            <div className="mb-3 flex justify-start">
+            <div className="mb-3 flex items-center justify-between">
               <Badge variant="red">Offline</Badge>
+              <button
+                onClick={() => { void (async () => { const ctrl = new AbortController(); setLoading(true); setError(null); try { const [sp, di, ri] = await Promise.all([fetchAPI<SystemPayload>('/api/hub/system', { signal: ctrl.signal }), listDevices(projectId!, ctrl.signal), listRooms(projectId!, ctrl.signal)]); setSystem(unwrapSystem(sp)); setDevices(di); setRooms(ri); } catch { setError('Errore caricamento dashboard'); } finally { setLoading(false); } })(); }}
+                className="rounded-lg border border-hub-border px-3 py-1 text-xs text-hub-text hover:bg-hub-border/30 transition-colors"
+              >
+                Riprova
+              </button>
             </div>
             <p className="text-sm text-hub-text">{error}</p>
           </div>
@@ -153,9 +159,12 @@ export default function DashboardPage() {
 
         {devices && devices.length > 0 && (
           <div className="card">
-            <h2 className="text-sm font-medium text-hub-text mb-3">
-              Dispositivi <span className="text-hub-muted text-xs">({devices.length})</span>
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-medium text-hub-text">
+                Dispositivi <span className="text-hub-muted text-xs">({devices.length})</span>
+              </h2>
+              <Link href="/devices" className="text-xs text-hub-accent hover:underline">Tutti →</Link>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {devices.slice(0, 9).map((device) => (
                 <div key={device.id} className="flex items-center gap-2 p-2 rounded-lg bg-hub-bg border border-hub-border/50 text-xs">

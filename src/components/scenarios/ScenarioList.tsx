@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import type { ScenarioRecord } from '@/lib/api/scenarios';
 
@@ -27,6 +28,14 @@ export default function ScenarioList({
   onDelete,
   onRun,
 }: Props) {
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter((s) => s.name.toLowerCase().includes(q));
+  }, [items, search]);
+
   return (
     <div className="card space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -45,6 +54,16 @@ export default function ScenarioList({
         </button>
       </div>
 
+      {items.length > 0 && (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cerca scenario..."
+          className="w-full rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text placeholder:text-hub-muted focus:outline-none focus:ring-1 focus:ring-hub-accent"
+        />
+      )}
+
       {items.length ? (
         <div className="overflow-auto">
           <table className="w-full text-sm text-hub-text">
@@ -58,7 +77,11 @@ export default function ScenarioList({
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-4 text-center text-hub-muted text-sm">Nessun risultato</td>
+                </tr>
+              ) : filtered.map((item) => (
                 <tr key={item.id} className="border-t border-hub-border">
                   <td className="py-2 pr-4">{item.name}</td>
                   <td className="py-2 pr-4">{item.enabled ? SCENARIO_COPY.listEnabled : SCENARIO_COPY.listDisabled}</td>

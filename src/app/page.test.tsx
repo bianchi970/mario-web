@@ -24,6 +24,10 @@ jest.mock('@/hooks/useProjectId', () => ({
   useProjectId: jest.fn(),
 }));
 
+jest.mock('@/context/ProjectContext', () => ({
+  useProject: () => ({ setProjectId: jest.fn() }),
+}));
+
 jest.mock('@/lib/api/devices', () => ({
   listDevices: jest.fn(),
 }));

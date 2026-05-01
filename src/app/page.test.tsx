@@ -36,6 +36,12 @@ jest.mock('@/lib/api/rooms', () => ({
   listRooms: jest.fn(),
 }));
 
+jest.mock('@/lib/api/scenarios', () => ({
+  listScenarios: jest.fn().mockResolvedValue([]),
+  listScenarioAudit: jest.fn().mockResolvedValue([]),
+  setScenarioEnabled: jest.fn().mockResolvedValue({ success: true }),
+}));
+
 jest.mock('@/lib/api/client', () => ({
   ApiClientError: class ApiClientError extends Error {
     status: number;

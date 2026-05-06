@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
       method: 'GET',
       headers: authHeaders(req),
       cache: 'no-store',
+      signal: AbortSignal.timeout(3000),
     });
 
     const data = await upstream.json().catch(() => ({ offline: false }));

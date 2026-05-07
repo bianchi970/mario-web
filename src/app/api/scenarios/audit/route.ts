@@ -36,11 +36,13 @@ export async function GET(req: NextRequest) {
           method: 'GET',
           headers,
           cache: 'no-store',
+          signal: AbortSignal.timeout(3000),
         }),
         fetch(`${BRAIN_URL}/projects/${encodeURIComponent(projectId)}/automations`, {
           method: 'GET',
           headers,
           cache: 'no-store',
+          signal: AbortSignal.timeout(3000),
         }),
       ]);
     } catch (error) {

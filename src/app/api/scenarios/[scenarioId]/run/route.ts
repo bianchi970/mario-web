@@ -26,6 +26,7 @@ export async function POST(
         {
           method: 'POST',
           headers: scenarioAuthHeaders(req),
+          signal: AbortSignal.timeout(3000),
         },
       );
     } catch {

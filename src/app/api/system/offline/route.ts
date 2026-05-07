@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       headers: authHeaders(req),
       body: JSON.stringify({ offline: body?.offline === true }),
       cache: 'no-store',
+      signal: AbortSignal.timeout(3000),
     });
 
     const data = await upstream.json().catch(() => ({ offline: body?.offline === true }));

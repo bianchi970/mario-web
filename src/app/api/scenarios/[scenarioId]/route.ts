@@ -28,6 +28,7 @@ export async function PATCH(
           method: 'PATCH',
           headers: scenarioAuthHeaders(req, true),
           body: JSON.stringify({ enabled: body?.enabled }),
+          signal: AbortSignal.timeout(3000),
         },
       );
     } catch (error) {
@@ -74,6 +75,7 @@ export async function DELETE(
         {
           method: 'DELETE',
           headers: scenarioAuthHeaders(req),
+          signal: AbortSignal.timeout(3000),
         },
       );
     } catch (error) {

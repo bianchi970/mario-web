@@ -78,6 +78,7 @@ async function listProjects(req: NextRequest): Promise<ProjectRecord[]> {
       method: 'GET',
       headers: scenarioAuthHeaders(req),
       cache: 'no-store',
+      signal: AbortSignal.timeout(3000),
     });
   } catch (error) {
     throw toScenarioProxyError(error);
@@ -98,6 +99,7 @@ async function projectExists(req: NextRequest, projectId: string): Promise<boole
       method: 'GET',
       headers: scenarioAuthHeaders(req),
       cache: 'no-store',
+      signal: AbortSignal.timeout(3000),
     });
   } catch (error) {
     throw toScenarioProxyError(error);

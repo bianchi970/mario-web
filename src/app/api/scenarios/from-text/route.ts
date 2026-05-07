@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
           headers: scenarioAuthHeaders(req, true),
           body: JSON.stringify({ text: body.text || '' }),
           cache: 'no-store',
+          signal: AbortSignal.timeout(10000),
         },
       );
     } catch (error) {

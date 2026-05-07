@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         headers: scenarioAuthHeaders(req, true),
         body: JSON.stringify(body),
         cache: 'no-store',
+        signal: AbortSignal.timeout(3000),
       });
     } catch (error) {
       return scenarioUpstreamUnavailableResponse();
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
         method: 'GET',
         headers: scenarioAuthHeaders(req),
         cache: 'no-store',
+        signal: AbortSignal.timeout(3000),
       });
     } catch (error) {
       return scenarioUpstreamUnavailableResponse();

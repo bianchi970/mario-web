@@ -327,7 +327,7 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Uscite attive"
-            value={devices?.filter((d) => d.active ?? d.online).length ?? '—'}
+            value={devices?.filter((d) => d.online).length ?? '—'}
             note="stato runtime Hub"
             tone="green"
           />
@@ -470,21 +470,23 @@ export default function DashboardPage() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-14 shrink-0 text-sm text-white/50">
-                            {new Date(item.executed_at).toLocaleTimeString('it-IT', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {item.executed_at
+                              ? new Date(item.executed_at).toLocaleTimeString('it-IT', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
                           </div>
                           <div className="text-white">{item.scenario_name}</div>
                         </div>
                         <span
                           className={`rounded-full border px-3 py-1 text-xs ${
-                            item.status === 'success'
+                            item.status === 'executed'
                               ? 'border-emerald-500/20 bg-emerald-500/15 text-emerald-300'
                               : 'border-red-500/20 bg-red-500/15 text-red-300'
                           }`}
                         >
-                          {item.status === 'success' ? 'OK' : 'Errore'}
+                          {item.status === 'executed' ? 'OK' : 'Errore'}
                         </span>
                       </div>
                     ))

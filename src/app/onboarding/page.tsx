@@ -6,6 +6,7 @@ import { fetchAPI } from '@/lib/api/client';
 import { listRooms } from '@/lib/api/rooms';
 import { useProjectId } from '@/hooks/useProjectId';
 import type { Room } from '@/lib/hub-types';
+import DeviceQRScanner from '@/components/onboarding/DeviceQRScanner';
 
 // ── Tipi ─────────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,11 @@ export default function OnboardingPage() {
   const [testLog, setTestLog]   = useState<string[]>([]);
   const [errMsg, setErrMsg]     = useState('');
   const [timeLeft, setTimeLeft] = useState(120);
+
+  // QR device scanner
+  const [scanOpen, setScanOpen]     = useState(false);
+  const [qrStatus, setQrStatus]     = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [qrMsg, setQrMsg]           = useState('');
 
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -168,6 +174,26 @@ export default function OnboardingPage() {
     setStep('done');
   }
 
+  // ── QR device scan ────────────────────────────────────────────────────────
+
+  async function handleDeviceQR(raw: string) {
+    if (!session) return;
+    setScanOpen(false);
+    setQrStatus('sending');
+    setQrMsg('');
+    try {
+      const result = await fetchAPI<{ success: boolean; protocol: string; notes: string }>(
+        `/api/hub/onboarding/session/${encodeURIComponent(session.session_token)}/device-qr`,
+        { method: 'POST', body: JSON.stringify({ qr_string: raw }) },
+      );
+      setQrStatus('ok');
+      setQrMsg(result.notes || `Provisioning ${result.protocol} avviato`);
+    } catch (err) {
+      setQrStatus('error');
+      setQrMsg(err instanceof Error ? err.message : 'Errore QR provisioning');
+    }
+  }
+
   // ── Ricomincia ────────────────────────────────────────────────────────────
 
   async function reset() {
@@ -181,6 +207,9 @@ export default function OnboardingPage() {
     setRoomId('');
     setTestLog([]);
     setErrMsg('');
+    setScanOpen(false);
+    setQrStatus('idle');
+    setQrMsg('');
     setStep('idle');
   }
 
@@ -230,29 +259,68 @@ export default function OnboardingPage() {
         {/* ── WAITING ── */}
         {step === 'waiting' && session && (
           <div className="space-y-4">
-            <p className="text-hub-muted text-sm">
-              Sessione aperta. Premi il tasto sul dispositivo Z-Wave (3 click rapidi).
-            </p>
 
-            {/* QR Code */}
-            {qrUrl && (
-              <div className="flex justify-center bg-white rounded-xl p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrUrl} alt="QR sessione" width={220} height={220} />
-              </div>
+            {/* Scanner camera (aperto su richiesta) */}
+            {scanOpen ? (
+              <DeviceQRScanner
+                onScan={handleDeviceQR}
+                onError={msg => { setScanOpen(false); setQrStatus('error'); setQrMsg(msg); }}
+                onCancel={() => setScanOpen(false)}
+              />
+            ) : (
+              <>
+                {/* Azione primaria: QR device */}
+                <button
+                  onClick={() => { setQrStatus('idle'); setQrMsg(''); setScanOpen(true); }}
+                  disabled={qrStatus === 'sending'}
+                  className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  <span>📷</span>
+                  {qrStatus === 'sending' ? 'Elaborazione QR...' : 'Inquadra QR dispositivo'}
+                </button>
+
+                {/* Esito provisioning QR */}
+                {qrStatus === 'ok' && (
+                  <div className="rounded-lg bg-green-900/30 border border-green-700 p-3 text-xs text-green-300">
+                    ✓ {qrMsg}
+                  </div>
+                )}
+                {qrStatus === 'error' && (
+                  <div className="rounded-lg bg-red-900/30 border border-red-700 p-3 text-xs text-red-300">
+                    {qrMsg}
+                  </div>
+                )}
+
+                {/* Azione secondaria: 3 click */}
+                <p className="text-hub-muted text-xs text-center">
+                  oppure premi <strong>3 volte</strong> il tasto fisico sul dispositivo
+                </p>
+              </>
             )}
 
+            {/* Barra attesa */}
             <div className="flex items-center justify-between text-xs text-hub-muted font-mono">
               <span>In attesa dispositivo...</span>
               <span className={timeLeft < 20 ? 'text-red-400' : ''}>{timeLeft}s</span>
             </div>
-
             <div className="h-1 bg-hub-border rounded">
               <div
                 className="h-1 bg-hub-accent rounded transition-all"
                 style={{ width: `${(timeLeft / 120) * 100}%` }}
               />
             </div>
+
+            {/* QR sessione MARIO — uso futuro companion app */}
+            {qrUrl && !scanOpen && (
+              <details className="text-xs text-hub-muted">
+                <summary className="cursor-pointer select-none">Info sessione</summary>
+                <div className="mt-2 flex justify-center bg-white rounded-xl p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qrUrl} alt="QR sessione MARIO" width={160} height={160} />
+                </div>
+                <p className="text-center mt-1 opacity-60">QR sessione MARIO (per companion app)</p>
+              </details>
+            )}
 
             <button onClick={reset} className="text-xs text-hub-muted underline">
               Annulla

@@ -6,7 +6,6 @@ import { fetchAPI } from '@/lib/api/client';
 import { listRooms } from '@/lib/api/rooms';
 import { useProjectId } from '@/hooks/useProjectId';
 import type { Room } from '@/lib/hub-types';
-import DeviceQRScanner from '@/components/onboarding/DeviceQRScanner';
 
 // ── Tipi ─────────────────────────────────────────────────────────────────────
 
@@ -77,10 +76,11 @@ export default function OnboardingPage() {
   const [errMsg, setErrMsg]     = useState('');
   const [timeLeft, setTimeLeft] = useState(120);
 
-  // QR device scanner
-  const [scanOpen, setScanOpen]     = useState(false);
-  const [qrStatus, setQrStatus]     = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
-  const [qrMsg, setQrMsg]           = useState('');
+  // DSK SmartStart manuale
+  const [dskOpen, setDskOpen]   = useState(false);
+  const [dskInput, setDskInput] = useState('');
+  const [dskStatus, setDskStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [dskMsg, setDskMsg]     = useState('');
 
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -104,7 +104,6 @@ export default function OnboardingPage() {
       const data = await openSession(projectId);
       setSession(data);
 
-      // Countdown visivo
       timerRef.current = setInterval(() => {
         setTimeLeft(t => {
           if (t <= 1) { stopPolling(); return 0; }
@@ -112,7 +111,6 @@ export default function OnboardingPage() {
         });
       }, 1000);
 
-      // Polling status
       pollRef.current = setInterval(async () => {
         try {
           const s = await pollSession(data.session_token);
@@ -133,6 +131,33 @@ export default function OnboardingPage() {
     } catch (err) {
       setErrMsg(err instanceof Error ? err.message : 'Errore apertura sessione');
       setStep('error');
+    }
+  }
+
+  // ── DSK SmartStart manuale ────────────────────────────────────────────────
+
+  async function handleDSKSubmit() {
+    const dsk = dskInput.trim();
+    if (!dsk) return;
+    if (!/^\d{5}(-\d{5}){7}$/.test(dsk)) {
+      setDskStatus('error');
+      setDskMsg('Formato non valido. Es: 12345-12345-12345-12345-12345-12345-12345-12345');
+      return;
+    }
+    setDskStatus('sending');
+    setDskMsg('');
+    try {
+      await fetchAPI('/api/hub/zwave/smartstart', {
+        method: 'POST',
+        body: JSON.stringify({ dsk, security_classes: [0, 1] }),
+      });
+      setDskStatus('ok');
+      setDskMsg('SmartStart attivato. Premi il tasto fisico per completare l\'inclusione.');
+      setDskInput('');
+      setDskOpen(false);
+    } catch (err) {
+      setDskStatus('error');
+      setDskMsg(err instanceof Error ? err.message : 'Errore SmartStart');
     }
   }
 
@@ -170,29 +195,7 @@ export default function OnboardingPage() {
     }
   }
 
-  function finish() {
-    setStep('done');
-  }
-
-  // ── QR device scan ────────────────────────────────────────────────────────
-
-  async function handleDeviceQR(raw: string) {
-    if (!session) return;
-    setScanOpen(false);
-    setQrStatus('sending');
-    setQrMsg('');
-    try {
-      const result = await fetchAPI<{ success: boolean; protocol: string; notes: string }>(
-        `/api/hub/onboarding/session/${encodeURIComponent(session.session_token)}/device-qr`,
-        { method: 'POST', body: JSON.stringify({ qr_string: raw }) },
-      );
-      setQrStatus('ok');
-      setQrMsg(result.notes || `Provisioning ${result.protocol} avviato`);
-    } catch (err) {
-      setQrStatus('error');
-      setQrMsg(err instanceof Error ? err.message : 'Errore QR provisioning');
-    }
-  }
+  function finish() { setStep('done'); }
 
   // ── Ricomincia ────────────────────────────────────────────────────────────
 
@@ -207,17 +210,12 @@ export default function OnboardingPage() {
     setRoomId('');
     setTestLog([]);
     setErrMsg('');
-    setScanOpen(false);
-    setQrStatus('idle');
-    setQrMsg('');
+    setDskOpen(false);
+    setDskInput('');
+    setDskStatus('idle');
+    setDskMsg('');
     setStep('idle');
   }
-
-  // ── QR URL ────────────────────────────────────────────────────────────────
-
-  const qrUrl = session
-    ? `/api/hub/onboarding/session/${encodeURIComponent(session.session_token)}/qr`
-    : null;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -231,7 +229,7 @@ export default function OnboardingPage() {
         <div className="flex items-center gap-2 text-xs text-hub-muted font-mono">
           {(['Sessione','Trovato','Stanza','Test','Fine'] as const).map((label, i) => {
             const stepIndex = ['idle','waiting','found','room','test','done'].indexOf(step);
-            const active = i <= stepIndex - (step === 'waiting' ? 0 : 0);
+            const active = i <= stepIndex;
             return (
               <span key={label} className={active ? 'text-hub-accent' : ''}>
                 {i > 0 && <span className="mx-1">›</span>}
@@ -245,7 +243,7 @@ export default function OnboardingPage() {
         {step === 'idle' && (
           <div className="space-y-4">
             <p className="text-hub-muted text-sm">
-              Premi per aprire una sessione di pairing. Poi premi il tasto sul dispositivo.
+              Avvia una sessione di pairing, poi includi il dispositivo.
             </p>
             <button
               onClick={startSession}
@@ -260,45 +258,62 @@ export default function OnboardingPage() {
         {step === 'waiting' && session && (
           <div className="space-y-4">
 
-            {/* Scanner camera (aperto su richiesta) */}
-            {scanOpen ? (
-              <DeviceQRScanner
-                onScan={handleDeviceQR}
-                onError={msg => { setScanOpen(false); setQrStatus('error'); setQrMsg(msg); }}
-                onCancel={() => setScanOpen(false)}
-              />
-            ) : (
-              <>
-                {/* Azione primaria: QR device */}
-                <button
-                  onClick={() => { setQrStatus('idle'); setQrMsg(''); setScanOpen(true); }}
-                  disabled={qrStatus === 'sending'}
-                  className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  <span>📷</span>
-                  {qrStatus === 'sending' ? 'Elaborazione QR...' : 'Inquadra QR dispositivo'}
-                </button>
-
-                {/* Esito provisioning QR */}
-                {qrStatus === 'ok' && (
-                  <div className="rounded-lg bg-green-900/30 border border-green-700 p-3 text-xs text-green-300">
-                    ✓ {qrMsg}
-                  </div>
-                )}
-                {qrStatus === 'error' && (
-                  <div className="rounded-lg bg-red-900/30 border border-red-700 p-3 text-xs text-red-300">
-                    {qrMsg}
-                  </div>
-                )}
-
-                {/* Azione secondaria: 3 click */}
-                <p className="text-hub-muted text-xs text-center">
-                  oppure premi <strong>3 volte</strong> il tasto fisico sul dispositivo
+            {/* Opzione A: DSK SmartStart */}
+            {dskOpen ? (
+              <div className="space-y-2">
+                <p className="text-xs text-hub-muted">
+                  Codice DSK — stampato sotto il QR sul dispositivo
                 </p>
-              </>
+                <input
+                  type="text"
+                  value={dskInput}
+                  onChange={e => setDskInput(e.target.value)}
+                  placeholder="12345-12345-12345-12345-12345-12345-12345-12345"
+                  className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-xs text-hub-text font-mono"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDSKSubmit}
+                    disabled={!dskInput.trim() || dskStatus === 'sending'}
+                    className="flex-1 bg-hub-accent text-black font-semibold py-2 rounded-lg text-xs disabled:opacity-40"
+                  >
+                    {dskStatus === 'sending' ? 'Attivazione...' : 'Attiva SmartStart'}
+                  </button>
+                  <button
+                    onClick={() => { setDskOpen(false); setDskInput(''); }}
+                    className="text-xs text-hub-muted px-3 border border-hub-border rounded-lg py-2"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setDskOpen(true)}
+                className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"
+              >
+                Inserisci codice dispositivo (DSK)
+              </button>
             )}
 
-            {/* Barra attesa */}
+            {/* Esito DSK */}
+            {dskStatus === 'ok' && (
+              <div className="rounded-lg bg-green-900/30 border border-green-700 p-3 text-xs text-green-300">
+                ✓ {dskMsg}
+              </div>
+            )}
+            {dskStatus === 'error' && (
+              <div className="rounded-lg bg-red-900/30 border border-red-700 p-3 text-xs text-red-300">
+                {dskMsg}
+              </div>
+            )}
+
+            {/* Opzione B: 3 click fisici */}
+            <p className="text-hub-muted text-xs text-center">
+              oppure premi <strong>3 volte</strong> il tasto fisico sul dispositivo
+            </p>
+
+            {/* Timer */}
             <div className="flex items-center justify-between text-xs text-hub-muted font-mono">
               <span>In attesa dispositivo...</span>
               <span className={timeLeft < 20 ? 'text-red-400' : ''}>{timeLeft}s</span>
@@ -309,18 +324,6 @@ export default function OnboardingPage() {
                 style={{ width: `${(timeLeft / 120) * 100}%` }}
               />
             </div>
-
-            {/* QR sessione MARIO — uso futuro companion app */}
-            {qrUrl && !scanOpen && (
-              <details className="text-xs text-hub-muted">
-                <summary className="cursor-pointer select-none">Info sessione</summary>
-                <div className="mt-2 flex justify-center bg-white rounded-xl p-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrUrl} alt="QR sessione MARIO" width={160} height={160} />
-                </div>
-                <p className="text-center mt-1 opacity-60">QR sessione MARIO (per companion app)</p>
-              </details>
-            )}
 
             <button onClick={reset} className="text-xs text-hub-muted underline">
               Annulla
@@ -348,7 +351,6 @@ export default function OnboardingPage() {
         {step === 'room' && (
           <div className="space-y-4">
             <p className="text-hub-muted text-sm">Assegna una stanza (opzionale).</p>
-
             <select
               value={roomId}
               onChange={e => setRoomId(e.target.value)}
@@ -359,7 +361,6 @@ export default function OnboardingPage() {
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
-
             <button
               onClick={confirmRoom}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"
@@ -372,10 +373,7 @@ export default function OnboardingPage() {
         {/* ── TEST ── */}
         {step === 'test' && deviceId && (
           <div className="space-y-4">
-            <p className="text-hub-muted text-sm">
-              Testa il dispositivo prima di salvare.
-            </p>
-
+            <p className="text-hub-muted text-sm">Testa il dispositivo prima di salvare.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => testCmd('turn_on')}
@@ -390,13 +388,11 @@ export default function OnboardingPage() {
                 OFF
               </button>
             </div>
-
             {testLog.length > 0 && (
               <div className="bg-hub-surface rounded-lg p-3 text-xs font-mono text-hub-muted space-y-1">
                 {testLog.map((l, i) => <div key={i}>{l}</div>)}
               </div>
             )}
-
             <button
               onClick={finish}
               disabled={testLog.length === 0}
@@ -412,11 +408,8 @@ export default function OnboardingPage() {
           <div className="space-y-4">
             <div className="rounded-lg bg-green-900/30 border border-green-700 p-4 text-sm text-center">
               <div className="text-green-400 font-semibold text-lg mb-1">✓ Dispositivo salvato</div>
-              <div className="text-hub-muted text-xs">
-                ID: {deviceId} — persiste dopo reboot
-              </div>
+              <div className="text-hub-muted text-xs">ID: {deviceId} — persiste dopo reboot</div>
             </div>
-
             <button
               onClick={reset}
               className="w-full bg-hub-surface border border-hub-border py-3 rounded-lg text-sm text-hub-text"
@@ -441,7 +434,6 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Errore inline (steps intermedi) */}
         {errMsg && step !== 'error' && (
           <div className="text-xs text-red-400 font-mono">{errMsg}</div>
         )}

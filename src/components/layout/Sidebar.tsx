@@ -10,6 +10,7 @@ const NAV = [
   { href: '/devices', label: 'Dispositivi', icon: '◈' },
   { href: '/rooms', label: 'Stanze', icon: '⬜' },
   { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣' },
+  { href: '/onboarding', label: 'Aggiungi', icon: '+' },
   { href: '/settings', label: 'Impostazioni', icon: '⚙' },
 ];
 

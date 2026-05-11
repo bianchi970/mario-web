@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  AlertTriangle,
   Battery,
   Eye,
   PlusCircle,
@@ -25,7 +24,7 @@ import { listScenarios, listScenarioAudit, setScenarioEnabled } from '@/lib/api/
 import type { ScenarioRecord, ScenarioAuditItem } from '@/lib/api/scenarios';
 import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
-import type { Alert } from '@/lib/house-state';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
@@ -84,21 +83,6 @@ function SectionCard({
   );
 }
 
-function AlertRow({ alert }: { alert: Alert }) {
-  const critical = alert.type === 'tamper' || alert.type === 'gas' || alert.type === 'battery_critical';
-  return (
-    <div
-      className={`flex items-center gap-3 rounded-[18px] border px-4 py-3 text-sm ${
-        critical
-          ? 'border-red-500/30 bg-red-500/10 text-red-200'
-          : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
-      }`}
-    >
-      <AlertTriangle className={`h-4 w-4 shrink-0 ${critical ? 'text-red-400' : 'text-amber-400'}`} />
-      <span>{alert.label}</span>
-    </div>
-  );
-}
 
 function RoomCard({
   room,
@@ -397,19 +381,12 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* SEZIONE 3 — Alert critici */}
-            {casa.alerts.length > 0 && (
-              <div className="space-y-2">
-                <div className="px-1 text-xs font-semibold uppercase tracking-[0.15em] text-red-400/80">
-                  Alert
-                </div>
-                {casa.alerts.map((alert, i) => (
-                  <AlertRow key={i} alert={alert} />
-                ))}
-              </div>
+            {/* SEZIONE 2 — Notifiche persistenti dal DB */}
+            {projectId && (
+              <NotificationCenter projectId={projectId} />
             )}
 
-            {/* SEZIONE 2 — Stanze */}
+            {/* SEZIONE 3 — Stanze */}
             {roomStates.length > 0 && (
               <SectionCard
                 title="Stanze"

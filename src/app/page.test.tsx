@@ -74,21 +74,22 @@ describe('Dashboard device inventory flow', () => {
     mockedListRooms.mockResolvedValue([]);
   });
 
-  it('renders the device inventory when devices resolve', async () => {
+  it('renders the house state section when devices resolve', async () => {
     mockedListDevices.mockResolvedValue([
       {
         id: 'dev-1',
         project_id: 'proj-1',
-        name: 'Kitchen Light',
-        protocol: 'zigbee',
+        name: 'FGMS-001',
+        protocol: 'zwave',
         online: true,
+        state: { temperature: 22.4, lux: 180, motion: false },
       } as never,
     ]);
 
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Kitchen Light')).toBeInTheDocument();
+      expect(screen.getByText('Stato Casa')).toBeInTheDocument();
     });
   });
 

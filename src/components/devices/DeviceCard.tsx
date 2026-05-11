@@ -1,14 +1,18 @@
+'use client';
+
+import { useState, useRef } from 'react';
 import type { Device } from '@/lib/hub-types';
 import Badge, { deviceTypeBadge } from '@/components/ui/Badge';
 import StatusDot from '@/components/ui/StatusDot';
 import CommandButton from './CommandButton';
+import { fetchAPI } from '@/lib/api/client';
 
 const DEVICE_ICONS: Record<string, string> = {
-  light: 'ðŸ’¡', rgb_light: 'ðŸŒˆ', cover: 'ðŸªŸ', blind: 'ðŸªŸ', awning: 'â›±',
-  thermostat: 'ðŸŒ¡', boiler: 'ðŸ”¥', valve: 'ðŸ”§', plug: 'ðŸ”Œ',
-  inverter: 'â˜€', battery: 'ðŸ”‹', meter: 'ðŸ“Š', ev_charger: 'âš¡',
-  alarm_panel: 'ðŸš¨', siren: 'ðŸ“£', motion_sensor: 'ðŸ‘', camera: 'ðŸ“·',
-  lock: 'ðŸ”’', sensor: 'ðŸ“¡', switch: 'ðŸ”„',
+  light: '💡', rgb_light: '🌈', cover: '🪟', blind: '🪟', awning: '⛱',
+  thermostat: '🌡', boiler: '🔥', valve: '🔧', plug: '🔌',
+  inverter: '☀', battery: '🔋', meter: '📊', ev_charger: '⚡',
+  alarm_panel: '🚨', siren: '📣', motion_sensor: '👁', camera: '📷',
+  lock: '🔒', sensor: '📡', switch: '🔄',
 };
 
 function formatLastSeen(ts: string | null | undefined) {
@@ -20,16 +24,69 @@ function formatLastSeen(ts: string | null | undefined) {
 }
 
 export default function DeviceCard({ device }: { device: Device }) {
-  const icon = DEVICE_ICONS[device.type] ?? 'â—ˆ';
+  const icon = DEVICE_ICONS[device.type] ?? '◈';
   const lastSeen = formatLastSeen(device.last_seen ?? device.connectivity?.last_seen);
+
+  const [displayName, setDisplayName] = useState(device.name);
+  const [editing, setEditing]         = useState(false);
+  const [inputVal, setInputVal]       = useState(device.name);
+  const [saving, setSaving]           = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit() {
+    setInputVal(displayName);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
+
+  async function commitEdit() {
+    const trimmed = inputVal.trim();
+    if (!trimmed || trimmed === displayName) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await fetchAPI(`/api/hub/devices/${encodeURIComponent(device.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: trimmed, project_id: device.project_id }),
+      });
+      setDisplayName(trimmed);
+    } catch { /* ignora — nome resta invariato */ }
+    setSaving(false);
+    setEditing(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter')  { e.preventDefault(); commitEdit(); }
+    if (e.key === 'Escape') { setEditing(false); }
+  }
 
   return (
     <div className="card flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-2xl leading-none">{icon}</span>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-hub-text truncate">{device.name}</p>
+          <div className="min-w-0 flex-1">
+
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={inputVal}
+                onChange={e => setInputVal(e.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={handleKeyDown}
+                disabled={saving}
+                className="w-full bg-hub-surface border border-hub-accent rounded px-1 py-0.5 text-sm font-medium text-hub-text focus:outline-none"
+              />
+            ) : (
+              <button
+                onClick={startEdit}
+                className="group flex items-center gap-1 text-left w-full min-w-0"
+                title="Rinomina"
+              >
+                <p className="text-sm font-medium text-hub-text truncate">{displayName}</p>
+                <span className="text-hub-muted opacity-0 group-hover:opacity-100 transition-opacity text-xs">✏</span>
+              </button>
+            )}
+
             <p className="text-xs text-hub-muted font-mono truncate">{device.id}</p>
           </div>
         </div>

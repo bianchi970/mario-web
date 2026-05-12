@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import type { Device } from '@/lib/hub-types';
+import type { Device, Room } from '@/lib/hub-types';
 import Badge, { deviceTypeBadge } from '@/components/ui/Badge';
 import StatusDot from '@/components/ui/StatusDot';
 import CommandButton from './CommandButton';
 import { fetchAPI } from '@/lib/api/client';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 
 const DEVICE_ICONS: Record<string, string> = {
   light: '💡', rgb_light: '🌈', cover: '🪟', blind: '🪟', awning: '⛱',
@@ -23,15 +24,32 @@ function formatLastSeen(ts: string | null | undefined) {
   return `${Math.round(diff / 3600000)}h fa`;
 }
 
-export default function DeviceCard({ device }: { device: Device }) {
+export default function DeviceCard({ device, rooms = [] }: { device: Device; rooms?: Room[] }) {
   const icon = DEVICE_ICONS[device.type] ?? '◈';
   const lastSeen = formatLastSeen(device.last_seen ?? device.connectivity?.last_seen);
+  const { installerMode } = useInstallerMode();
 
   const [displayName, setDisplayName] = useState(device.name);
   const [editing, setEditing]         = useState(false);
   const [inputVal, setInputVal]       = useState(device.name);
   const [saving, setSaving]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [displayRoom, setDisplayRoom] = useState<string>(device.room_id ?? '');
+  const [savingRoom, setSavingRoom]   = useState(false);
+
+  async function handleRoomChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const roomId = e.target.value;
+    setDisplayRoom(roomId);
+    setSavingRoom(true);
+    try {
+      await fetchAPI(`/api/hub/devices/${encodeURIComponent(device.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ room_id: roomId || null, project_id: device.project_id }),
+      });
+    } catch { /* ignora — la select torna al valore precedente al prossimo render */ }
+    setSavingRoom(false);
+  }
 
   function startEdit() {
     setInputVal(displayName);
@@ -103,6 +121,24 @@ export default function DeviceCard({ device }: { device: Device }) {
       {Object.keys(device.state ?? {}).length > 0 && (
         <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
           {JSON.stringify(device.state)}
+        </div>
+      )}
+
+      {installerMode && rooms.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-hub-muted shrink-0">Stanza</span>
+          <select
+            value={displayRoom}
+            onChange={handleRoomChange}
+            disabled={savingRoom}
+            aria-label="Assegna stanza"
+            className="flex-1 bg-hub-bg border border-hub-border rounded px-2 py-0.5 text-xs text-hub-text focus:outline-none focus:border-hub-accent"
+          >
+            <option value="">— nessuna —</option>
+            {rooms.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
         </div>
       )}
 

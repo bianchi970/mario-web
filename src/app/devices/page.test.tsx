@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import DevicesPage from '@/app/devices/page';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listDevices } from '@/lib/api/devices';
+import { listRooms } from '@/lib/api/rooms';
 
 jest.mock('@/components/layout/TopBar', () => ({
   __esModule: true,
@@ -23,12 +24,18 @@ jest.mock('@/lib/api/devices', () => ({
   listDevices: jest.fn(),
 }));
 
+jest.mock('@/lib/api/rooms', () => ({
+  listRooms: jest.fn(),
+}));
+
 const mockedUseProjectId = useProjectId as jest.MockedFunction<typeof useProjectId>;
 const mockedListDevices = listDevices as jest.MockedFunction<typeof listDevices>;
+const mockedListRooms = listRooms as jest.MockedFunction<typeof listRooms>;
 
 describe('DevicesPage data flow', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    mockedListRooms.mockResolvedValue([]);
   });
 
   it('loads devices when projectId is present', async () => {

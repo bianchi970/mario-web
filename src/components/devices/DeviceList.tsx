@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Device } from '@/lib/hub-types';
+import type { Device, Room } from '@/lib/hub-types';
 import DeviceCard from './DeviceCard';
 
 type Filter = 'all' | 'online' | 'offline';
 
-export default function DeviceList({ devices }: { devices: Device[] }) {
+export default function DeviceList({ devices, rooms = [] }: { devices: Device[]; rooms?: Room[] }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -75,7 +75,7 @@ export default function DeviceList({ devices }: { devices: Device[] }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((device) => (
-            <DeviceCard key={device.id} device={device} />
+            <DeviceCard key={device.id} device={device} rooms={rooms} />
           ))}
         </div>
       )}

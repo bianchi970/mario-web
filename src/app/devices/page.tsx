@@ -6,17 +6,20 @@ import Badge from '@/components/ui/Badge';
 import DeviceList from '@/components/devices/DeviceList';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listDevices } from '@/lib/api/devices';
-import type { Device } from '@/lib/hub-types';
+import { listRooms } from '@/lib/api/rooms';
+import type { Device, Room } from '@/lib/hub-types';
 
 export default function DevicesPage() {
   const projectId = useProjectId();
   const [devices, setDevices] = useState<Device[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) {
       setDevices([]);
+      setRooms([]);
       setError(null);
       setLoading(false);
       return;
@@ -28,9 +31,13 @@ export default function DevicesPage() {
       setLoading(true);
       setError(null);
       try {
-        const items = await listDevices(projectId!);
+        const [items, roomItems] = await Promise.all([
+          listDevices(projectId!),
+          listRooms(projectId!).catch(() => [] as Room[]),
+        ]);
         if (cancelled) return;
         setDevices(items);
+        setRooms(roomItems);
       } catch (err) {
         if (cancelled) return;
         setDevices([]);
@@ -80,7 +87,7 @@ export default function DevicesPage() {
             <p className="text-xs mt-1">L&apos;inventory del progetto selezionato è vuoto.</p>
           </div>
         ) : (
-          <DeviceList devices={devices} />
+          <DeviceList devices={devices} rooms={rooms} />
         )}
       </main>
     </>

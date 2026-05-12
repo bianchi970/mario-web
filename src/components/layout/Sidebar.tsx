@@ -3,19 +3,22 @@
 import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 
-const NAV = [
-  { href: '/', label: 'Dashboard', icon: '□' },
-  { href: '/energy', label: 'Energia', icon: '⚡' },
-  { href: '/devices', label: 'Dispositivi', icon: '◈' },
-  { href: '/rooms', label: 'Stanze', icon: '⬜' },
-  { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣' },
-  { href: '/onboarding', label: 'Aggiungi', icon: '+' },
-  { href: '/settings', label: 'Impostazioni', icon: '⚙' },
+const NAV_ALL = [
+  { href: '/', label: 'Dashboard', icon: '□', installerOnly: false },
+  { href: '/energy', label: 'Energia', icon: '⚡', installerOnly: false },
+  { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },
+  { href: '/rooms', label: 'Stanze', icon: '⬜', installerOnly: false },
+  { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },
+  { href: '/onboarding', label: 'Aggiungi', icon: '+', installerOnly: true },
+  { href: '/settings', label: 'Impostazioni', icon: '⚙', installerOnly: false },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { installerMode } = useInstallerMode();
+  const NAV = NAV_ALL.filter((item) => !item.installerOnly || installerMode);
 
   return (
     <>
@@ -43,8 +46,11 @@ export default function Sidebar() {
             );
           })}
         </nav>
-        <div className="px-5 py-4 border-t border-hub-border text-xs text-hub-muted">
-          mario-hub · porta 4001
+        <div className="px-5 py-4 border-t border-hub-border text-xs text-hub-muted space-y-1">
+          <div>mario-hub · porta 4001</div>
+          {installerMode && (
+            <div className="text-hub-accent font-medium">Modalità installatore</div>
+          )}
         </div>
       </aside>
 

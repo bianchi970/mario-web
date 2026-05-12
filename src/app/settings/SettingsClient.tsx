@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProject } from '@/context/ProjectContext';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 
 function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
   const map: Record<string, { label: string; variant: 'green' | 'red' | 'amber' | 'gray' }> = {
@@ -37,6 +38,7 @@ export default function SettingsClient({
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
   const { projectId, setProjectId } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
+  const { installerMode, setInstallerMode } = useInstallerMode();
 
   async function checkHealth() {
     if (offlineMode) {
@@ -122,6 +124,26 @@ export default function SettingsClient({
         <p className="text-xs text-hub-muted">
           Salvato nel browser. E&apos; la sorgente unica per dispositivi, stanze e scenari.
         </p>
+      </div>
+
+      <div className="card space-y-3">
+        <h2 className="text-sm font-medium text-hub-text">Modalità</h2>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <span className="text-sm text-hub-muted block">Modalità installatore</span>
+            <span className="text-xs text-hub-muted">Abilita voci tecniche: Dispositivi e Aggiungi dispositivo.</span>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-hub-text">
+            <input
+              type="checkbox"
+              checked={installerMode}
+              onChange={(e) => setInstallerMode(e.target.checked)}
+              aria-label="Modalità installatore"
+              className="h-4 w-4 accent-hub-accent"
+            />
+            {installerMode ? 'Attiva' : 'Disattiva'}
+          </label>
+        </div>
       </div>
 
       {system ? (

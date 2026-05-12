@@ -3,6 +3,7 @@ import SettingsClient from '@/app/settings/SettingsClient';
 import CommandButton from '@/components/devices/CommandButton';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
 import { ProjectProvider } from '@/context/ProjectContext';
+import { InstallerModeProvider } from '@/context/InstallerModeContext';
 
 describe('Settings offline mode wiring', () => {
   const device = {
@@ -47,9 +48,45 @@ describe('Settings offline mode wiring', () => {
     window.localStorage.clear();
   });
 
+  function renderSettings() {
+    return render(
+      <ProjectProvider>
+        <InstallerModeProvider>
+          <OfflineModeProvider>
+            <SettingsClient
+              adapters={[]}
+              system={null}
+              adaptersAvailable={false}
+              systemAvailable={false}
+              hubDisplayUrl="http://localhost:4001"
+            />
+          </OfflineModeProvider>
+        </InstallerModeProvider>
+      </ProjectProvider>,
+    );
+  }
+
   function getActionButtons() {
     return screen.getAllByRole('button').filter((button) => button.textContent !== 'Check');
   }
+
+  it('mostra il toggle modalità installatore e lo persiste in localStorage', async () => {
+    renderSettings();
+
+    const toggle = await screen.findByLabelText('Modalità installatore');
+    expect(toggle).not.toBeChecked();
+    expect(window.localStorage.getItem('mario_installer_mode')).toBeNull();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toBeChecked();
+    expect(window.localStorage.getItem('mario_installer_mode')).toBe('true');
+
+    fireEvent.click(toggle);
+
+    expect(toggle).not.toBeChecked();
+    expect(window.localStorage.getItem('mario_installer_mode')).toBeNull();
+  });
 
   it('toggles the real command flow on and off from the global setting', async () => {
     render(

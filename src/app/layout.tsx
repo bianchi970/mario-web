@@ -3,6 +3,7 @@ import './globals.css';
 import Sidebar from '@/components/layout/Sidebar';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
 import { ProjectProvider } from '@/context/ProjectContext';
+import { InstallerModeProvider } from '@/context/InstallerModeContext';
 
 export const metadata: Metadata = {
   title: 'MARIO Web',
@@ -14,12 +15,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="it" className="dark">
       <body className="flex min-h-screen bg-hub-bg">
         <ProjectProvider>
-          <OfflineModeProvider>
-            <Sidebar />
-            <div className="flex-1 flex flex-col min-h-screen overflow-auto pb-16 md:pb-0">
-              {children}
-            </div>
-          </OfflineModeProvider>
+          <InstallerModeProvider>
+            <OfflineModeProvider>
+              <Sidebar />
+              <div className="flex-1 flex flex-col min-h-screen overflow-auto pb-16 md:pb-0">
+                {children}
+              </div>
+            </OfflineModeProvider>
+          </InstallerModeProvider>
         </ProjectProvider>
       </body>
     </html>

@@ -17,6 +17,7 @@ import {
 import TopBar from '@/components/layout/TopBar';
 import { useProjectId } from '@/hooks/useProjectId';
 import { useProject } from '@/context/ProjectContext';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 import { ApiClientError } from '@/lib/api/client';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
@@ -142,6 +143,7 @@ function RoomCard({
 export default function DashboardPage() {
   const projectId = useProjectId();
   const { setProjectId } = useProject();
+  const { installerMode } = useInstallerMode();
   const [mounted, setMounted] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [devices, setDevices] = useState<Device[] | null>(null);
@@ -383,7 +385,10 @@ export default function DashboardPage() {
 
             {/* SEZIONE 2 — Notifiche persistenti dal DB */}
             {projectId && (
-              <NotificationCenter projectId={projectId} />
+              <NotificationCenter
+                projectId={projectId}
+                audience={installerMode ? 'installer' : 'client'}
+              />
             )}
 
             {/* SEZIONE 3 — Stanze */}

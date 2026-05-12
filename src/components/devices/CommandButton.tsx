@@ -45,6 +45,10 @@ const COMMANDS: Record<string, { action: string; label: string }[]> = {
 
 const DEFAULT_CMDS = [{ action: 'turn_on', label: 'On' }, { action: 'turn_off', label: 'Off' }];
 
+const READ_ONLY_TYPES = new Set([
+  'motion_sensor', 'sensor', 'meter', 'battery', 'camera', 'controller',
+]);
+
 interface Props {
   device: Device;
 }
@@ -55,6 +59,8 @@ export default function CommandButton({ device }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { offlineMode, offlineModeLoading } = useOfflineMode();
   const projectId = useProjectId();
+
+  if (READ_ONLY_TYPES.has(device.type)) return null;
 
   const cmds = COMMANDS[device.type] ?? DEFAULT_CMDS;
 

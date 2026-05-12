@@ -459,24 +459,8 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* SEZIONE 4 — Azioni rapide (sempre visibili) */}
+        {/* SEZIONE 4 — Azioni rapide */}
         <div className="grid grid-cols-2 gap-3 pb-4">
-          <Link
-            href="/onboarding"
-            className="flex flex-col gap-2 rounded-[22px] border border-blue-500/25 bg-blue-500/10 px-4 py-5 active:bg-blue-500/20"
-          >
-            <PlusCircle className="h-6 w-6 text-blue-400" />
-            <div className="font-medium text-white">Aggiungi</div>
-            <div className="text-xs text-white/40">Nuovo dispositivo</div>
-          </Link>
-          <Link
-            href="/settings"
-            className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-5 active:bg-white/[0.07]"
-          >
-            <Shield className="h-6 w-6 text-white/50" />
-            <div className="font-medium text-white">Sicurezza</div>
-            <div className="text-xs text-white/40">Stato e allarmi</div>
-          </Link>
           <Link
             href="/scenarios"
             className="flex flex-col gap-2 rounded-[22px] border border-violet-500/25 bg-violet-500/10 px-4 py-5 active:bg-violet-500/20"
@@ -486,13 +470,33 @@ export default function DashboardPage() {
             <div className="text-xs text-white/40">{enabledScenarios} attivi</div>
           </Link>
           <Link
-            href="/devices"
+            href="/settings"
             className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-5 active:bg-white/[0.07]"
           >
-            <Smartphone className="h-6 w-6 text-white/50" />
-            <div className="font-medium text-white">Dispositivi</div>
-            <div className="text-xs text-white/40">{devices?.length ?? 0} totali</div>
+            <Shield className="h-6 w-6 text-white/50" />
+            <div className="font-medium text-white">Sicurezza</div>
+            <div className="text-xs text-white/40">Stato e allarmi</div>
           </Link>
+          {installerMode && (
+            <>
+              <Link
+                href="/onboarding"
+                className="flex flex-col gap-2 rounded-[22px] border border-blue-500/25 bg-blue-500/10 px-4 py-5 active:bg-blue-500/20"
+              >
+                <PlusCircle className="h-6 w-6 text-blue-400" />
+                <div className="font-medium text-white">Aggiungi</div>
+                <div className="text-xs text-white/40">Nuovo dispositivo</div>
+              </Link>
+              <Link
+                href="/devices"
+                className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-5 active:bg-white/[0.07]"
+              >
+                <Smartphone className="h-6 w-6 text-white/50" />
+                <div className="font-medium text-white">Dispositivi</div>
+                <div className="text-xs text-white/40">{devices?.length ?? 0} totali</div>
+              </Link>
+            </>
+          )}
         </div>
 
       </main>

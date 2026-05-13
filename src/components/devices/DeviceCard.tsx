@@ -26,28 +26,58 @@ function formatLastSeen(ts: string | null | undefined) {
 
 const SENSOR_TYPES = new Set(['sensor', 'motion_sensor', 'contact_sensor', 'temperature_sensor', 'humidity_sensor', 'co2_sensor']);
 
-function SensorState({ state }: { state: Record<string, unknown> }) {
-  const rows: { label: string; value: string; highlight?: boolean }[] = [];
+type CapTiming = Record<string, 'realtime' | 'lazy' | 'cached'>;
 
-  if ('motion' in state) {
+function SensorState({
+  state,
+  capabilities = [],
+  capabilityTiming = {},
+}: {
+  state: Record<string, unknown>;
+  capabilities?: string[];
+  capabilityTiming?: CapTiming;
+}) {
+  const rows: { label: string; value: string; highlight?: boolean; muted?: boolean }[] = [];
+
+  // MOTION — realtime
+  if ('motion' in state || capabilities.includes('motion')) {
     rows.push({ label: 'Movimento', value: state.motion ? 'rilevato' : 'assente', highlight: !!state.motion });
+    if ('last_motion_at' in state && state.last_motion_at) {
+      rows.push({ label: 'Ultimo movimento', value: formatLastSeen(state.last_motion_at as string) ?? '' });
+    }
   }
-  if ('last_motion_at' in state && state.last_motion_at) {
-    rows.push({ label: 'Ultimo movimento', value: formatLastSeen(state.last_motion_at as string) ?? '' });
+
+  // TEMPERATURE — lazy
+  const hasTempCap = capabilities.includes('temperature') || 'temperature' in state;
+  if (hasTempCap) {
+    if (state.temperature !== null && state.temperature !== undefined) {
+      rows.push({ label: 'Temperatura', value: `${state.temperature} °C` });
+    } else if (capabilityTiming['temperature'] === 'lazy') {
+      rows.push({ label: 'Temperatura', value: 'in attesa primo aggiornamento', muted: true });
+    }
   }
-  if ('temperature' in state && state.temperature !== null && state.temperature !== undefined) {
-    rows.push({ label: 'Temperatura', value: `${state.temperature} °C` });
-  } else if ('motion' in state) {
-    rows.push({ label: 'Temperatura', value: 'in attesa' });
+
+  // LUX — lazy
+  const hasLuxCap = capabilities.includes('lux') || 'lux' in state;
+  if (hasLuxCap) {
+    if (state.lux !== null && state.lux !== undefined) {
+      rows.push({ label: 'Luminosità', value: `${state.lux} lx` });
+    } else if (capabilityTiming['lux'] === 'lazy') {
+      rows.push({ label: 'Luminosità', value: 'in attesa primo aggiornamento', muted: true });
+    }
   }
-  if ('lux' in state && state.lux !== null && state.lux !== undefined) {
-    rows.push({ label: 'Luminosità', value: `${state.lux} lx` });
-  } else if ('motion' in state) {
-    rows.push({ label: 'Luminosità', value: 'in attesa' });
+
+  // BATTERY — lazy
+  const hasBatteryCap = capabilities.includes('battery') || 'battery' in state;
+  if (hasBatteryCap) {
+    if (state.battery !== null && state.battery !== undefined) {
+      rows.push({ label: 'Batteria', value: `${state.battery}%` });
+    } else if (capabilityTiming['battery'] === 'lazy') {
+      rows.push({ label: 'Batteria', value: 'in attesa primo aggiornamento', muted: true });
+    }
   }
-  if ('battery' in state && state.battery !== null && state.battery !== undefined) {
-    rows.push({ label: 'Batteria', value: `${state.battery}%` });
-  }
+
+  // TAMPER — realtime (solo se attivo)
   if ('tamper' in state && state.tamper) {
     rows.push({ label: 'Tamper', value: 'aperto', highlight: true });
   }
@@ -56,10 +86,14 @@ function SensorState({ state }: { state: Record<string, unknown> }) {
 
   return (
     <div className="text-xs bg-hub-bg rounded-lg px-2 py-1.5 space-y-0.5">
-      {rows.map(({ label, value, highlight }) => (
+      {rows.map(({ label, value, highlight, muted }) => (
         <div key={label} className="flex justify-between gap-2">
           <span className="text-hub-muted">{label}</span>
-          <span className={highlight ? 'text-hub-accent font-medium' : 'text-hub-text font-mono'}>{value}</span>
+          <span className={
+            highlight ? 'text-hub-accent font-medium' :
+            muted ? 'text-hub-muted italic' :
+            'text-hub-text font-mono'
+          }>{value}</span>
         </div>
       ))}
     </div>
@@ -160,9 +194,13 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
         {!device.online && <Badge variant="red">Non in linea</Badge>}
       </div>
 
-      {Object.keys(device.state ?? {}).length > 0 && (
+      {(SENSOR_TYPES.has(device.type) || Object.keys(device.state ?? {}).length > 0) && (
         SENSOR_TYPES.has(device.type)
-          ? <SensorState state={device.state as Record<string, unknown>} />
+          ? <SensorState
+              state={device.state as Record<string, unknown>}
+              capabilities={device.capabilities}
+              capabilityTiming={device.capability_timing}
+            />
           : <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
               {JSON.stringify(device.state)}
             </div>

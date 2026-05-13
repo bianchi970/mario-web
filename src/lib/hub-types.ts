@@ -25,6 +25,7 @@ export interface Device {
     last_seen?: string | null;
   };
   metadata?: Record<string, unknown>;
+  capability_timing?: Record<string, 'realtime' | 'lazy' | 'cached'>;
 }
 
 export interface Room {

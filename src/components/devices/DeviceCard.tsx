@@ -24,6 +24,48 @@ function formatLastSeen(ts: string | null | undefined) {
   return `${Math.round(diff / 3600000)}h fa`;
 }
 
+const SENSOR_TYPES = new Set(['sensor', 'motion_sensor', 'contact_sensor', 'temperature_sensor', 'humidity_sensor', 'co2_sensor']);
+
+function SensorState({ state }: { state: Record<string, unknown> }) {
+  const rows: { label: string; value: string; highlight?: boolean }[] = [];
+
+  if ('motion' in state) {
+    rows.push({ label: 'Movimento', value: state.motion ? 'rilevato' : 'assente', highlight: !!state.motion });
+  }
+  if ('last_motion_at' in state && state.last_motion_at) {
+    rows.push({ label: 'Ultimo movimento', value: formatLastSeen(state.last_motion_at as string) ?? '' });
+  }
+  if ('temperature' in state && state.temperature !== null && state.temperature !== undefined) {
+    rows.push({ label: 'Temperatura', value: `${state.temperature} °C` });
+  } else if ('motion' in state) {
+    rows.push({ label: 'Temperatura', value: 'in attesa' });
+  }
+  if ('lux' in state && state.lux !== null && state.lux !== undefined) {
+    rows.push({ label: 'Luminosità', value: `${state.lux} lx` });
+  } else if ('motion' in state) {
+    rows.push({ label: 'Luminosità', value: 'in attesa' });
+  }
+  if ('battery' in state && state.battery !== null && state.battery !== undefined) {
+    rows.push({ label: 'Batteria', value: `${state.battery}%` });
+  }
+  if ('tamper' in state && state.tamper) {
+    rows.push({ label: 'Tamper', value: 'aperto', highlight: true });
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="text-xs bg-hub-bg rounded-lg px-2 py-1.5 space-y-0.5">
+      {rows.map(({ label, value, highlight }) => (
+        <div key={label} className="flex justify-between gap-2">
+          <span className="text-hub-muted">{label}</span>
+          <span className={highlight ? 'text-hub-accent font-medium' : 'text-hub-text font-mono'}>{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DeviceCard({ device, rooms = [] }: { device: Device; rooms?: Room[] }) {
   const icon = DEVICE_ICONS[device.type] ?? '◈';
   const lastSeen = formatLastSeen(device.last_seen ?? device.connectivity?.last_seen);
@@ -119,9 +161,11 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
       </div>
 
       {Object.keys(device.state ?? {}).length > 0 && (
-        <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
-          {JSON.stringify(device.state)}
-        </div>
+        SENSOR_TYPES.has(device.type)
+          ? <SensorState state={device.state as Record<string, unknown>} />
+          : <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
+              {JSON.stringify(device.state)}
+            </div>
       )}
 
       {installerMode && rooms.length > 0 && (

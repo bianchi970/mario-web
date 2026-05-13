@@ -48,7 +48,8 @@ function SensorState({
   }
 
   // TEMPERATURE — lazy
-  const hasTempCap = capabilities.includes('temperature') || 'temperature' in state;
+  // Usa capabilityTiming come check primario: capabilities può essere array di oggetti UI (controller)
+  const hasTempCap = capabilityTiming['temperature'] !== undefined || 'temperature' in state;
   if (hasTempCap) {
     if (state.temperature !== null && state.temperature !== undefined) {
       rows.push({ label: 'Temperatura', value: `${state.temperature} °C` });
@@ -58,7 +59,7 @@ function SensorState({
   }
 
   // LUX — lazy
-  const hasLuxCap = capabilities.includes('lux') || 'lux' in state;
+  const hasLuxCap = capabilityTiming['lux'] !== undefined || 'lux' in state;
   if (hasLuxCap) {
     if (state.lux !== null && state.lux !== undefined) {
       rows.push({ label: 'Luminosità', value: `${state.lux} lx` });
@@ -68,7 +69,7 @@ function SensorState({
   }
 
   // BATTERY — lazy
-  const hasBatteryCap = capabilities.includes('battery') || 'battery' in state;
+  const hasBatteryCap = capabilityTiming['battery'] !== undefined || 'battery' in state;
   if (hasBatteryCap) {
     if (state.battery !== null && state.battery !== undefined) {
       rows.push({ label: 'Batteria', value: `${state.battery}%` });

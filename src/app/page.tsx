@@ -216,7 +216,19 @@ export default function DashboardPage() {
     }
 
     void load();
-    return () => controller.abort();
+
+    // Polling silenzioso ogni 2s — solo device state, solo quando visibile
+    const timer = setInterval(() => {
+      if (controller.signal.aborted || document.visibilityState !== 'visible') return;
+      listDevices(projectId!, controller.signal).then((items) => {
+        if (!controller.signal.aborted) setDevices(items);
+      }).catch(() => { /* silent */ });
+    }, 2000);
+
+    return () => {
+      controller.abort();
+      clearInterval(timer);
+    };
   }, [projectId, retryCount]);
 
   async function handleToggleScenario(scenarioId: string, enabled: boolean) {

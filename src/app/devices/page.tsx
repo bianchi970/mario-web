@@ -55,8 +55,17 @@ export default function DevicesPage() {
 
     void loadDevices();
 
+    // Polling silenzioso ogni 2s — solo quando la pagina è visibile
+    const timer = setInterval(() => {
+      if (cancelled || document.visibilityState !== 'visible') return;
+      listDevices(projectId!).then((items) => {
+        if (!cancelled) setDevices(items);
+      }).catch(() => { /* silent — mantieni stato precedente */ });
+    }, 2000);
+
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, [projectId]);
 

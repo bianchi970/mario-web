@@ -35,7 +35,12 @@ const mockedListRooms = listRooms as jest.MockedFunction<typeof listRooms>;
 describe('DevicesPage data flow', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    jest.useFakeTimers();
     mockedListRooms.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('loads devices when projectId is present', async () => {

@@ -11,7 +11,6 @@ const NAV_ALL = [
   { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },
   { href: '/rooms', label: 'Stanze', icon: '⬜', installerOnly: false },
   { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },
-  { href: '/automazioni', label: 'Automazioni', icon: '⚡', installerOnly: false },
   { href: '/onboarding', label: 'Aggiungi', icon: '+', installerOnly: true },
   { href: '/settings', label: 'Impostazioni', icon: '⚙', installerOnly: false },
 ];

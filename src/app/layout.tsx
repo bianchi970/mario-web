@@ -4,6 +4,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
 import { ProjectProvider } from '@/context/ProjectContext';
 import { InstallerModeProvider } from '@/context/InstallerModeContext';
+import { GatewayProvider } from '@/context/GatewayContext';
 
 export const metadata: Metadata = {
   title: 'MARIO Web',
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="it" className="dark">
       <body className="flex min-h-screen bg-hub-bg">
+        <GatewayProvider>
         <ProjectProvider>
           <InstallerModeProvider>
             <OfflineModeProvider>
@@ -24,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </OfflineModeProvider>
           </InstallerModeProvider>
         </ProjectProvider>
+        </GatewayProvider>
       </body>
     </html>
   );

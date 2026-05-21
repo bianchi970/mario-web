@@ -13,6 +13,7 @@ const NAV_ALL = [
   { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },
   { href: '/onboarding', label: 'Aggiungi', icon: '+', installerOnly: true },
   { href: '/settings', label: 'Impostazioni', icon: '⚙', installerOnly: false },
+  { href: '/gateways', label: 'Gateway', icon: '⊞', installerOnly: false },
 ];
 
 export default function Sidebar() {

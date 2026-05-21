@@ -5,15 +5,19 @@ import TopBar from '@/components/layout/TopBar';
 import Badge from '@/components/ui/Badge';
 import RoomGrid from '@/components/rooms/RoomGrid';
 import { useProjectId } from '@/hooks/useProjectId';
-import { listRooms } from '@/lib/api/rooms';
+import { listRooms, createRoom } from '@/lib/api/rooms';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 import type { Room } from '@/lib/hub-types';
 
 export default function RoomsPage() {
   const projectId = useProjectId();
+  const { installerMode } = useInstallerMode();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [newRoomName, setNewRoomName] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!projectId) {
@@ -54,6 +58,22 @@ export default function RoomsPage() {
     };
   }, [projectId]);
 
+  async function handleCreateRoom(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newRoomName.trim();
+    if (!name || !projectId || creating) return;
+    setCreating(true);
+    try {
+      const room = await createRoom(projectId, name);
+      setRooms((prev) => [...prev, room]);
+      setNewRoomName('');
+    } catch {
+      // silenzioso — la stanza non è stata creata
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const filtered = useMemo(() => {
     if (!search.trim()) return rooms;
     const q = search.toLowerCase();
@@ -82,6 +102,24 @@ export default function RoomsPage() {
           </div>
         ) : (
           <>
+            {installerMode && (
+              <form onSubmit={handleCreateRoom} className="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  value={newRoomName}
+                  onChange={(e) => setNewRoomName(e.target.value)}
+                  placeholder="Nome nuova stanza..."
+                  className="flex-1 rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text placeholder:text-hub-muted focus:outline-none focus:ring-1 focus:ring-hub-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={!newRoomName.trim() || creating}
+                  className="rounded-lg bg-hub-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {creating ? '...' : 'Aggiungi'}
+                </button>
+              </form>
+            )}
             <div className="mb-4">
               <input
                 type="text"

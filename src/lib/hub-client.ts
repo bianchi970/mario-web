@@ -9,8 +9,10 @@ import type {
   SystemInfo, HubHealth, RegistrySnapshot, CommandResult,
 } from './hub-types';
 
-const HUB_URL   = process.env.HUB_URL   || 'http://localhost:4001';
-const HUB_TOKEN = process.env.HUB_TOKEN || '';
+const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
+const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
+const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
+const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const DEFAULT_PROJECT_ID = process.env.DEFAULT_PROJECT_ID || 'default';
 type HubEnvelope<T> = { success: boolean; data: T; error: string | null };
 
@@ -27,6 +29,11 @@ function authHeader(): Record<string, string> {
 }
 
 async function hubFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  // Modalità remota: relay tramite mario-remote-bridge
+  if (REMOTE_BRIDGE_URL) {
+    return hubFetchBridge<T>(path, options);
+  }
+  // Modalità locale: chiamata diretta a hub LAN
   const url = `${HUB_URL}/api/hub${path}`;
   const res = await fetch(url, {
     ...options,
@@ -35,12 +42,38 @@ async function hubFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
       ...authHeader(),
       ...(options.headers ?? {}),
     },
-    // No caching on server side — always fresh
     cache: 'no-store',
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`Hub API ${path} → ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function hubFetchBridge<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method  = (options.method as string | undefined) ?? 'GET';
+  const body    = options.body != null ? String(options.body) : null;
+
+  const res = await fetch(`${REMOTE_BRIDGE_URL}/relay`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${BRIDGE_RELAY_TOKEN}`,
+    },
+    body: JSON.stringify({
+      method,
+      path:    `/api/hub${path}`,
+      headers: { 'content-type': 'application/json', ...authHeader() },
+      body,
+    }),
+    signal: AbortSignal.timeout(12_000),
+    cache:  'no-store',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Bridge relay ${path} → ${res.status}: ${text}`);
   }
   return res.json() as Promise<T>;
 }

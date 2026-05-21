@@ -47,7 +47,7 @@ export default function Sidebar() {
           })}
         </nav>
         <div className="px-5 py-4 border-t border-hub-border text-xs text-hub-muted space-y-1">
-          <div>mario-hub · porta 4001</div>
+          <div>MARIO Gateway</div>
           {installerMode && (
             <div className="text-hub-accent font-medium">Modalità installatore</div>
           )}

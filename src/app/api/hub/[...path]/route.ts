@@ -1,18 +1,25 @@
 /**
  * api/hub/[...path]/route.ts - Catch-all proxy to mario-hub.
  *
- * All client-side requests go to /api/hub/... (same origin, no CORS).
- * This route can forward browser auth when present, otherwise it can use
- * the server-side HUB_TOKEN. If that token is rejected, it retries once
- * without Authorization so local dev-mode Hub can surface real business errors.
+ * Modalità locale (default):
+ *   Chiama HUB_URL direttamente (LAN Pi).
  *
- * SSE passthrough: if Accept: text/event-stream, streams the hub response body.
+ * Modalità remota (REMOTE_BRIDGE_URL impostato):
+ *   Invia la richiesta al mario-remote-bridge via HTTP relay,
+ *   che la inoltra al Pi via WebSocket outbound.
+ *   Il Pi chiama mario-hub localmente e risponde.
+ *
+ * SSE passthrough: se Accept: text/event-stream, streamma il body hub.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const HUB_URL = process.env.HUB_URL || 'http://localhost:4001';
-const HUB_TOKEN = process.env.HUB_TOKEN || '';
+const HUB_URL           = process.env.HUB_URL            || 'http://localhost:4001';
+const HUB_TOKEN         = process.env.HUB_TOKEN          || '';
+const REMOTE_BRIDGE_URL = process.env.REMOTE_BRIDGE_URL  || '';
+const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
+
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 function upstreamUnavailableResponse() {
   return NextResponse.json(
@@ -29,10 +36,23 @@ function upstreamUnavailableResponse() {
   );
 }
 
+function bridgeUnavailableResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      data: null,
+      error: {
+        code: 'BRIDGE_UNAVAILABLE',
+        message: 'Pi non raggiungibile (bridge disconnesso)',
+        source: 'remote-bridge',
+      },
+    },
+    { status: 503 },
+  );
+}
+
 function buildHubUrl(path: string[], req: NextRequest): string {
-  const joined = path.join('/');
-  const search = req.nextUrl.search;
-  return `${HUB_URL}/api/hub/${joined}${search}`;
+  return `${HUB_URL}/api/hub/${path.join('/')}${req.nextUrl.search}`;
 }
 
 function hubHeaders(
@@ -56,30 +76,31 @@ function hubHeaders(
   return out;
 }
 
+// ── Modalità locale ────────────────────────────────────────────────────────
+
 async function fetchHub(
   req: NextRequest,
   path: string[],
   authMode: 'server' | 'passthrough' | 'none',
   body: BodyInit | undefined,
 ): Promise<Response> {
-  const targetUrl = buildHubUrl(path, req);
-
-  return fetch(targetUrl, {
+  return fetch(buildHubUrl(path, req), {
     method: req.method,
     headers: hubHeaders(req.headers, authMode),
     body,
-    // Required for streaming body in Next.js
-    // @ts-expect-error duplex is valid for streaming but not in all TS types
+    // @ts-expect-error duplex è necessario per streaming body
     duplex: 'half',
   });
 }
 
-async function proxyRequest(req: NextRequest, path: string[]): Promise<Response> {
+async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   const isSSE = req.headers.get('accept') === 'text/event-stream';
   const hasIncomingAuth = !!req.headers.get('authorization');
 
   const firstAuthMode = hasIncomingAuth ? 'passthrough' : 'server';
-  const body = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.from(await req.arrayBuffer());
+  const body = ['GET', 'HEAD'].includes(req.method)
+    ? undefined
+    : Buffer.from(await req.arrayBuffer());
 
   let upstreamRes = await fetchHub(req, path, firstAuthMode, body);
 
@@ -108,34 +129,73 @@ async function proxyRequest(req: NextRequest, path: string[]): Promise<Response>
   });
 }
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try {
-    return await proxyRequest(req, params.path);
-  } catch {
-    return upstreamUnavailableResponse();
+// ── Modalità remota (bridge) ───────────────────────────────────────────────
+
+async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> {
+  const hubPath = `/api/hub/${path.join('/')}${req.nextUrl.search}`;
+
+  const bodyText = ['GET', 'HEAD'].includes(req.method)
+    ? null
+    : await req.text();
+
+  const relayPayload = {
+    method:  req.method,
+    path:    hubPath,
+    headers: {
+      'content-type':  req.headers.get('content-type')  || 'application/json',
+      'authorization': HUB_TOKEN ? `Bearer ${HUB_TOKEN}` : '',
+    },
+    body: bodyText,
+  };
+
+  const relayRes = await fetch(`${REMOTE_BRIDGE_URL}/relay`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${BRIDGE_RELAY_TOKEN}`,
+    },
+    body:   JSON.stringify(relayPayload),
+    signal: AbortSignal.timeout(12_000),
+  });
+
+  if (relayRes.status === 503) return bridgeUnavailableResponse();
+
+  const responseBody = await relayRes.text();
+  return new NextResponse(responseBody, {
+    status:  relayRes.status,
+    headers: {
+      'Content-Type': relayRes.headers.get('content-type') || 'application/json',
+    },
+  });
+}
+
+// ── Dispatcher ─────────────────────────────────────────────────────────────
+
+async function proxyRequest(req: NextRequest, path: string[]): Promise<Response> {
+  if (REMOTE_BRIDGE_URL) {
+    return proxyBridge(req, path);
   }
+  return proxyLocal(req, path);
+}
+
+// ── Route handlers ─────────────────────────────────────────────────────────
+
+export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
+  try { return await proxyRequest(req, params.path); }
+  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try {
-    return await proxyRequest(req, params.path);
-  } catch {
-    return upstreamUnavailableResponse();
-  }
+  try { return await proxyRequest(req, params.path); }
+  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try {
-    return await proxyRequest(req, params.path);
-  } catch {
-    return upstreamUnavailableResponse();
-  }
+  try { return await proxyRequest(req, params.path); }
+  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try {
-    return await proxyRequest(req, params.path);
-  } catch {
-    return upstreamUnavailableResponse();
-  }
+  try { return await proxyRequest(req, params.path); }
+  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }

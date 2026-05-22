@@ -18,10 +18,11 @@ const HUB_TOKEN  = process.env.HUB_TOKEN  || '';
 const BRAIN_TOKEN = process.env.BRAIN_TOKEN || '';
 
 export async function GET() {
-  const [hubIdentity, hubOk, brainOk] = await Promise.all([
+  const [hubIdentity, hubOk, brainOk, zWaveOk] = await Promise.all([
     fetchHubIdentity(),
     checkHub(),
     checkBrain(),
+    checkZWave(),
   ]);
 
   return NextResponse.json({
@@ -32,9 +33,10 @@ export async function GET() {
       web: webVersion,
       hub: hubIdentity?.version ?? null,
     },
-    hub:   hubOk   ? 'reachable' : 'unreachable',
-    brain: brainOk ? 'reachable' : 'unreachable',
-    ts:    new Date().toISOString(),
+    hub:    hubOk    ? 'reachable' : 'unreachable',
+    brain:  brainOk  ? 'reachable' : 'unreachable',
+    z_wave: zWaveOk  ? 'active'    : 'inactive',
+    ts:     new Date().toISOString(),
   });
 }
 
@@ -73,5 +75,20 @@ async function checkBrain(): Promise<boolean> {
       headers, signal: AbortSignal.timeout(2_000), cache: 'no-store',
     });
     return res.ok;
+  } catch { return false; }
+}
+
+async function checkZWave(): Promise<boolean> {
+  try {
+    const headers: Record<string, string> = {};
+    if (HUB_TOKEN) headers.authorization = `Bearer ${HUB_TOKEN}`;
+    const res = await fetch(`${HUB_URL}/api/hub/adapters`, {
+      headers, signal: AbortSignal.timeout(2_000), cache: 'no-store',
+    });
+    if (!res.ok) return false;
+    const data = await res.json() as { adapters?: { status: string; adapter_id?: string }[] };
+    return data.adapters?.some(
+      (a) => a.adapter_id?.includes('zwave') && a.status === 'active',
+    ) ?? false;
   } catch { return false; }
 }

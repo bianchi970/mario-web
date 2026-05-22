@@ -7,6 +7,10 @@ jest.mock('@/components/layout/TopBar', () => ({
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
+// Mock vuoti per automazioni e devices (via fetchAPI che controlla res.ok)
+const autoMock = { ok: true, status: 200, json: async () => ({ automations: [] }) };
+const devsMock = { ok: true, status: 200, json: async () => ({ devices: [] }) };
+
 describe('scenarios management ui', () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -16,6 +20,7 @@ describe('scenarios management ui', () => {
   test('renders scenario list from backend', async () => {
     const fetchMock = jest
       .fn()
+      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
       .mockResolvedValueOnce({
         json: async () => ({
           success: true,
@@ -32,9 +37,9 @@ describe('scenarios management ui', () => {
           ],
         }),
       })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      });
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock);
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -62,7 +67,9 @@ describe('scenarios management ui', () => {
           status: 'error',
           error: 'NO_ACTIVE_PROJECT',
         }),
-      });
+      })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock);
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -76,6 +83,7 @@ describe('scenarios management ui', () => {
   test('toggles scenario and refreshes list', async () => {
     const fetchMock = jest
       .fn()
+      // mount
       .mockResolvedValueOnce({
         json: async () => ({
           success: true,
@@ -91,12 +99,11 @@ describe('scenarios management ui', () => {
           ],
         }),
       })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true }),
-      })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
+      // user: toggle + refresh scenarios
+      .mockResolvedValueOnce({ json: async () => ({ success: true }) })
       .mockResolvedValueOnce({
         json: async () => ({
           success: true,
@@ -131,6 +138,7 @@ describe('scenarios management ui', () => {
   test('deletes scenario and refreshes list', async () => {
     const fetchMock = jest
       .fn()
+      // mount
       .mockResolvedValueOnce({
         json: async () => ({
           success: true,
@@ -146,21 +154,13 @@ describe('scenarios management ui', () => {
           ],
         }),
       })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: true,
-          data: [],
-        }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      });
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
+      // user: delete + refresh scenarios + refresh audit
+      .mockResolvedValueOnce({ json: async () => ({ success: true }) })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] });
 
     global.fetch = fetchMock as unknown as typeof fetch;
 

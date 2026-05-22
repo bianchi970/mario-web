@@ -9,6 +9,10 @@ jest.mock('@/components/layout/TopBar', () => ({
 
 const fetchMock = jest.fn();
 
+// Mock vuoti per le chiamate iniziali di automazioni e devices (via fetchAPI che controlla res.ok)
+const autoMock  = { ok: true, status: 200, json: async () => ({ automations: [] }) };
+const devsMock  = { ok: true, status: 200, json: async () => ({ devices: [] }) };
+
 describe('scenarios NL UI', () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -18,12 +22,12 @@ describe('scenarios NL UI', () => {
 
   test('creates scenario from clear NL input', async () => {
     fetchMock
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
+      // user action: createScenarioFromText
       .mockResolvedValueOnce({
         json: async () => ({
           success: true,
@@ -36,12 +40,9 @@ describe('scenarios NL UI', () => {
           },
         }),
       })
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      });
+      // refresh dopo create
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] });
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -55,7 +56,8 @@ describe('scenarios NL UI', () => {
       expect(screen.getByText(/Scenario creato:/i)).toBeInTheDocument();
     });
 
-    const body = JSON.parse(fetchMock.mock.calls[2][1].body as string);
+    // calls[4] = createScenarioFromText (dopo scenarios[0], audit[1], automations[2], devices[3])
+    const body = JSON.parse(fetchMock.mock.calls[4][1].body as string);
     expect(body.actions).toBeUndefined();
     expect(body.targets).toBeUndefined();
     expect(body.text).toBe('alle 22 chiudi le tapparelle zona notte');
@@ -63,12 +65,10 @@ describe('scenarios NL UI', () => {
 
   test('shows needs_confirmation and does not save immediately', async () => {
     fetchMock
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,
@@ -90,17 +90,16 @@ describe('scenarios NL UI', () => {
     });
 
     expect(screen.getByText('Conferma e crea')).toBeDisabled();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // 4 mount + 1 user = 5
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
   test('confirmation completes missing time and creates scenario', async () => {
     fetchMock
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,
@@ -120,12 +119,8 @@ describe('scenarios NL UI', () => {
           },
         }),
       })
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      });
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] });
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -152,15 +147,14 @@ describe('scenarios NL UI', () => {
       expect(screen.getByText(/Scenario creato:/i)).toBeInTheDocument();
     });
 
-    const retryBody = JSON.parse(fetchMock.mock.calls[3][1].body as string);
+    // calls[5] = confirm retry (dopo scenarios[0], audit[1], auto[2], devs[3], needs_conf[4])
+    const retryBody = JSON.parse(fetchMock.mock.calls[5][1].body as string);
     expect(retryBody.text).toContain('alle 22:00');
   });
 
   test('renders audit items from backend with readable reason labels', async () => {
     fetchMock
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
       .mockResolvedValueOnce({
         json: async () => [
           {
@@ -171,7 +165,9 @@ describe('scenarios NL UI', () => {
             executed_at: '2026-04-11T22:00:00Z',
           },
         ],
-      });
+      })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock);
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -184,12 +180,10 @@ describe('scenarios NL UI', () => {
 
   test('shows italian auth required message', async () => {
     fetchMock
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,

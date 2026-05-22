@@ -8,6 +8,10 @@ jest.mock('@/components/layout/TopBar', () => ({
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
+// Mock vuoti per automazioni e devices (via fetchAPI che controlla res.ok)
+const autoMock = { ok: true, status: 200, json: async () => ({ automations: [] }) };
+const devsMock = { ok: true, status: 200, json: async () => ({ devices: [] }) };
+
 describe('scenarios boundary regression', () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -38,12 +42,12 @@ describe('scenarios boundary regression', () => {
   test('shows only missing fields and keeps confirm disabled until filled', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
+      // user action
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,
@@ -73,9 +77,8 @@ describe('scenarios boundary regression', () => {
   test('refreshes audit on demand and updates the table', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
+      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
       .mockResolvedValueOnce({
         json: async () => [
           {
@@ -87,6 +90,9 @@ describe('scenarios boundary regression', () => {
           },
         ],
       })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
+      // user: "Aggiorna audit"
       .mockResolvedValueOnce({
         json: async () => [
           {
@@ -115,6 +121,7 @@ describe('scenarios boundary regression', () => {
       expect(screen.queryByText('Night close')).not.toBeInTheDocument();
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // 4 mount + 1 user refresh = 5
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 });

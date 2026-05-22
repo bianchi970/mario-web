@@ -7,6 +7,10 @@ jest.mock('@/components/layout/TopBar', () => ({
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
+// Mock vuoti per automazioni e devices (via fetchAPI che controlla res.ok)
+const autoMock = { ok: true, status: 200, json: async () => ({ automations: [] }) };
+const devsMock = { ok: true, status: 200, json: async () => ({ devices: [] }) };
+
 describe('scenarios ux runtime', () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -16,12 +20,12 @@ describe('scenarios ux runtime', () => {
   test('clear phrase creates scenario and resets the form', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
+      // user action
       .mockResolvedValueOnce({
         json: async () => ({
           success: true,
@@ -34,12 +38,8 @@ describe('scenarios ux runtime', () => {
           },
         }),
       })
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      });
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] });
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -59,12 +59,10 @@ describe('scenarios ux runtime', () => {
   test('ambiguous phrase shows confirmation panel with original text visible', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,
@@ -95,12 +93,10 @@ describe('scenarios ux runtime', () => {
   test('incomplete confirmation keeps button disabled', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => [],
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,
@@ -128,9 +124,7 @@ describe('scenarios ux runtime', () => {
   test('audit is ordered from most recent event', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
       .mockResolvedValueOnce({
         json: async () => [
           {
@@ -155,7 +149,9 @@ describe('scenarios ux runtime', () => {
             executed_at: '2026-04-11T21:00:00Z',
           },
         ],
-      });
+      })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock);
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -178,9 +174,7 @@ describe('scenarios ux runtime', () => {
   test('policy forbidden reason is human readable', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({ success: true, data: [] }),
-      })
+      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
       .mockResolvedValueOnce({
         json: async () => [
           {
@@ -191,7 +185,9 @@ describe('scenarios ux runtime', () => {
             executed_at: '2026-04-11T22:00:00Z',
           },
         ],
-      });
+      })
+      .mockResolvedValueOnce(autoMock)
+      .mockResolvedValueOnce(devsMock);
 
     global.fetch = fetchMock as unknown as typeof fetch;
 

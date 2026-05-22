@@ -3,19 +3,38 @@
 import { useEffect, useState } from 'react';
 import TopBar from '@/components/layout/TopBar';
 import { useGateway, type GatewayEntry } from '@/context/GatewayContext';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 
 interface IdentityResponse {
   gateway_id: string;
   name: string;
   hub: string;
   brain: string;
+  z_wave: string;
   version: { web: string; hub: string | null };
+}
+
+function detectMode(): 'Locale' | 'VPN' {
+  if (typeof window === 'undefined') return 'Locale';
+  const h = window.location.hostname;
+  if (
+    h === 'localhost' ||
+    /^127\./.test(h) ||
+    /^192\.168\./.test(h) ||
+    /^10\./.test(h) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+  ) return 'Locale';
+  return 'VPN';
 }
 
 export default function GatewaysPage() {
   const { gateways, currentUrl, addGateway, updateGateway, removeGateway, goToGateway } = useGateway();
+  const { installerMode } = useInstallerMode();
 
   const [localIdentity, setLocalIdentity] = useState<IdentityResponse | null>(null);
+  const [mode, setMode] = useState<'Locale' | 'VPN'>('Locale');
+
+  useEffect(() => { setMode(detectMode()); }, []);
   const [addUrl, setAddUrl] = useState('');
   const [addName, setAddName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
@@ -99,8 +118,13 @@ export default function GatewaysPage() {
             </div>
             <p className="font-semibold text-hub-text">{localIdentity.name}</p>
             <div className="text-xs text-hub-muted space-y-0.5">
-              <div>ID: <span className="font-mono text-hub-text">{localIdentity.gateway_id}</span></div>
-              <div>Web v{localIdentity.version.web} · Hub v{localIdentity.version.hub ?? '?'}</div>
+              <div className="flex items-center gap-2">
+                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                  mode === 'Locale' ? 'bg-green-400/15 text-green-400' : 'bg-hub-accent/15 text-hub-accent'
+                }`}>
+                  {mode}
+                </span>
+              </div>
               <div className="flex gap-3 mt-1">
                 <span className={localIdentity.hub === 'reachable' ? 'text-green-400' : 'text-red-400'}>
                   Hub {localIdentity.hub === 'reachable' ? '✓' : '✗'}
@@ -108,7 +132,16 @@ export default function GatewaysPage() {
                 <span className={localIdentity.brain === 'reachable' ? 'text-green-400' : 'text-red-400'}>
                   Brain {localIdentity.brain === 'reachable' ? '✓' : '✗'}
                 </span>
+                <span className={(localIdentity.z_wave === 'active') ? 'text-green-400' : 'text-hub-muted'}>
+                  Z-Wave {localIdentity.z_wave === 'active' ? '✓' : '–'}
+                </span>
               </div>
+              {installerMode && (
+                <div className="pt-1 space-y-0.5 text-hub-muted">
+                  <div>ID: <span className="font-mono text-hub-text">{localIdentity.gateway_id}</span></div>
+                  <div>Web v{localIdentity.version.web} · Hub v{localIdentity.version.hub ?? '?'}</div>
+                </div>
+              )}
             </div>
           </div>
         )}

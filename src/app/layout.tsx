@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Sidebar from '@/components/layout/Sidebar';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
@@ -7,8 +7,17 @@ import { InstallerModeProvider } from '@/context/InstallerModeContext';
 import { GatewayProvider } from '@/context/GatewayContext';
 
 export const metadata: Metadata = {
-  title: 'MARIO Web',
-  description: 'MARIO Hub — Domotics Control Panel',
+  title: 'MARIO',
+  description: 'Domotica locale — controllo impianto',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'MARIO',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0f1117',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

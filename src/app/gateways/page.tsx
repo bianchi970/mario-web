@@ -14,6 +14,15 @@ interface IdentityResponse {
   version: { web: string; hub: string | null };
 }
 
+interface WgStatus {
+  public_ip: string | null;
+  conf_endpoint: string | null;
+  active: boolean;
+  handshake: string | null;
+  rx: string | null;
+  tx: string | null;
+}
+
 function detectMode(): 'Locale' | 'VPN' {
   if (typeof window === 'undefined') return 'Locale';
   const h = window.location.hostname;
@@ -33,8 +42,33 @@ export default function GatewaysPage() {
 
   const [localIdentity, setLocalIdentity] = useState<IdentityResponse | null>(null);
   const [mode, setMode] = useState<'Locale' | 'VPN'>('Locale');
+  const [wgStatus, setWgStatus]     = useState<WgStatus | null>(null);
+  const [wgQr, setWgQr]             = useState<string | null>(null);
+  const [wgUpdating, setWgUpdating] = useState(false);
 
   useEffect(() => { setMode(detectMode()); }, []);
+
+  useEffect(() => {
+    if (!installerMode) return;
+    fetch('/api/hub/wireguard/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setWgStatus(d); })
+      .catch(() => {});
+  }, [installerMode]);
+
+  async function handleRegenQr() {
+    setWgUpdating(true);
+    setWgQr(null);
+    try {
+      const res = await fetch('/api/hub/wireguard/regenerate-qr', { method: 'POST' });
+      const data = await res.json();
+      if (data.qr) {
+        setWgQr(data.qr);
+        setWgStatus(prev => prev ? { ...prev, public_ip: data.ip, conf_endpoint: `${data.ip}:51820` } : prev);
+      }
+    } catch { /* silenzioso */ }
+    setWgUpdating(false);
+  }
   const [addUrl, setAddUrl] = useState('');
   const [addName, setAddName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
@@ -143,6 +177,60 @@ export default function GatewaysPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* VPN WireGuard — solo installatore */}
+        {installerMode && (
+          <div className="card space-y-3 border border-hub-accent/20">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-hub-text">VPN WireGuard</p>
+              {wgStatus && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                  wgStatus.active ? 'bg-green-400/15 text-green-400' : 'bg-hub-muted/20 text-hub-muted'
+                }`}>
+                  {wgStatus.active ? 'Connessa' : 'In attesa'}
+                </span>
+              )}
+            </div>
+
+            {wgStatus && (
+              <div className="text-xs text-hub-muted space-y-0.5 font-mono">
+                <div>IP pubblico: <span className="text-hub-text">{wgStatus.public_ip ?? '–'}</span></div>
+                <div>Endpoint conf: <span className="text-hub-text">{wgStatus.conf_endpoint ?? '–'}</span></div>
+                {wgStatus.handshake && <div className="font-sans">Handshake: <span className="text-hub-text">{wgStatus.handshake}</span></div>}
+                {wgStatus.rx && <div className="font-sans">Traffico: ↓{wgStatus.rx} ↑{wgStatus.tx}</div>}
+              </div>
+            )}
+
+            {wgStatus?.public_ip && wgStatus.conf_endpoint &&
+              !wgStatus.conf_endpoint.startsWith(wgStatus.public_ip) && (
+              <p className="text-xs text-yellow-400 bg-yellow-400/10 rounded px-2 py-1.5">
+                ⚠ IP TIM cambiato — rigenera il profilo per aggiornare il telefono.
+              </p>
+            )}
+
+            <button
+              onClick={handleRegenQr}
+              disabled={wgUpdating}
+              className="w-full py-2 rounded-lg border border-hub-accent/50 text-hub-accent text-sm hover:bg-hub-accent/10 disabled:opacity-40 transition-colors"
+            >
+              {wgUpdating ? 'Aggiornamento…' : 'Aggiorna IP + Rigenera QR'}
+            </button>
+
+            {wgQr && (
+              <div className="space-y-2">
+                <p className="text-xs text-hub-muted">Scansiona con WireGuard → + → Scansiona QR:</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={wgQr} alt="QR WireGuard" className="w-full rounded-lg border border-hub-border" />
+                <p className="text-xs text-yellow-400/80">Visibile solo all'installatore. Non condividere.</p>
+              </div>
+            )}
+
+            <p className="text-xs text-hub-muted border-t border-hub-border pt-2">
+              Per installazione definitiva senza servizi esterni è consigliato IP pubblico statico dal provider.
+              Con IP dinamico TIM, se l&apos;IP cambia, usare il pulsante sopra per aggiornare il profilo WireGuard.
+            </p>
           </div>
         )}
 

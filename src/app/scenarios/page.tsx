@@ -7,6 +7,7 @@ import TopBar from '@/components/layout/TopBar';
 import NLScenarioForm from '@/components/scenarios/NLScenarioForm';
 import ScenarioList from '@/components/scenarios/ScenarioList';
 import ScenarioConfirmationPanel from '@/components/scenarios/ScenarioConfirmationPanel';
+import ScenarioDraftPanel from '@/components/scenarios/ScenarioDraftPanel';
 import ScenarioAuditList from '@/components/scenarios/ScenarioAuditList';
 import AutomationCard from '@/components/automations/AutomationCard';
 import AutomationWizard from '@/components/automations/AutomationWizard';
@@ -24,6 +25,7 @@ import {
   setScenarioEnabled,
   type ScenarioAuditItem,
   type ScenarioRecord,
+  type ScenarioSpecV2,
 } from '@/lib/api/scenarios';
 import {
   listAutomations,
@@ -72,6 +74,8 @@ export default function ScenariosPage() {
   const [scenarioItems, setScenarioItems] = useState<ScenarioRecord[]>([]);
   const [auditUpdatedAt, setAuditUpdatedAt] = useState<string | null>(null);
   const [managementLoading, setManagementLoading] = useState(false);
+  const [draftV2, setDraftV2] = useState<ScenarioSpecV2 | null>(null);
+  const [clarification, setClarification] = useState<{ question: string; options: string[] } | null>(null);
 
   const hasConfirmation = useMemo(() => missing.length > 0, [missing]);
 
@@ -189,8 +193,20 @@ export default function ScenariosPage() {
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
+    setDraftV2(null);
+    setClarification(null);
     try {
-      const res = await createScenarioFromText({ text, projectId });
+      const deviceContext = devices.map((d) => ({
+        id: d.id,
+        name: d.name,
+        type: d.type,
+        capabilities: d.capabilities,
+      }));
+      const res = await createScenarioFromText({
+        text,
+        projectId,
+        ...(deviceContext.length > 0 ? { devices: deviceContext } : {}),
+      });
       if (res.success && res.status === 'created') {
         setMissing([]);
         setConfirmationValues({ trigger_time: '', outcome_text: '' });
@@ -201,11 +217,19 @@ export default function ScenariosPage() {
         await refreshAudit();
         return;
       }
+      if (res.success && res.status === 'draft') {
+        setDraftV2(res.data);
+        return;
+      }
       if (!res.success && res.status === 'needs_confirmation') {
         setMissing(res.missing || []);
         return;
       }
-      setError(formatScenarioError(res.error));
+      if (!res.success && res.status === 'needs_clarification') {
+        setClarification({ question: res.question, options: res.options || [] });
+        return;
+      }
+      setError(formatScenarioError((res as { error?: string }).error));
     } catch (err) {
       setError(err instanceof Error ? formatScenarioError(err.message) : SCENARIO_COPY.unexpectedError);
     } finally {
@@ -246,6 +270,42 @@ export default function ScenariosPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // — Draft V2 handlers —
+  async function handleDraftConfirm() {
+    if (!draftV2 || !projectId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await createAutomation(projectId, {
+        name: draftV2.name,
+        enabled: draftV2.enabled,
+        trigger_type: (draftV2.trigger as { type: string }).type as 'schedule' | 'bus_event' | 'device_state',
+        trigger: draftV2.trigger,
+        conditions: draftV2.conditions,
+        actions: draftV2.actions,
+        created_at: '',
+      });
+      setDraftV2(null);
+      setText('');
+      setSuccessMessage(`Automazione salvata: ${draftV2.name}`);
+      await loadAutomations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : SCENARIO_COPY.unexpectedError);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleDraftEdit() {
+    setDraftV2(null);
+  }
+
+  function handleDraftCancel() {
+    setDraftV2(null);
+    setText('');
+    setClarification(null);
   }
 
   // — Automazioni handlers —
@@ -325,6 +385,30 @@ export default function ScenariosPage() {
             error={error}
           />
           {successMessage ? <div className="card text-sm text-hub-text">{successMessage}</div> : null}
+          {draftV2 ? (
+            <ScenarioDraftPanel
+              spec={draftV2}
+              deviceNames={deviceNames}
+              onConfirm={handleDraftConfirm}
+              onEdit={handleDraftEdit}
+              onCancel={handleDraftCancel}
+              loading={loading}
+            />
+          ) : null}
+          {clarification ? (
+            <div className="card space-y-2">
+              <h3 className="text-sm font-semibold text-hub-text">Serve un chiarimento</h3>
+              <p className="text-sm text-hub-muted">{clarification.question}</p>
+              {clarification.options.length > 0 && (
+                <ul className="space-y-1">
+                  {clarification.options.map((opt) => (
+                    <li key={opt} className="text-sm text-hub-muted">• {opt}</li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-hub-muted">Modifica il testo e riprova.</p>
+            </div>
+          ) : null}
           {hasConfirmation ? (
             <ScenarioConfirmationPanel
               originalText={text}

@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
         {
           method: 'POST',
           headers: scenarioAuthHeaders(req, true),
-          body: JSON.stringify({ text: body.text || '' }),
+          body: JSON.stringify({
+            text: body.text || '',
+            ...(Array.isArray(body.devices) ? { devices: body.devices } : {}),
+          }),
           cache: 'no-store',
           signal: AbortSignal.timeout(10000),
         },

@@ -1,6 +1,35 @@
+export type DeviceContextInput = {
+  id: string;
+  name: string;
+  type: string;
+  capabilities: string[];
+};
+
+export type ScenarioSpecV2 = {
+  name: string;
+  enabled: boolean;
+  trigger: Record<string, unknown>;
+  conditions: Array<Record<string, unknown>>;
+  actions: Array<Record<string, unknown>>;
+};
+
+export type DraftScenarioV2Response = {
+  success: true;
+  status: 'draft';
+  data: ScenarioSpecV2;
+};
+
+export type NeedsClarificationResponse = {
+  success: false;
+  status: 'needs_clarification';
+  question: string;
+  options: string[];
+};
+
 export type CreateScenarioFromTextRequest = {
   text: string;
   projectId?: string;
+  devices?: DeviceContextInput[];
 };
 
 export type NeedsConfirmationResponse = {
@@ -30,6 +59,8 @@ export type ErrorScenarioResponse = {
 export type CreateScenarioFromTextResponse =
   | NeedsConfirmationResponse
   | CreatedScenarioResponse
+  | DraftScenarioV2Response
+  | NeedsClarificationResponse
   | ErrorScenarioResponse;
 
 export type ScenarioAuditItem = {
@@ -70,12 +101,16 @@ function assertNoRawPayload(payload: unknown) {
 export async function createScenarioFromText(
   payload: CreateScenarioFromTextRequest
 ): Promise<CreateScenarioFromTextResponse> {
-  assertNoRawPayload(payload);
+  assertNoRawPayload({ text: payload.text });
 
   const res = await fetch('/api/scenarios/from-text', {
     method: 'POST',
     headers: jsonHeaders(),
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      text: payload.text,
+      projectId: payload.projectId,
+      ...(Array.isArray(payload.devices) ? { devices: payload.devices } : {}),
+    }),
   });
 
   const data = await res

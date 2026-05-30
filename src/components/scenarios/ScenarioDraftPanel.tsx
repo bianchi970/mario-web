@@ -30,6 +30,17 @@ function formatTrigger(trigger: TriggerSpec): string {
     const base = `Quando ${trigger.device_id || 'dispositivo'} ${trigger.property} ${trigger.operator} ${trigger.value}`;
     return trigger.for ? `${base} (per ${trigger.for}s)` : base;
   }
+  if (trigger.type === 'sun_event') {
+    const event = trigger.event as string;
+    const offset = (trigger.offset_minutes as number) ?? 0;
+    if (offset === 0) return event === 'sunrise' ? "All'alba" : 'Al tramonto';
+    if (offset < 0) {
+      const prep = event === 'sunrise' ? "dell'alba" : 'del tramonto';
+      return `${Math.abs(offset)} minuti prima ${prep}`;
+    }
+    const prep = event === 'sunrise' ? "l'alba" : 'il tramonto';
+    return `${offset} minuti dopo ${prep}`;
+  }
   return `Trigger: ${trigger.type || 'sconosciuto'}`;
 }
 

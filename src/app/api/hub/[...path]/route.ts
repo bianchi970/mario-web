@@ -195,6 +195,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { path: stri
   catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
+export async function PUT(req: NextRequest, { params }: { params: { path: string[] } }) {
+  try { return await proxyRequest(req, params.path); }
+  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
   try { return await proxyRequest(req, params.path); }
   catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }

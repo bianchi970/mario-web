@@ -100,6 +100,13 @@ export interface CommandResult {
   };
 }
 
+export type ProjectMode = 'home' | 'night' | 'away' | 'vacation' | 'simulation';
+
+export interface ProjectModeInfo {
+  project_id: string;
+  mode: ProjectMode;
+}
+
 export interface RegistrySnapshot {
   devices: Device[];
   stateCache?: Record<string, unknown>;

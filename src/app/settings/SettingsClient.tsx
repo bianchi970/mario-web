@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import type { Adapter, SystemInfo } from '@/lib/hub-types';
+import { useEffect, useState } from 'react';
+import type { Adapter, ProjectMode, SystemInfo } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { getProjectMode, MODE_LABELS, MODE_ORDER, setProjectMode } from '@/lib/api/mode';
 
 function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
   const map: Record<string, { label: string; variant: 'green' | 'red' | 'amber' | 'gray' }> = {
@@ -36,9 +37,26 @@ export default function SettingsClient({
   hubDisplayUrl,
 }: Props) {
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
+  const [currentMode, setCurrentMode] = useState<ProjectMode | null>(null);
+  const [modeChanging, setModeChanging] = useState(false);
   const { projectId, setProjectId } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
+
+  useEffect(() => {
+    if (!projectId || !systemAvailable) return;
+    void getProjectMode(projectId).then((info) => {
+      if (info) setCurrentMode(info.mode);
+    });
+  }, [projectId, systemAvailable]);
+
+  async function handleSetMode(mode: ProjectMode) {
+    if (!projectId || modeChanging) return;
+    setModeChanging(true);
+    const ok = await setProjectMode(projectId, mode);
+    if (ok) setCurrentMode(mode);
+    setModeChanging(false);
+  }
 
   async function checkHealth() {
     if (offlineMode) {
@@ -125,6 +143,30 @@ export default function SettingsClient({
           Salvato nel browser. E&apos; la sorgente unica per dispositivi, stanze e scenari.
         </p>
       </div>
+
+      {currentMode && (
+        <div className="card space-y-3">
+          <h2 className="text-sm font-medium text-hub-text">Modalità impianto</h2>
+          <div className="flex flex-wrap gap-2">
+            {MODE_ORDER.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => void handleSetMode(m)}
+                disabled={modeChanging}
+                aria-pressed={currentMode === m}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                  currentMode === m
+                    ? 'bg-hub-accent text-white'
+                    : 'border border-hub-border text-hub-muted hover:text-hub-text'
+                }`}
+              >
+                {MODE_LABELS[m]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card space-y-3">
         <h2 className="text-sm font-medium text-hub-text">Modalità</h2>

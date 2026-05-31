@@ -88,6 +88,52 @@ describe('Settings offline mode wiring', () => {
     expect(window.localStorage.getItem('mario_installer_mode')).toBeNull();
   });
 
+  it('mostra selettore modalità impianto e chiama PUT al cambio', async () => {
+    global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/system/status') {
+        return Promise.resolve({ ok: true, json: async () => ({ offline: false }) });
+      }
+      if (url === '/api/hub/projects/default/mode') {
+        if (!init?.method || init.method === 'GET') {
+          return Promise.resolve({ ok: true, json: async () => ({ project_id: 'default', mode: 'home' }) });
+        }
+        if (init.method === 'PUT') {
+          return Promise.resolve({ ok: true, json: async () => ({ project_id: 'default', mode: 'night' }) });
+        }
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    }) as jest.Mock;
+
+    render(
+      <ProjectProvider>
+        <InstallerModeProvider>
+          <OfflineModeProvider>
+            <SettingsClient
+              adapters={[]}
+              system={null}
+              adaptersAvailable={false}
+              systemAvailable={true}
+              hubDisplayUrl="http://localhost:4001"
+            />
+          </OfflineModeProvider>
+        </InstallerModeProvider>
+      </ProjectProvider>,
+    );
+
+    await screen.findByText('Casa');
+    expect(screen.getByRole('button', { name: 'Casa' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Notte' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/hub/projects/default/mode',
+        expect.objectContaining({ method: 'PUT' }),
+      );
+    });
+  });
+
   it('toggles the real command flow on and off from the global setting', async () => {
     render(
       <ProjectProvider>

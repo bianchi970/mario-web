@@ -44,6 +44,22 @@ function formatTrigger(trigger: TriggerSpec): string {
   return `Trigger: ${trigger.type || 'sconosciuto'}`;
 }
 
+const MODE_LABELS: Record<string, string> = {
+  home:       'Casa',
+  night:      'Notte',
+  away:       'Fuori casa',
+  vacation:   'Vacanza',
+  simulation: 'Simulazione',
+};
+
+function formatCondition(c: Record<string, unknown>): string {
+  if (c.type === 'project_mode') {
+    const label = MODE_LABELS[String(c.value)] ?? String(c.value);
+    return `Modalità: ${label}`;
+  }
+  return `${String(c.type)}: ${String(c.operator)} ${String(c.value)}`;
+}
+
 function formatAction(action: ActionSpec, deviceNames?: Map<string, string>): string {
   if (!action.type) {
     const name = deviceNames?.get(action.device_id as string) || (action.device_id as string);
@@ -89,7 +105,7 @@ export default function ScenarioDraftPanel({
             <p className="text-xs text-hub-muted uppercase tracking-wide mb-1">Condizioni</p>
             {spec.conditions.map((c, i) => (
               <p key={i} className="text-hub-text">
-                {String(c.type)}: {String(c.operator)} {String(c.value)}
+                {formatCondition(c)}
               </p>
             ))}
           </div>

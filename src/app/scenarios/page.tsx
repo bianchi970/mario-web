@@ -264,7 +264,7 @@ export default function ScenariosPage() {
         setMissing(retry.missing || []);
         return;
       }
-      setError(formatScenarioError(retry.error || 'Conferma non riuscita'));
+      setError(formatScenarioError((retry as { error?: string }).error || 'Conferma non riuscita'));
     } catch (err) {
       setError(err instanceof Error ? formatScenarioError(err.message) : SCENARIO_COPY.unexpectedError);
     } finally {
@@ -285,7 +285,6 @@ export default function ScenariosPage() {
         trigger: draftV2.trigger,
         conditions: draftV2.conditions,
         actions: draftV2.actions,
-        created_at: '',
       });
       setDraftV2(null);
       setText('');

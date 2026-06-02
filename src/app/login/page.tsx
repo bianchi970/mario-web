@@ -9,6 +9,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const from         = searchParams.get('from') ?? '/';
 
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
@@ -22,15 +23,21 @@ function LoginForm() {
       const res = await fetch('/api/auth/login', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ password }),
+        body:    JSON.stringify({ username, password }),
       });
 
       if (res.ok) {
         router.push(from);
         router.refresh();
       } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error === 'wrong_password' ? 'Password non corretta.' : 'Errore di accesso.');
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        if (data.error === 'invalid_credentials') {
+          setError('Credenziali non valide.');
+        } else if (data.error === 'hub_unreachable') {
+          setError('Hub non raggiungibile.');
+        } else {
+          setError('Errore di accesso.');
+        }
       }
     } catch {
       setError('Impossibile contattare il server.');
@@ -51,13 +58,27 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           <div>
+            <label className="text-xs text-hub-muted block mb-1">Utente</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+              required
+              autoComplete="username"
+              placeholder="admin"
+              className="w-full px-3 py-2 rounded-lg border border-hub-border bg-hub-bg text-hub-text text-sm focus:outline-none focus:border-hub-accent"
+            />
+          </div>
+
+          <div>
             <label className="text-xs text-hub-muted block mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoFocus
               required
+              autoComplete="current-password"
               placeholder="••••••••"
               className="w-full px-3 py-2 rounded-lg border border-hub-border bg-hub-bg text-hub-text text-sm focus:outline-none focus:border-hub-accent"
             />
@@ -69,7 +90,7 @@ function LoginForm() {
 
           <button
             type="submit"
-            disabled={loading || !password}
+            disabled={loading || !username || !password}
             className="w-full py-2 rounded-lg bg-hub-accent text-white text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
           >
             {loading ? 'Accesso…' : 'Entra'}

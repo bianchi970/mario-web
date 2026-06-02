@@ -8,6 +8,7 @@ import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 import { getProjectMode, MODE_LABELS, MODE_ORDER, setProjectMode } from '@/lib/api/mode';
+import UsersSection from '@/components/settings/UsersSection';
 
 function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
   const map: Record<string, { label: string; variant: 'green' | 'red' | 'amber' | 'gray' }> = {
@@ -39,9 +40,17 @@ export default function SettingsClient({
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
   const [currentMode, setCurrentMode] = useState<ProjectMode | null>(null);
   const [modeChanging, setModeChanging] = useState(false);
+  const [me, setMe] = useState<{ id: string | null; role: string | null } | null>(null);
   const { projectId, setProjectId } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
+
+  useEffect(() => {
+    void fetch('/api/auth/me')
+      .then((r) => r.json() as Promise<{ id: string | null; role: string | null }>)
+      .then((d) => setMe(d))
+      .catch(() => { /* ignora */ });
+  }, []);
 
   useEffect(() => {
     if (!projectId || !systemAvailable) return;
@@ -249,6 +258,8 @@ export default function SettingsClient({
           </div>
         </div>
       ) : null}
+
+      {me?.role === 'admin' && <UsersSection currentUserId={me.id} />}
     </div>
   );
 }

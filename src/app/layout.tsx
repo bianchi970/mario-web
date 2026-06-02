@@ -9,6 +9,7 @@ import { GatewayProvider } from '@/context/GatewayContext';
 export const metadata: Metadata = {
   title: 'MARIO',
   description: 'Domotica locale — controllo impianto',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -23,6 +24,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="it" className="dark">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');` }} />
+      </head>
       <body className="flex min-h-screen bg-hub-bg">
         <GatewayProvider>
         <ProjectProvider>

@@ -8,6 +8,7 @@ import { useInstallerMode } from '@/context/InstallerModeContext';
 const NAV_ALL = [
   { href: '/', label: 'Dashboard', icon: '□', installerOnly: false },
   { href: '/energy', label: 'Energia', icon: '⚡', installerOnly: false },
+  { href: '/storico', label: 'Storico', icon: '◷', installerOnly: false },
   { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },
   { href: '/rooms', label: 'Stanze', icon: '⬜', installerOnly: false },
   { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },

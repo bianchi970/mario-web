@@ -22,6 +22,7 @@ const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4
 const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
 const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
 const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
+const HUB_ID             = process.env.HUB_ID             || '';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -133,7 +134,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
   const userToken  = req.cookies.get('mario_hub_token')?.value || '';
   const incomingAuth = req.headers.get('authorization');
 
-  const relayPayload = {
+  const relayPayload: Record<string, unknown> = {
     method:  req.method,
     path:    hubPath,
     headers: {
@@ -144,6 +145,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
     },
     body: bodyText,
   };
+  if (HUB_ID) relayPayload.hub_id = HUB_ID;
 
   const relayRes = await fetch(`${REMOTE_BRIDGE_URL}/relay`, {
     method:  'POST',

@@ -10,7 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * Attivo solo se REMOTE_AUTH_MODE=true.
  */
 
-const HUB_URL = process.env.HUB_URL || 'http://localhost:4001';
+const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
+const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
+const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 export async function POST(req: NextRequest) {
@@ -32,12 +34,30 @@ export async function POST(req: NextRequest) {
 
   let hubToken: string;
   try {
-    const hubRes = await fetch(`${HUB_URL}/api/hub/auth/login`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ username, password }),
-      signal:  AbortSignal.timeout(5000),
-    });
+    let hubRes: Response;
+    if (REMOTE_BRIDGE_URL) {
+      hubRes = await fetch(`${REMOTE_BRIDGE_URL}/relay`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${BRIDGE_RELAY_TOKEN}`,
+        },
+        body: JSON.stringify({
+          method:  'POST',
+          path:    '/api/hub/auth/login',
+          headers: { 'content-type': 'application/json' },
+          body:    JSON.stringify({ username, password }),
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+    } else {
+      hubRes = await fetch(`${HUB_URL}/api/hub/auth/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username, password }),
+        signal:  AbortSignal.timeout(5000),
+      });
+    }
 
     if (!hubRes.ok) {
       const isAuthError = hubRes.status === 401 || hubRes.status === 400;

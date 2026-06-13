@@ -260,6 +260,24 @@ export default function SettingsClient({
       ) : null}
 
       {me?.role === 'admin' && <UsersSection currentUserId={me.id} />}
+
+      {installerMode && (
+        <div className="card space-y-2">
+          <h2 className="text-sm font-medium text-hub-text">Area tecnica</h2>
+          {[
+            { href: '/devices',    label: 'Dispositivi' },
+            { href: '/gateways',   label: 'Gateway' },
+            { href: '/energy',     label: 'Energia' },
+            { href: '/storico',    label: 'Storico' },
+            { href: '/onboarding', label: 'Aggiungi dispositivo' },
+          ].map(({ href, label }) => (
+            <a key={href} href={href}
+              className="flex items-center justify-between py-1.5 text-sm text-hub-muted hover:text-hub-text">
+              {label} <span>→</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

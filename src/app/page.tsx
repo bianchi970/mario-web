@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Battery,
@@ -155,6 +156,8 @@ export default function DashboardPage() {
   const [brainOnline, setBrainOnline] = useState(false);
   const [togglingScenario, setTogglingScenario] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [nlInput, setNlInput] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -206,7 +209,7 @@ export default function DashboardPage() {
         setScenarios(null);
         setBrainOnline(false);
         if (err instanceof ApiClientError && (err.status === 500 || err.status === 502)) {
-          setError('Hub non disponibile');
+          setError('Casa non raggiungibile');
         } else {
           setError('Errore caricamento');
         }
@@ -269,30 +272,18 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.2em] text-white/40">MARIO</div>
-            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-white">
-              {effectiveProjectId ?? 'Nessun progetto'}
-            </h1>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-white">Casa</h1>
           </div>
           <div className="flex items-center gap-2">
-            {(
-              [
-                ['Hub', hubOnline],
-                ['Brain', brainOnline],
-              ] as [string, boolean][]
-            ).map(([name, ok]) => (
-              <div
-                key={name}
-                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5"
-              >
-                <span className={`h-2 w-2 rounded-full ${serviceDot(ok)}`} />
-                <span className="text-xs text-white/70">{name}</span>
-              </div>
-            ))}
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+              <span className={`h-2 w-2 rounded-full ${serviceDot(hubOnline)}`} />
+              <span className="text-xs text-white/70">{hubOnline ? 'Online' : 'Offline'}</span>
+            </div>
           </div>
         </div>
 
-        {/* Banner: nessun progetto */}
-        {!effectiveProjectId ? (
+        {/* Banner: nessun progetto — solo installer */}
+        {!effectiveProjectId && installerMode ? (
           <div className="flex items-start gap-3 rounded-[22px] border border-amber-500/25 bg-amber-500/10 p-5 text-amber-100">
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="flex-1">
@@ -394,6 +385,19 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Box comando naturale */}
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (nlInput.trim()) router.push('/scenarios'); }}
+              className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4"
+            >
+              <input
+                value={nlInput}
+                onChange={(e) => setNlInput(e.target.value)}
+                placeholder="Cosa vuoi fare?"
+                className="w-full bg-transparent text-white placeholder:text-white/30 outline-none text-sm"
+              />
+            </form>
 
             {/* SEZIONE 2 — Notifiche persistenti dal DB */}
             {projectId && (

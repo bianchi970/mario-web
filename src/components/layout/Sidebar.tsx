@@ -6,15 +6,15 @@ import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 
 const NAV_ALL = [
-  { href: '/', label: 'Dashboard', icon: '□', installerOnly: false },
-  { href: '/energy', label: 'Energia', icon: '⚡', installerOnly: false },
-  { href: '/storico', label: 'Storico', icon: '◷', installerOnly: false },
-  { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },
+  { href: '/', label: 'Casa', icon: '□', installerOnly: false },
   { href: '/rooms', label: 'Stanze', icon: '⬜', installerOnly: false },
   { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },
-  { href: '/onboarding', label: 'Aggiungi', icon: '+', installerOnly: true },
   { href: '/settings', label: 'Impostazioni', icon: '⚙', installerOnly: false },
-  { href: '/gateways', label: 'Gateway', icon: '⊞', installerOnly: false },
+  { href: '/energy', label: 'Energia', icon: '⚡', installerOnly: true },
+  { href: '/storico', label: 'Storico', icon: '◷', installerOnly: true },
+  { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },
+  { href: '/onboarding', label: 'Aggiungi', icon: '+', installerOnly: true },
+  { href: '/gateways', label: 'Gateway', icon: '⊞', installerOnly: true },
 ];
 
 export default function Sidebar() {
@@ -49,7 +49,6 @@ export default function Sidebar() {
           })}
         </nav>
         <div className="px-5 py-4 border-t border-hub-border text-xs text-hub-muted space-y-1">
-          <div>MARIO Gateway</div>
           {installerMode && (
             <div className="text-hub-accent font-medium">Modalità installatore</div>
           )}

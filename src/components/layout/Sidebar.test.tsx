@@ -37,9 +37,9 @@ describe('Sidebar — installer mode nav filtering', () => {
     expect(screen.getAllByText('Aggiungi').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('mostra sempre Dashboard, Stanze, Scenari, Impostazioni indipendentemente dal mode', () => {
+  it('mostra sempre Casa, Stanze, Scenari, Impostazioni indipendentemente dal mode', () => {
     renderSidebar();
-    expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Casa').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Stanze').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Impostazioni').length).toBeGreaterThanOrEqual(1);
   });

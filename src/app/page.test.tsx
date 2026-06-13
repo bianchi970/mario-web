@@ -4,20 +4,24 @@ import { useProjectId } from '@/hooks/useProjectId';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
 import { ApiClientError, fetchAPI } from '@/lib/api/client';
+import { useInstallerMode } from '@/context/InstallerModeContext';
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
+
+jest.mock('@/context/InstallerModeContext', () => ({
+  useInstallerMode: jest.fn(() => ({ installerMode: false, setInstallerMode: jest.fn() })),
+}));
 
 jest.mock('@/components/layout/TopBar', () => ({
   __esModule: true,
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
-jest.mock('@/components/dashboard/StatsRow', () => ({
+jest.mock('@/components/notifications/NotificationCenter', () => ({
   __esModule: true,
-  default: () => <div>stats-row</div>,
-}));
-
-jest.mock('@/components/dashboard/EventFeed', () => ({
-  __esModule: true,
-  default: () => <div>event-feed</div>,
+  default: () => null,
 }));
 
 jest.mock('@/hooks/useProjectId', () => ({
@@ -54,6 +58,7 @@ jest.mock('@/lib/api/client', () => ({
 }));
 
 const mockedUseProjectId = useProjectId as jest.MockedFunction<typeof useProjectId>;
+const mockedUseInstallerMode = useInstallerMode as jest.MockedFunction<typeof useInstallerMode>;
 const mockedListDevices = listDevices as jest.MockedFunction<typeof listDevices>;
 const mockedListRooms = listRooms as jest.MockedFunction<typeof listRooms>;
 const mockedFetchAPI = fetchAPI as jest.MockedFunction<typeof fetchAPI>;
@@ -62,6 +67,7 @@ describe('Dashboard device inventory flow', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     mockedUseProjectId.mockReturnValue('proj-1');
+    mockedUseInstallerMode.mockReturnValue({ installerMode: false, setInstallerMode: jest.fn() });
     mockedFetchAPI.mockResolvedValue({
       hostname: 'hub-pc',
       platform: 'win32',
@@ -93,22 +99,22 @@ describe('Dashboard device inventory flow', () => {
     });
   });
 
-  it('blocks the dashboard when projectId is missing', () => {
+  it('hides project banner for normal user when projectId is missing', () => {
     mockedUseProjectId.mockReturnValue(undefined);
 
     render(<DashboardPage />);
 
-    expect(screen.getByText('Seleziona un progetto.')).toBeInTheDocument();
+    expect(screen.queryByText('Seleziona un progetto.')).not.toBeInTheDocument();
     expect(mockedListDevices).not.toHaveBeenCalled();
   });
 
-  it('shows hub unavailable when inventory loading fails', async () => {
+  it('shows home unavailable when inventory loading fails', async () => {
     mockedListDevices.mockRejectedValue(new ApiClientError('hub error', 502));
 
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Hub non disponibile')).toBeInTheDocument();
+      expect(screen.getByText('Casa non raggiungibile')).toBeInTheDocument();
     });
   });
 });

@@ -8,12 +8,15 @@ import { GatewayProvider } from '@/context/GatewayContext';
 
 export const metadata: Metadata = {
   title: 'MARIO',
-  description: 'Domotica locale — controllo impianto',
+  description: 'Domotica locale — controllo casa',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'MARIO',
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
   },
 };
 

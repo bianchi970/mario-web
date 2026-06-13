@@ -1,6 +1,7 @@
 {
   "name": "MARIO",
   "short_name": "MARIO",
+  "id": "/",
   "description": "Domotica locale — controllo casa",
   "start_url": "/",
   "scope": "/",

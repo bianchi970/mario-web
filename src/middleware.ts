@@ -22,6 +22,11 @@ const PUBLIC_PREFIXES = [
   '/_next/',
   '/favicon.ico',
   '/mario-ca.crt',
+  '/manifest',        // manifest.json / manifest.webmanifest
+  '/sw.js',           // service worker
+  '/icons/',          // icone PWA
+  '/screenshots/',    // screenshot PWA
+  '/apple-touch-icon',
 ];
 
 export async function middleware(request: NextRequest) {

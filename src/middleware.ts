@@ -42,8 +42,18 @@ export async function middleware(request: NextRequest) {
 
   // Verifica JWT Hub
   const token = request.cookies.get('mario_hub_token')?.value ?? '';
-  if (token && JWT_SECRET && await verifyJWT(token, JWT_SECRET)) {
-    return NextResponse.next();
+  if (token && JWT_SECRET) {
+    const { valid, mustChange } = await verifyJWT(token, JWT_SECRET);
+    if (valid) {
+      // Deve cambiare password → blocca tutto tranne /change-password
+      if (mustChange && !pathname.startsWith('/change-password')) {
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'must_change_password' }, { status: 403 });
+        }
+        return NextResponse.redirect(new URL('/change-password', request.url));
+      }
+      return NextResponse.next();
+    }
   }
 
   // Chiamate API private → 401 JSON
@@ -60,10 +70,11 @@ export async function middleware(request: NextRequest) {
 // ── JWT HS256 verify (Web Crypto API — Edge runtime) ─────────────────────────
 // Il Hub firma con jsonwebtoken HS256. Verifichiamo senza librerie esterne.
 
-async function verifyJWT(token: string, secret: string): Promise<boolean> {
+async function verifyJWT(token: string, secret: string): Promise<{ valid: boolean; mustChange: boolean }> {
+  const FAIL = { valid: false, mustChange: false };
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) return FAIL;
 
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
@@ -76,18 +87,17 @@ async function verifyJWT(token: string, secret: string): Promise<boolean> {
 
     const sigInput = encoder.encode(`${parts[0]}.${parts[1]}`);
     const sigBytes = base64urlDecode(parts[2]);
-    const valid    = await crypto.subtle.verify('HMAC', key, sigBytes, sigInput);
-    if (!valid) return false;
+    const ok       = await crypto.subtle.verify('HMAC', key, sigBytes, sigInput);
+    if (!ok) return FAIL;
 
-    // Controlla scadenza (exp claim)
     const payload = JSON.parse(
       new TextDecoder().decode(base64urlDecode(parts[1]))
-    ) as { exp?: number };
-    if (payload.exp && payload.exp * 1000 < Date.now()) return false;
+    ) as { exp?: number; must_change_password?: boolean };
+    if (payload.exp && payload.exp * 1000 < Date.now()) return FAIL;
 
-    return true;
+    return { valid: true, mustChange: payload.must_change_password === true };
   } catch {
-    return false;
+    return FAIL;
   }
 }
 

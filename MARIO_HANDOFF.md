@@ -1,5 +1,18 @@
 # MARIO_HANDOFF — Mappa runtime definitiva
-# B34.7 — 14/06/2026
+# B34.8 — 14/06/2026
+
+## MARIO è uno solo
+
+MARIO è un prodotto unico composto da 4 pezzi tecnici:
+
+| Componente | Ruolo |
+|---|---|
+| mario-web | app utente |
+| mario-hub | runtime casa / comandi / protocolli |
+| mario-brain | interpretazione / logica intelligente |
+| mario-remote-bridge | collegamento remoto VPS ↔ Pi |
+
+Non esiste un "MARIO locale" diverso da un "MARIO cloud". Esiste un MARIO.
 
 ## Runtime HomeMARIO — UNICO
 
@@ -41,15 +54,22 @@ Browser/App
                                 └── mosquitto :1883 (Pi)
 ```
 
-### Fuori runtime (non usare)
-- Render
-- WireGuard (wg0 inactive e fuori runtime)
-- mario-web sul Pi (disabled)
-- pm2
-- npx next start manuale
-- accesso utente da 192.168.1.4
+## Fuori runtime (non usare, non avviare, non modificare)
 
-### Repo ufficiali
+| Cosa | Motivo |
+|---|---|
+| DOMOTICA FACILE PROGETTO root | monorepo archiviato — ARCHIVIATO_NON_USARE.txt |
+| mario-web-clean | copia stale B29.1 — ARCHIVIATO_NON_USARE.txt |
+| mario-web sul Pi | disabled B34.7 — non far parte del runtime |
+| Render | rimosso dal runtime |
+| WireGuard | wg0 inactive, fuori runtime |
+| C:\tmp | cartella temporanea — NON sorgente |
+| 192.168.1.4 come accesso utente | solo tecnico SSH |
+| pm2 | non usato |
+| npx next start manuale | non usato |
+
+## Repo ufficiali
+
 | Componente | Percorso locale | Remote | Branch |
 |---|---|---|---|
 | mario-web | ROMEO DITTA 2025\mario-web | bianchi970/mario-web.git | main |
@@ -57,10 +77,11 @@ Browser/App
 | mario-brain | ...DOMOTICA...\mario-brain | bianchi970/mario-brain.git | master |
 | mario-remote-bridge | ROMEO DITTA 2025\mario-remote-bridge | bianchi970/mario-remote-bridge.git | main |
 
-NON usare: DOMOTICA FACILE PROGETTO root, mario-web-clean, C:\tmp come sorgente.
+## Stato commit (B34.8)
 
-### Stato commit (B34.7)
-- mario-web VPS: 3cb8428 B34.5.1
-- mario-remote-bridge VPS: 9846211
-- mario-hub Pi: d7d6e3b B34.5.1
-- mario-brain Pi: b9dc3dd BLOCCO 14
+| Componente | Commit locale | Commit VPS/Pi |
+|---|---|---|
+| mario-web | B34.8 (questo commit) | 3cb8428 (B34.5.1) |
+| mario-hub | be970c9 (B34.6) | d7d6e3b (B34.5.1) |
+| mario-brain | 13751d9 (B34.6) | b9dc3dd (BLOCCO 14) |
+| mario-remote-bridge | 9846211 | 9846211 |

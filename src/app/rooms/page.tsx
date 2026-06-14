@@ -86,8 +86,8 @@ export default function RoomsPage() {
       <main className="flex-1 p-5">
         {!projectId ? (
           <div className="card py-16 text-center text-hub-muted">
-            <p className="text-sm text-hub-text">Seleziona un progetto.</p>
-            <p className="mt-1 text-xs">Imposta il Project ID nelle Impostazioni.</p>
+            <p className="text-sm text-hub-text">Impianto non configurato.</p>
+            <p className="mt-1 text-xs">Configura l&apos;impianto nelle Impostazioni.</p>
           </div>
         ) : loading ? (
           <div className="card py-16 text-center text-hub-muted">
@@ -99,6 +99,11 @@ export default function RoomsPage() {
               <Badge variant="red">Offline</Badge>
             </div>
             <p className="text-sm text-hub-text">{error}</p>
+          </div>
+        ) : rooms.length === 0 && !installerMode ? (
+          <div className="card py-16 text-center text-hub-muted">
+            <p className="text-sm text-hub-text">Nessuna stanza configurata.</p>
+            <p className="mt-1 text-xs">Contatta l&apos;installatore per configurare le stanze.</p>
           </div>
         ) : (
           <>

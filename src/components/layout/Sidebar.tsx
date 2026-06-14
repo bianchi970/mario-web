@@ -27,7 +27,6 @@ export default function Sidebar() {
       <aside className="hidden md:flex flex-col w-56 min-h-screen bg-hub-surface border-r border-hub-border">
         <div className="px-5 py-5 border-b border-hub-border">
           <span className="font-bold text-lg tracking-tight text-white">MARIO</span>
-          <span className="ml-1 text-xs text-hub-accent font-mono">web</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map(({ href, label, icon }) => {

@@ -30,6 +30,28 @@ import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
+function formatTrigger(trigger: unknown): string {
+  if (!trigger || typeof trigger !== 'object') return 'Manuale';
+  const t = trigger as Record<string, unknown>;
+  if (t.type === 'schedule') {
+    if (t.at && typeof t.at === 'string') return `Ogni giorno alle ${t.at}`;
+    if (t.cron && typeof t.cron === 'string') {
+      const parts = t.cron.split(' ');
+      if (parts.length === 5 && parts[2] === '*' && parts[3] === '*' && parts[4] === '*') {
+        const h = String(parts[1]).padStart(2, '0');
+        const m = String(parts[0]).padStart(2, '0');
+        return `Ogni giorno alle ${h}:${m}`;
+      }
+      return 'Pianificato';
+    }
+    return 'Pianificato';
+  }
+  if (t.type === 'bus_event') return 'Automatico';
+  if (t.type === 'device_state') return 'Automatico';
+  if (t.type === 'sun_event') return t.event === 'sunrise' ? "All'alba" : 'Al tramonto';
+  return 'Manuale';
+}
+
 function serviceDot(ok: boolean) {
   return ok
     ? 'bg-emerald-400 shadow shadow-emerald-500/40'
@@ -456,7 +478,7 @@ export default function DashboardPage() {
                         <div>
                           <div className="font-medium text-white">{scenario.name}</div>
                           <div className="mt-0.5 text-xs text-white/40">
-                            {String((scenario.trigger as { cron?: string })?.cron ?? 'Manuale')}
+                            {formatTrigger(scenario.trigger)}
                           </div>
                         </div>
                         <ScenarioSwitch

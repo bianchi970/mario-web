@@ -18,7 +18,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <TopBar title="Settings" />
+      <TopBar title="Impostazioni" />
       <main className="flex-1 p-5 max-w-2xl space-y-6">
         <SettingsClient
           adapters={adapters}

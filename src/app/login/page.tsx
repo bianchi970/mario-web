@@ -52,7 +52,6 @@ function LoginForm() {
         {/* Logo */}
         <div className="text-center mb-8">
           <span className="font-bold text-2xl tracking-tight text-white">MARIO</span>
-          <span className="ml-1 text-sm text-hub-accent font-mono">web</span>
           <p className="mt-2 text-xs text-hub-muted">Accesso remoto</p>
         </div>
 

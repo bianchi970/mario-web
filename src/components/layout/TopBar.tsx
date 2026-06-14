@@ -32,7 +32,7 @@ export default function TopBar({ title }: { title: string }) {
             'bg-hub-red'
           }`}
         />
-        {offlineMode ? 'sistema offline' : offlineModeLoading ? 'stato sistema...' : hubOk === null ? 'connecting...' : hubOk ? 'hub online' : 'hub offline'}
+        {offlineMode ? 'Sistema offline' : offlineModeLoading ? 'Connessione...' : hubOk === null ? 'Connessione...' : hubOk ? 'Online' : 'Offline'}
       </div>
     </header>
   );

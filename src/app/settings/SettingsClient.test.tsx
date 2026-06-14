@@ -67,7 +67,9 @@ describe('Settings offline mode wiring', () => {
   }
 
   function getActionButtons() {
-    return screen.getAllByRole('button').filter((button) => button.textContent !== 'Check');
+    return screen.getAllByRole('button').filter(
+      (button) => button.textContent !== 'Check' && button.textContent !== 'Esci',
+    );
   }
 
   it('mostra il toggle modalità installatore e lo persiste in localStorage', async () => {

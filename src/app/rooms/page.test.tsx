@@ -57,7 +57,7 @@ describe('RoomsPage data flow', () => {
 
     render(<RoomsPage />);
 
-    expect(screen.getByText('Seleziona un progetto.')).toBeInTheDocument();
+    expect(screen.getByText('Impianto non configurato.')).toBeInTheDocument();
     expect(mockedListRooms).not.toHaveBeenCalled();
   });
 

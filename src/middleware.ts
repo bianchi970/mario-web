@@ -27,6 +27,7 @@ const PUBLIC_PREFIXES = [
   '/icons/',          // icone PWA
   '/screenshots/',    // screenshot PWA
   '/apple-touch-icon',
+  '/.well-known/', // Digital Asset Links e altri file pubblici
 ];
 
 export async function middleware(request: NextRequest) {

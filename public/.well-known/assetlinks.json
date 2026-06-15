@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.homemario.app",
+    "sha256_cert_fingerprints": [
+      "A5:AC:FB:52:54:1F:5D:7A:94:D7:27:E0:07:C7:85:DA:CF:7D:42:4D:92:89:98:70:BF:97:BF:BF:76:12:F6:99"
+    ]
+  }
+}]

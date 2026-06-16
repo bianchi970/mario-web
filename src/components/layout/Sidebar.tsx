@@ -5,23 +5,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 
+// mobileHidden: non appare nella bottom nav mobile (solo sidebar desktop)
 const NAV_ALL = [
-  { href: '/', label: 'Casa', icon: '□', installerOnly: false },
-  { href: '/rooms', label: 'Stanze', icon: '⬜', installerOnly: false },
-  { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },
-  { href: '/settings', label: 'Impostazioni', icon: '⚙', installerOnly: false },
-  { href: '/security', label: 'Sicurezza', icon: '🛡', installerOnly: false },
-  { href: '/energy',   label: 'Energia',   icon: '⚡', installerOnly: false },
-  { href: '/storico', label: 'Storico', icon: '◷', installerOnly: true },
-  { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },
-  { href: '/onboarding', label: 'Aggiungi', icon: '+', installerOnly: true },
-  { href: '/gateways', label: 'Gateway', icon: '⊞', installerOnly: true },
+  { href: '/',          label: 'Casa',         icon: '□',  installerOnly: false, mobileHidden: false },
+  { href: '/rooms',     label: 'Stanze',       icon: '⬜', installerOnly: false, mobileHidden: false },
+  { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false, mobileHidden: false },
+  { href: '/settings',  label: 'Impostazioni', icon: '⚙', installerOnly: false, mobileHidden: false },
+  { href: '/security',  label: 'Sicurezza',    icon: '🛡', installerOnly: false, mobileHidden: true },
+  { href: '/energy',    label: 'Energia',      icon: '⚡', installerOnly: false, mobileHidden: true },
+  { href: '/storico',   label: 'Storico',      icon: '◷', installerOnly: true,  mobileHidden: true },
+  { href: '/devices',   label: 'Dispositivi',  icon: '◈', installerOnly: true,  mobileHidden: true },
+  { href: '/onboarding',label: 'Aggiungi',     icon: '+',  installerOnly: true,  mobileHidden: true },
+  { href: '/gateways',  label: 'Gateway',      icon: '⊞', installerOnly: true,  mobileHidden: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { installerMode } = useInstallerMode();
-  const NAV = NAV_ALL.filter((item) => !item.installerOnly || installerMode);
+  const NAV       = NAV_ALL.filter((item) => !item.installerOnly || installerMode);
+  const MOBILE_NAV = NAV.filter((item) => !item.mobileHidden);
 
   return (
     <>
@@ -56,7 +58,7 @@ export default function Sidebar() {
       </aside>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-hub-surface border-t border-hub-border flex">
-        {NAV.map(({ href, label, icon }) => {
+        {MOBILE_NAV.map(({ href, label, icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
             <Link

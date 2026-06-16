@@ -27,6 +27,44 @@ function formatLastSeen(ts: string | null | undefined) {
 
 const SENSOR_TYPES = new Set(['sensor', 'motion_sensor', 'contact_sensor', 'temperature_sensor', 'humidity_sensor', 'co2_sensor']);
 
+function CameraState({ state }: { state: Record<string, unknown> }) {
+  const streamUrl    = (state.stream_url ?? state.rtsp_url ?? state.hls_url) as string | undefined;
+  const snapshotUrl  = state.snapshot_url as string | undefined;
+  const onvifHost    = state.onvif_host as string | undefined;
+  const resolution   = state.resolution as string | undefined;
+
+  return (
+    <div className="text-xs bg-hub-bg rounded-lg px-2 py-1.5 space-y-0.5">
+      {onvifHost && (
+        <div className="flex justify-between gap-2">
+          <span className="text-hub-muted">ONVIF</span>
+          <span className="text-hub-text font-mono truncate max-w-[130px]">{onvifHost}</span>
+        </div>
+      )}
+      {resolution && (
+        <div className="flex justify-between gap-2">
+          <span className="text-hub-muted">Risoluzione</span>
+          <span className="text-hub-text font-mono">{resolution}</span>
+        </div>
+      )}
+      {streamUrl ? (
+        <div className="flex justify-between gap-2">
+          <span className="text-hub-muted">Stream</span>
+          <span className="text-emerald-400 font-mono text-[10px] truncate max-w-[130px]">{streamUrl}</span>
+        </div>
+      ) : (
+        <div className="text-hub-muted italic">Stream non configurato</div>
+      )}
+      {snapshotUrl && (
+        <div className="flex justify-between gap-2">
+          <span className="text-hub-muted">Snapshot</span>
+          <span className="text-hub-text font-mono text-[10px] truncate max-w-[130px]">{snapshotUrl}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type CapTiming = Record<string, 'realtime' | 'lazy' | 'cached'>;
 
 function SensorState({
@@ -196,7 +234,9 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
         {!device.online && <Badge variant="red">Non in linea</Badge>}
       </div>
 
-      {(SENSOR_TYPES.has(device.type) || Object.keys(device.state ?? {}).length > 0) && (
+      {device.type === 'camera' ? (
+        <CameraState state={device.state as Record<string, unknown>} />
+      ) : (SENSOR_TYPES.has(device.type) || Object.keys(device.state ?? {}).length > 0) ? (
         SENSOR_TYPES.has(device.type)
           ? <SensorState
               state={device.state as Record<string, unknown>}
@@ -206,7 +246,7 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
           : <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
               {JSON.stringify(device.state)}
             </div>
-      )}
+      ) : null}
 
       {installerMode && rooms.length > 0 && (
         <div className="flex items-center gap-2">

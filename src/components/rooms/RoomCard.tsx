@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Device, Room } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
 import StatusDot from '@/components/ui/StatusDot';
+import CommandButton from '@/components/devices/CommandButton';
 import { useProjectId } from '@/hooks/useProjectId';
 
 const ROOM_ICONS: Record<string, string> = {
@@ -71,11 +72,16 @@ export default function RoomCard({ room }: { room: Room }) {
             <p className="text-xs text-hub-muted text-center py-3">Nessun dispositivo assegnato</p>
           ) : (
             devices.map((device) => (
-              <div key={device.id} className="flex items-center gap-2 text-xs p-1.5 rounded-lg bg-hub-bg">
-                <StatusDot online={device.online} pulse={false} />
-                <span className="flex-1 text-hub-text truncate">{device.name}</span>
-                {!device.online && <Badge variant="red" className="shrink-0">Non in linea</Badge>}
-                <Badge variant="gray" className="shrink-0">{device.protocol}</Badge>
+              <div key={device.id} className="rounded-lg bg-hub-bg p-2.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <StatusDot online={device.online} pulse={false} />
+                  <span className="flex-1 text-sm text-hub-text truncate font-medium">{device.name}</span>
+                  {!device.online && <Badge variant="red" className="shrink-0 text-xs">Offline</Badge>}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="gray" className="shrink-0 text-xs">{device.protocol}</Badge>
+                  <CommandButton device={device} />
+                </div>
               </div>
             ))
           )}

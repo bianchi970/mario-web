@@ -32,6 +32,7 @@ import {
   createAutomation,
   updateAutomation,
   deleteAutomation,
+  runAutomation,
 } from '@/lib/api/automations';
 import { listDevices } from '@/lib/api/devices';
 import type { Automation, Device } from '@/lib/hub-types';
@@ -336,6 +337,12 @@ export default function ScenariosPage() {
     );
     setAutomations((prev) => [...prev, automation]);
     setWizardOpen(false);
+    void refreshScenarioList(); // aggiorna tab Scenari se Brain disponibile
+  }
+
+  async function handleAutoRun(id: string) {
+    if (!projectId) return;
+    await runAutomation(projectId, id);
   }
 
   if (!projectId) {
@@ -383,6 +390,15 @@ export default function ScenariosPage() {
             loading={loading}
             error={error}
           />
+          <div className="card flex items-center justify-between gap-3">
+            <p className="text-sm text-hub-muted">Preferisci configurarlo a mano?</p>
+            <button
+              onClick={() => setWizardOpen(true)}
+              className="shrink-0 rounded-lg border border-hub-border px-3 py-2 text-sm text-hub-text hover:bg-hub-bg transition-colors"
+            >
+              Crea manualmente
+            </button>
+          </div>
           {successMessage ? <div className="card text-sm text-hub-text">{successMessage}</div> : null}
           {draftV2 ? (
             <ScenarioDraftPanel
@@ -438,16 +454,14 @@ export default function ScenariosPage() {
       {/* Tab: Automazioni */}
       {tab === 'automazioni' && (
         <main className="flex-1 p-5 space-y-4">
-          {installerMode && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => setWizardOpen(true)}
-                className="px-4 py-2 rounded-lg bg-hub-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                {AUTOMATION_COPY.newButton}
-              </button>
-            </div>
-          )}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setWizardOpen(true)}
+              className="px-4 py-2 rounded-lg bg-hub-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              {AUTOMATION_COPY.newButton}
+            </button>
+          </div>
 
           {autoError && <div className="card text-sm text-red-400">{autoError}</div>}
 
@@ -471,6 +485,7 @@ export default function ScenariosPage() {
               deviceNames={deviceNames}
               onToggle={handleAutoToggle}
               onDelete={handleAutoDelete}
+              onRun={handleAutoRun}
             />
           ))}
         </main>

@@ -131,11 +131,16 @@ function motionDevices(devices: Device[]): Device[] {
   );
 }
 
-// Switchable devices: relay, switch
-function switchDevices(devices: Device[]): Device[] {
+// Controllable devices: all types that accept turn_on/turn_off
+const CONTROLLABLE_TYPES = new Set([
+  'light', 'rgb_light', 'switch', 'plug', 'cover', 'blind', 'awning',
+  'switch_relay', 'ev_charger', 'alarm_panel', 'thermostat',
+]);
+
+function controllableDevices(devices: Device[]): Device[] {
   return devices.filter(
     (d) =>
-      d.type === 'switch_relay' ||
+      CONTROLLABLE_TYPES.has(d.type) ||
       d.type.includes('switch') ||
       d.capabilities.includes('switch'),
   );
@@ -197,7 +202,7 @@ export default function AutomationWizard({ devices, onSave, onClose }: Props) {
   }
 
   const sensors = motionDevices(devices);
-  const switches = switchDevices(devices);
+  const switches = controllableDevices(devices);
   const valid = isStepValid(step, state, devices);
 
   return (

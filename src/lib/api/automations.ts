@@ -49,3 +49,15 @@ export async function deleteAutomation(
     { method: 'DELETE' },
   );
 }
+
+export async function runAutomation(
+  projectId: string,
+  id: string,
+): Promise<{ status: string }> {
+  const pid = projectId.trim();
+  if (!pid) throw new Error('PROJECT_REQUIRED');
+  return fetchAPI<{ status: string }>(
+    `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(id)}/run`,
+    { method: 'POST' },
+  );
+}

@@ -59,6 +59,7 @@ export interface Automation {
   conditions?: Record<string, unknown>[];
   created_at: string;
   updated_at?: string;
+  last_run?: string | null;
 }
 
 export interface Adapter {

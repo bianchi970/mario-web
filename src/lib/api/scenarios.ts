@@ -78,7 +78,9 @@ export type ScenarioRecord = {
   trigger: Record<string, unknown>;
   conditions: Array<Record<string, unknown>>;
   outcome: Record<string, unknown>;
+  actions?: Array<Record<string, unknown>>;
   updated_at?: string | null;
+  last_run?: string | null;
 };
 
 function jsonHeaders() {

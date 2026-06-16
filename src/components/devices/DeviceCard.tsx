@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Link from 'next/link';
 import type { Device, Room } from '@/lib/hub-types';
 import Badge, { deviceTypeBadge } from '@/components/ui/Badge';
 import StatusDot from '@/components/ui/StatusDot';
@@ -226,13 +227,21 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
       )}
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-hub-border/50">
-        {device.online && lastSeen ? (
-          <span className="text-xs text-hub-muted">visto {lastSeen}</span>
-        ) : (
-          <span className={`text-xs ${device.online ? 'text-hub-muted' : 'text-hub-red'}`}>
-            {device.online ? 'In linea' : 'Non in linea'}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {device.online && lastSeen ? (
+            <span className="text-xs text-hub-muted">visto {lastSeen}</span>
+          ) : (
+            <span className={`text-xs ${device.online ? 'text-hub-muted' : 'text-hub-red'}`}>
+              {device.online ? 'In linea' : 'Non in linea'}
+            </span>
+          )}
+          <Link
+            href={`/devices/${encodeURIComponent(device.id)}`}
+            className="text-xs text-hub-muted hover:text-hub-accent transition-colors"
+          >
+            Dettaglio →
+          </Link>
+        </div>
         <CommandButton device={device} />
       </div>
     </div>

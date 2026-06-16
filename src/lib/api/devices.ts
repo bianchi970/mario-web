@@ -31,3 +31,12 @@ export async function listDevices(projectId: string, signal?: AbortSignal): Prom
   const data = unwrapPayload<{ devices?: Device[] } | null>(payload as { devices?: Device[] } | null);
   return Array.isArray(data?.devices) ? data.devices : [];
 }
+
+export async function getDevice(deviceId: string): Promise<Device | null> {
+  try {
+    const payload = await fetchAPI<Device | null>(`/api/hub/devices/${encodeURIComponent(deviceId)}`);
+    return payload ?? null;
+  } catch {
+    return null;
+  }
+}

@@ -1,5 +1,5 @@
 # MARIO_HANDOFF — Mappa runtime definitiva
-# B34.8 — 14/06/2026
+# B35.9 — 16/06/2026
 
 ## MARIO è uno solo
 
@@ -77,11 +77,29 @@ Browser/App
 | mario-brain | ...DOMOTICA...\mario-brain | bianchi970/mario-brain.git | master |
 | mario-remote-bridge | ROMEO DITTA 2025\mario-remote-bridge | bianchi970/mario-remote-bridge.git | main |
 
-## Stato commit (B34.8)
+## Stato commit (B35.9)
 
-| Componente | Commit locale | Commit VPS/Pi |
+| Componente | Commit locale | Commit VPS/Pi | Note |
+|---|---|---|---|
+| mario-web | d2b639c (B35.9) | d2b639c (B35.9) | Live ✅ |
+| mario-hub | 3038d1a (B35.5) | 3038d1a (B35.5) | Pi ✅ |
+| mario-brain | 13751d9 (B34.6) | b9dc3dd (BLOCCO 14) | Non modificato |
+| mario-remote-bridge | 9846211 | 9846211 | Non modificato |
+
+## Funzionalità completate (B35)
+
+| Blocco | Feature | Stato |
 |---|---|---|
-| mario-web | B34.8 (questo commit) | 3cb8428 (B34.5.1) |
-| mario-hub | be970c9 (B34.6) | d7d6e3b (B34.5.1) |
-| mario-brain | 13751d9 (B34.6) | b9dc3dd (BLOCCO 14) |
-| mario-remote-bridge | 9846211 | 9846211 |
+| B35.2 | Notifiche in-app (TopBar bell + dropdown + dismiss) | ✅ |
+| B35.3 | Scenari senza Brain (creazione manuale, run via Hub) | ✅ |
+| B35.4 | Home: dispositivi offline + esecuzioni recenti | ✅ |
+| B35.5 | Meteo Open-Meteo (Hub service + widget Home + impostazioni) | ✅ |
+| B35.6 | Sicurezza /security (stato, modalità, eventi, confirm dialog) | ✅ |
+| B35.7 | Energia client-side + visibile a tutti | ✅ |
+| B35.8 | Dettaglio dispositivo /devices/[id] | ✅ |
+| B35.9 | Navigazione 4 voci mobile + telecamere card ONVIF | ✅ |
+
+## API Hub aggiunte (B35.5)
+
+- `GET  /api/hub/weather?project_id=X` — meteo Open-Meteo (cache 30min, fallback offline)
+- `PATCH /api/hub/projects/:id/location` — aggiorna lat/lon/city per il meteo

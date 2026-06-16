@@ -54,10 +54,20 @@ async function sendCommand(
 
 function ThermostatControl({ device, projectId }: { device: Device; projectId: string }) {
   const s = (device.state ?? {}) as Record<string, unknown>;
-  const initialSetpoint = Number(s.setpoint ?? s.target_temperature ?? s.heating_setpoint ?? 20);
+
+  // Setpoint: null finché il protocollo non lo invia — nessun fallback fisso
+  const rawSetpoint = s.setpoint ?? s.target_temperature ?? s.heating_setpoint;
+  const initialSetpoint: number | null = typeof rawSetpoint === 'number' ? rawSetpoint : null;
+
+  // Range e step dal protocollo (schema comune); se assenti usa valori sicuri
+  const minTemp  = typeof s.min  === 'number' ? s.min  : 5;
+  const maxTemp  = typeof s.max  === 'number' ? s.max  : 35;
+  const stepTemp = typeof s.step === 'number' ? s.step : 0.5;
+  const unit     = typeof s.unit === 'string'  ? s.unit : '°C';
+
   const currentTemp = typeof s.temperature === 'number' ? s.temperature : null;
 
-  const [setpoint, setSetpoint] = useState<number>(initialSetpoint);
+  const [setpoint, setSetpoint] = useState<number | null>(initialSetpoint);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<'ok' | 'error' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -74,8 +84,9 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
   }
 
   function adjust(delta: number) {
-    const next = Math.round((setpoint + delta) * 2) / 2; // step 0.5°C
-    const clamped = Math.min(35, Math.max(5, next));
+    const base = setpoint ?? currentTemp ?? minTemp;
+    const next = Math.round((base + delta) / stepTemp) * stepTemp;
+    const clamped = Math.min(maxTemp, Math.max(minTemp, next));
     setSetpoint(clamped);
     void applySetpoint(clamped);
   }
@@ -83,16 +94,16 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
   return (
     <div className="flex flex-col items-end gap-1">
       {currentTemp !== null && (
-        <span className="text-xs text-hub-muted">Attuale: {currentTemp}°C</span>
+        <span className="text-xs text-hub-muted">Attuale: {currentTemp}{unit}</span>
       )}
       <div className="flex items-center gap-1.5">
-        <Button size="sm" variant="secondary" onClick={() => adjust(-0.5)} disabled={loading}>−</Button>
+        <Button size="sm" variant="secondary" onClick={() => adjust(-stepTemp)} disabled={loading}>−</Button>
         <span className={`min-w-[3.2rem] text-center text-sm font-mono tabular-nums ${
           result === 'ok' ? 'text-emerald-400' : result === 'error' ? 'text-red-400' : 'text-hub-text'
         }`}>
-          {loading ? '…' : `${setpoint.toFixed(1)}°`}
+          {loading ? '…' : setpoint !== null ? `${setpoint.toFixed(1)}${unit}` : '—'}
         </span>
-        <Button size="sm" variant="secondary" onClick={() => adjust(+0.5)} disabled={loading}>+</Button>
+        <Button size="sm" variant="secondary" onClick={() => adjust(+stepTemp)} disabled={loading}>+</Button>
       </div>
       {errorMessage && <p className="text-xs text-hub-red text-right">{errorMessage}</p>}
     </div>

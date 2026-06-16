@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Adapter, ProjectMode, SystemInfo } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -8,6 +8,7 @@ import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 import { getProjectMode, MODE_LABELS, MODE_ORDER, setProjectMode } from '@/lib/api/mode';
+import { patchProjectLocation } from '@/lib/api/weather';
 import UsersSection from '@/components/settings/UsersSection';
 
 function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
@@ -38,6 +39,12 @@ export default function SettingsClient({
   hubDisplayUrl,
 }: Props) {
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
+  const [locationLat, setLocationLat] = useState('');
+  const [locationLon, setLocationLon] = useState('');
+  const [locationCity, setLocationCity] = useState('');
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationMsg, setLocationMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const locationMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentMode, setCurrentMode] = useState<ProjectMode | null>(null);
   const [modeChanging, setModeChanging] = useState(false);
   const [me, setMe] = useState<{ id: string | null; role: string | null } | null>(null);
@@ -76,6 +83,27 @@ export default function SettingsClient({
       setHealth(data.status === 'ok' ? 'ok' : 'error');
     } catch {
       setHealth('error');
+    }
+  }
+
+  async function handleSaveLocation() {
+    if (!projectId || locationSaving) return;
+    const lat = parseFloat(locationLat);
+    const lon = parseFloat(locationLon);
+    if (isNaN(lat) || isNaN(lon)) {
+      setLocationMsg({ ok: false, text: 'Latitudine e longitudine devono essere numeri validi.' });
+      return;
+    }
+    setLocationSaving(true);
+    try {
+      await patchProjectLocation(projectId, lat, lon, locationCity.trim());
+      setLocationMsg({ ok: true, text: 'Posizione salvata.' });
+    } catch {
+      setLocationMsg({ ok: false, text: 'Errore salvataggio posizione.' });
+    } finally {
+      setLocationSaving(false);
+      if (locationMsgTimer.current) clearTimeout(locationMsgTimer.current);
+      locationMsgTimer.current = setTimeout(() => setLocationMsg(null), 4000);
     }
   }
 
@@ -229,6 +257,55 @@ export default function SettingsClient({
             <p className="text-xs text-hub-muted">
               Salvato nel browser. E&apos; la sorgente unica per dispositivi, stanze e scenari.
             </p>
+          </div>
+
+          {/* Posizione meteo */}
+          <div className="card space-y-3">
+            <h2 className="text-sm font-medium text-hub-text">Posizione meteo</h2>
+            <p className="text-xs text-hub-muted">
+              Usata per il meteo Open-Meteo nella Home. Lascia vuoto per disattivare.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-hub-muted mb-1">Latitudine</label>
+                <input
+                  type="number" step="0.0001" placeholder="45.4654"
+                  value={locationLat}
+                  onChange={(e) => setLocationLat(e.target.value)}
+                  className="w-full bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-hub-muted mb-1">Longitudine</label>
+                <input
+                  type="number" step="0.0001" placeholder="9.1859"
+                  value={locationLon}
+                  onChange={(e) => setLocationLon(e.target.value)}
+                  className="w-full bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-hub-muted mb-1">Città (opzionale)</label>
+              <input
+                type="text" placeholder="Milano"
+                value={locationCity}
+                onChange={(e) => setLocationCity(e.target.value)}
+                className="w-full bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text focus:outline-none focus:border-hub-accent"
+              />
+            </div>
+            {locationMsg && (
+              <p className={`text-xs ${locationMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+                {locationMsg.text}
+              </p>
+            )}
+            <button
+              onClick={() => void handleSaveLocation()}
+              disabled={locationSaving || !locationLat || !locationLon}
+              className="w-full rounded-lg border border-hub-accent/50 py-2 text-sm text-hub-accent hover:bg-hub-accent/10 disabled:opacity-40 transition-colors"
+            >
+              {locationSaving ? 'Salvataggio...' : 'Salva posizione'}
+            </button>
           </div>
 
           {/* System Info */}

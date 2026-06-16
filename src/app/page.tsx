@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Battery,
@@ -25,6 +25,7 @@ import type { ScenarioRecord, ScenarioAuditItem } from '@/lib/api/scenarios';
 import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
@@ -176,6 +177,8 @@ export default function DashboardPage() {
   const [brainOnline, setBrainOnline] = useState(false);
   const [togglingScenario, setTogglingScenario] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const weatherTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -251,6 +254,17 @@ export default function DashboardPage() {
       clearInterval(timer);
     };
   }, [projectId, retryCount]);
+
+  // Polling meteo ogni 30 min
+  useEffect(() => {
+    if (!projectId) { setWeather(null); return; }
+    getWeatherData(projectId).then(setWeather).catch(() => {});
+    weatherTimer.current = setInterval(
+      () => getWeatherData(projectId).then(setWeather).catch(() => {}),
+      30 * 60 * 1000,
+    );
+    return () => { if (weatherTimer.current) clearInterval(weatherTimer.current); };
+  }, [projectId]);
 
   async function handleToggleScenario(scenarioId: string, enabled: boolean) {
     if (!projectId) return;
@@ -403,6 +417,42 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Widget Meteo */}
+            {weather && (
+              <div className="rounded-[24px] border border-sky-500/20 bg-sky-500/[0.04] p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400/70">
+                    {weather.city ?? 'Meteo'}
+                  </div>
+                  <span className="text-[10px] text-white/30">Open-Meteo</span>
+                </div>
+                <div className="flex items-end gap-4">
+                  <div>
+                    <div className="text-3xl font-semibold text-white">
+                      {weather.temperature !== null ? `${Math.round(weather.temperature)}°` : '—'}
+                    </div>
+                    {weather.condition && (
+                      <div className="mt-0.5 text-xs text-white/50">{weather.condition}</div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-0.5 text-xs text-white/50">
+                    {weather.feels_like !== null && (
+                      <div>Percepita {Math.round(weather.feels_like)}°</div>
+                    )}
+                    {weather.temp_max !== null && weather.temp_min !== null && (
+                      <div>↑{Math.round(weather.temp_max)}° ↓{Math.round(weather.temp_min)}°</div>
+                    )}
+                    {weather.rain_prob_day !== null && (
+                      <div>Pioggia {weather.rain_prob_day}%</div>
+                    )}
+                    {weather.humidity !== null && (
+                      <div>Umidità {weather.humidity}%</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Notifiche persistenti dal DB */}
             {projectId && (

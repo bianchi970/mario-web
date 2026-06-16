@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Battery,
   Eye,
   PlusCircle,
-  Settings,
   Shield,
   ShieldAlert,
   Smartphone,
@@ -178,8 +176,6 @@ export default function DashboardPage() {
   const [brainOnline, setBrainOnline] = useState(false);
   const [togglingScenario, setTogglingScenario] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [nlInput, setNlInput] = useState('');
-  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -408,18 +404,34 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Box comando naturale */}
-            <form
-              onSubmit={(e) => { e.preventDefault(); if (nlInput.trim()) router.push('/scenarios'); }}
-              className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4"
-            >
-              <input
-                value={nlInput}
-                onChange={(e) => setNlInput(e.target.value)}
-                placeholder="Cosa vuoi fare?"
-                className="w-full bg-transparent text-white placeholder:text-white/30 outline-none text-sm"
-              />
-            </form>
+            {/* Dispositivi accesi ora */}
+            {(() => {
+              const ACTIVE_TYPES = new Set(['light', 'rgb_light', 'switch', 'plug', 'ev_charger']);
+              const active = (devices ?? []).filter(
+                (d) => ACTIVE_TYPES.has(d.type) && (d.state as Record<string, unknown>)?.on === true,
+              );
+              if (active.length === 0) return null;
+              return (
+                <div className="rounded-[24px] border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400/70">
+                    Accesi ora ({active.length})
+                  </div>
+                  <div className="space-y-2">
+                    {active.slice(0, 5).map((d) => (
+                      <div key={d.id} className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="flex-1 text-sm text-white truncate">{d.name}</span>
+                      </div>
+                    ))}
+                    {active.length > 5 && (
+                      <Link href="/devices" className="text-xs text-white/40 hover:text-white/60">
+                        +{active.length - 5} altri →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* SEZIONE 2 — Notifiche persistenti dal DB */}
             {projectId && (

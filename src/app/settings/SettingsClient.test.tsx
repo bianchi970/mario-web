@@ -154,7 +154,7 @@ describe('Settings offline mode wiring', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText('Stato offline di sistema')).not.toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Apri' })).toBeInTheDocument();
     });
 
     fireEvent.click(getActionButtons()[0]);
@@ -186,7 +186,7 @@ describe('Settings offline mode wiring', () => {
     fireEvent.click(screen.getByLabelText('Stato offline di sistema'));
 
     await waitFor(() => {
-      expect(getActionButtons()).toHaveLength(2);
+      expect(getActionButtons()).toHaveLength(3);
     });
 
     fireEvent.click(getActionButtons()[0]);

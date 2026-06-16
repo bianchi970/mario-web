@@ -10,6 +10,7 @@ const NAV_ALL = [
   { href: '/rooms', label: 'Stanze', icon: '⬜', installerOnly: false },
   { href: '/scenarios', label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false },
   { href: '/settings', label: 'Impostazioni', icon: '⚙', installerOnly: false },
+  { href: '/security', label: 'Sicurezza', icon: '🛡', installerOnly: false },
   { href: '/energy', label: 'Energia', icon: '⚡', installerOnly: true },
   { href: '/storico', label: 'Storico', icon: '◷', installerOnly: true },
   { href: '/devices', label: 'Dispositivi', icon: '◈', installerOnly: true },

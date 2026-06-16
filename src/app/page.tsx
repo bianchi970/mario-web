@@ -633,7 +633,7 @@ export default function DashboardPage() {
             <div className="text-xs text-white/40">{enabledScenarios} attivi</div>
           </Link>
           <Link
-            href="/settings"
+            href="/security"
             className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-5 active:bg-white/[0.07]"
           >
             <Shield className="h-6 w-6 text-white/50" />

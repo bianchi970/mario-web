@@ -404,6 +404,40 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Notifiche persistenti dal DB */}
+            {projectId && (
+              <NotificationCenter
+                projectId={projectId}
+                audience={installerMode ? 'installer' : 'client'}
+              />
+            )}
+
+            {/* Dispositivi offline */}
+            {(() => {
+              const offline = (devices ?? []).filter((d) => !d.online);
+              if (offline.length === 0) return null;
+              return (
+                <div className="rounded-[24px] border border-red-500/20 bg-red-500/[0.05] p-4">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-red-400/70">
+                    Offline ({offline.length})
+                  </div>
+                  <div className="space-y-2">
+                    {offline.slice(0, 4).map((d) => (
+                      <div key={d.id} className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+                        <span className="flex-1 text-sm text-white/70 truncate">{d.name}</span>
+                      </div>
+                    ))}
+                    {offline.length > 4 && (
+                      <Link href="/devices" className="text-xs text-white/40 hover:text-white/60">
+                        +{offline.length - 4} altri →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Dispositivi accesi ora */}
             {(() => {
               const ACTIVE_TYPES = new Set(['light', 'rgb_light', 'switch', 'plug', 'ev_charger']);
@@ -433,12 +467,41 @@ export default function DashboardPage() {
               );
             })()}
 
-            {/* SEZIONE 2 — Notifiche persistenti dal DB */}
-            {projectId && (
-              <NotificationCenter
-                projectId={projectId}
-                audience={installerMode ? 'installer' : 'client'}
-              />
+            {/* Esecuzioni recenti */}
+            {auditItems.length > 0 && (
+              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+                  Esecuzioni recenti
+                </div>
+                <div className="space-y-2">
+                  {auditItems.slice(0, 5).map((item, i) => (
+                    <div key={item.scenario_id + i} className="flex items-center gap-2">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                          item.status === 'executed' ? 'bg-emerald-400' : 'bg-amber-400'
+                        }`}
+                      />
+                      <span className="flex-1 text-sm text-white/70 truncate">
+                        {item.scenario_name ?? item.scenario_id}
+                      </span>
+                      {item.executed_at && (
+                        <span className="text-[10px] text-white/30 shrink-0">
+                          {(() => {
+                            try {
+                              return new Date(item.executed_at!).toLocaleTimeString('it-IT', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              });
+                            } catch {
+                              return '';
+                            }
+                          })()}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* SEZIONE 3 — Stanze */}

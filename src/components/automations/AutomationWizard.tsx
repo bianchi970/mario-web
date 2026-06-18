@@ -7,7 +7,7 @@ import { AUTOMATION_COPY } from './automation-copy';
 type TriggerType = 'schedule' | 'motion' | 'manual';
 type ActionType = 'turn_on' | 'turn_off';
 
-interface WizardState {
+export interface WizardState {
   triggerType: TriggerType | null;
   // schedule
   scheduleTime: string; // HH:MM
@@ -26,7 +26,28 @@ interface Props {
   devices: Device[];
   onSave: (payload: Record<string, unknown>) => Promise<void>;
   onClose: () => void;
+  initialState?: Partial<WizardState>;
+  editMode?: boolean;
 }
+
+function parseCronToWizard(cron: string): { scheduleTime: string; scheduleDays: boolean[] } {
+  const parts = cron.trim().split(/\s+/);
+  if (parts.length !== 5) return { scheduleTime: '00:00', scheduleDays: new Array(7).fill(true) as boolean[] };
+  const [min, hour, , , dow] = parts;
+  const h = String(Number(hour)).padStart(2, '0');
+  const m = String(Number(min)).padStart(2, '0');
+  const scheduleTime = `${h}:${m}`;
+  if (dow === '*') return { scheduleTime, scheduleDays: new Array(7).fill(true) as boolean[] };
+  if (dow === '1-5') return { scheduleTime, scheduleDays: [true, true, true, true, true, false, false] };
+  const scheduleDays = new Array(7).fill(false) as boolean[];
+  dow.split(',').map(Number).forEach((cd) => {
+    const idx = (cd === 0 || cd === 7) ? 6 : cd - 1;
+    if (idx >= 0 && idx <= 6) scheduleDays[idx] = true;
+  });
+  return { scheduleTime, scheduleDays };
+}
+
+export { parseCronToWizard };
 
 function buildAutoName(state: WizardState, devices: Device[]): string {
   const action = state.actionType === 'turn_on' ? 'Accendi' : 'Spegni';
@@ -146,7 +167,7 @@ function controllableDevices(devices: Device[]): Device[] {
   );
 }
 
-export default function AutomationWizard({ devices, onSave, onClose }: Props) {
+export default function AutomationWizard({ devices, onSave, onClose, initialState, editMode = false }: Props) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +180,7 @@ export default function AutomationWizard({ devices, onSave, onClose }: Props) {
     actionType: null,
     actionDeviceId: '',
     name: '',
+    ...initialState,
   });
 
   function update(patch: Partial<WizardState>) {
@@ -182,10 +204,12 @@ export default function AutomationWizard({ devices, onSave, onClose }: Props) {
     setStep((s) => s - 1);
   }
 
-  // Auto-fill name when reaching step 4
+  // Auto-fill name when reaching step 4 (only if empty)
   function handleNextToStep4() {
-    const autoName = buildAutoName(state, devices);
-    update({ name: autoName });
+    if (!state.name.trim()) {
+      const autoName = buildAutoName(state, devices);
+      update({ name: autoName });
+    }
     setStep(4);
   }
 
@@ -210,7 +234,7 @@ export default function AutomationWizard({ devices, onSave, onClose }: Props) {
       <div className="w-full max-w-sm bg-hub-surface rounded-t-2xl md:rounded-2xl border border-hub-border shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-hub-border">
-          <span className="font-semibold text-hub-text">{AUTOMATION_COPY.wizardTitle}</span>
+          <span className="font-semibold text-hub-text">{editMode ? 'Modifica Automazione' : AUTOMATION_COPY.wizardTitle}</span>
           <button onClick={onClose} className="text-hub-muted hover:text-hub-text text-lg leading-none">✕</button>
         </div>
 
@@ -432,7 +456,7 @@ export default function AutomationWizard({ devices, onSave, onClose }: Props) {
               onClick={handleSave}
               className="flex-1 py-2 rounded-lg bg-hub-accent text-white text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
             >
-              {saving ? 'Salvataggio…' : AUTOMATION_COPY.save}
+              {saving ? 'Salvataggio…' : editMode ? 'Salva Modifiche' : AUTOMATION_COPY.save}
             </button>
           )}
         </div>

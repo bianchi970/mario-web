@@ -13,9 +13,10 @@ interface Props {
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
   onRun?: (id: string) => Promise<void>;
+  onEdit?: (id: string) => void;
 }
 
-export default function AutomationCard({ automation, deviceNames, onToggle, onDelete, onRun }: Props) {
+export default function AutomationCard({ automation, deviceNames, onToggle, onDelete, onRun, onEdit }: Props) {
   const { installerMode } = useInstallerMode();
   const whenText = triggerToText(automation.trigger, deviceNames);
   const doesText = actionsToText(automation.actions, deviceNames);
@@ -95,6 +96,16 @@ export default function AutomationCard({ automation, deviceNames, onToggle, onDe
         >
           {automation.enabled ? 'Disattiva' : 'Attiva'}
         </button>
+
+        {/* Modifica — solo installatore */}
+        {installerMode && onEdit && (
+          <button
+            onClick={() => onEdit(automation.id)}
+            className="text-xs px-3 py-1 rounded border border-hub-border text-hub-text hover:bg-hub-border/30 transition-colors"
+          >
+            Modifica
+          </button>
+        )}
 
         {/* Elimina — solo installatore */}
         {installerMode && (

@@ -10,7 +10,7 @@ import ScenarioConfirmationPanel from '@/components/scenarios/ScenarioConfirmati
 import ScenarioDraftPanel from '@/components/scenarios/ScenarioDraftPanel';
 import ScenarioAuditList from '@/components/scenarios/ScenarioAuditList';
 import AutomationCard from '@/components/automations/AutomationCard';
-import AutomationWizard from '@/components/automations/AutomationWizard';
+import AutomationWizard, { parseCronToWizard, type WizardState } from '@/components/automations/AutomationWizard';
 import {
   SCENARIO_COPY,
   formatScenarioError,
@@ -38,6 +38,31 @@ import { listDevices } from '@/lib/api/devices';
 import type { Automation, Device } from '@/lib/hub-types';
 
 type Tab = 'scenari' | 'automazioni';
+
+function automationToWizardState(a: Automation): Partial<WizardState> {
+  const firstAction = Array.isArray(a.actions) && a.actions.length > 0 ? a.actions[0] : null;
+  const cmd = firstAction?.command;
+  const actionType: 'turn_on' | 'turn_off' | null =
+    cmd === 'turn_on' || cmd === 'turn_off' ? (cmd as 'turn_on' | 'turn_off') : null;
+  const actionDeviceId = typeof firstAction?.device_id === 'string' ? firstAction.device_id : '';
+
+  if (a.trigger_type === 'schedule') {
+    const cron = typeof a.trigger.cron === 'string' ? a.trigger.cron : '';
+    const { scheduleTime, scheduleDays } = parseCronToWizard(cron);
+    return { triggerType: 'schedule', scheduleTime, scheduleDays, actionType, actionDeviceId, name: a.name };
+  }
+  if (a.trigger_type === 'device_state') {
+    return {
+      triggerType: 'motion',
+      motionDeviceId: typeof a.trigger.device_id === 'string' ? a.trigger.device_id : '',
+      motionValue: a.trigger.value !== false,
+      actionType,
+      actionDeviceId,
+      name: a.name,
+    };
+  }
+  return { triggerType: 'manual', actionType, actionDeviceId, name: a.name };
+}
 
 function appendTimeToText(text: string, time: string) {
   const trimmed = text.trim();
@@ -86,6 +111,7 @@ export default function ScenariosPage() {
   const [autoLoading, setAutoLoading] = useState(false);
   const [autoError, setAutoError] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
 
   const deviceNames = useMemo(() => {
     const m = new Map<string, string>();
@@ -345,6 +371,22 @@ export default function ScenariosPage() {
     await runAutomation(projectId, id);
   }
 
+  function handleAutoEdit(id: string) {
+    const a = automations.find((x) => x.id === id);
+    if (a) setEditingAutomation(a);
+  }
+
+  async function handleSaveEditFromWizard(payload: Record<string, unknown>) {
+    if (!projectId || !editingAutomation) return;
+    const updated = await updateAutomation(
+      projectId,
+      editingAutomation.id,
+      payload as Parameters<typeof updateAutomation>[2],
+    );
+    setAutomations((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    setEditingAutomation(null);
+  }
+
   if (!projectId) {
     return (
       <>
@@ -486,16 +528,22 @@ export default function ScenariosPage() {
               onToggle={handleAutoToggle}
               onDelete={handleAutoDelete}
               onRun={handleAutoRun}
+              onEdit={handleAutoEdit}
             />
           ))}
         </main>
       )}
 
-      {wizardOpen && (
+      {(wizardOpen || editingAutomation !== null) && (
         <AutomationWizard
           devices={devices}
-          onSave={handleSaveFromWizard}
-          onClose={() => setWizardOpen(false)}
+          editMode={editingAutomation !== null}
+          initialState={editingAutomation ? automationToWizardState(editingAutomation) : undefined}
+          onSave={editingAutomation ? handleSaveEditFromWizard : handleSaveFromWizard}
+          onClose={() => {
+            setWizardOpen(false);
+            setEditingAutomation(null);
+          }}
         />
       )}
     </>

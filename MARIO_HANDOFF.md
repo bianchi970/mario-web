@@ -1,19 +1,33 @@
 # MARIO_HANDOFF — Mappa runtime definitiva
-# B35.10 — 18/06/2026
-# STATO: APPLICAZIONE COMPLETATA E CONGELATA ✅
+# B36 — 18/06/2026
+# STATO: B36 Brain-AI COMPLETATO ✅
 
-## Freeze applicazione (18/06/2026)
+## B36 — Brain-AI (18/06/2026)
 
-L'applicazione HomeMARIO è dichiarata **completata e congelata** al blocco B35.10.
+B36 implementa la comprensione del linguaggio naturale tramite Brain:
 
-Tutte le funzionalità pianificate sono implementate, testate e deployate:
+| Componente | Stato |
+|---|---|
+| mario-brain: provider AI (local/cloud/disabled) | ✅ dd51e3d |
+| mario-brain: /api/brain/* endpoints | ✅ dd51e3d |
+| mario-brain: error memory (brain_errors table) | ✅ dd51e3d |
+| mario-hub: Brain proxy /brain/* in router | ✅ 5426394 |
+| mario-web: NLCommandBar componente | ✅ cd1a229 |
+| mario-web: /api/brain proxy (local+bridge mode) | ✅ cd1a229 |
+| Test Brain: 26/26 provider + 32/32 API | ✅ |
+| Test Hub: 191/191 | ✅ |
+| Test Web: 74/74 | ✅ |
+| Deploy Pi + VPS | ✅ |
+
+Accesso Brain via VPS: `/api/brain/status` → bridge relay → Hub → Brain
+
+## B35.10 — Freeze precedente (18/06/2026)
+
+Tutte le funzionalità B35 implementate, testate e deployate:
 - 191/191 test Hub ✅
 - 74/74 test Web ✅
 - Tutti i servizi attivi su VPS + Pi ✅
 - Bridge connesso ✅
-
-**Nessuna modifica al codice senza motivazione esplicita.**
-Prossimo intervento: solo bugfix confermati in produzione o nuova sessione di sviluppo (B36+).
 
 ## MARIO è uno solo
 

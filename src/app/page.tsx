@@ -26,6 +26,7 @@ import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
+import NLCommandBar from '@/components/brain/NLCommandBar';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
@@ -452,6 +453,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Brain NL Command Bar */}
+            {projectId && (
+              <NLCommandBar projectId={projectId} devices={devices ?? []} />
             )}
 
             {/* Notifiche persistenti dal DB */}

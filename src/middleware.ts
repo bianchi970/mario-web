@@ -19,6 +19,7 @@ const PUBLIC_PREFIXES = [
   '/login',
   '/api/auth/',
   '/api/gateway/status',
+  '/api/brain/status',
   '/_next/',
   '/favicon.ico',
   '/mario-ca.crt',

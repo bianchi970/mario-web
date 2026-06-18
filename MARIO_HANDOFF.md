@@ -1,5 +1,19 @@
 # MARIO_HANDOFF — Mappa runtime definitiva
-# B35.9 — 16/06/2026
+# B35.10 — 18/06/2026
+# STATO: APPLICAZIONE COMPLETATA E CONGELATA ✅
+
+## Freeze applicazione (18/06/2026)
+
+L'applicazione HomeMARIO è dichiarata **completata e congelata** al blocco B35.10.
+
+Tutte le funzionalità pianificate sono implementate, testate e deployate:
+- 191/191 test Hub ✅
+- 74/74 test Web ✅
+- Tutti i servizi attivi su VPS + Pi ✅
+- Bridge connesso ✅
+
+**Nessuna modifica al codice senza motivazione esplicita.**
+Prossimo intervento: solo bugfix confermati in produzione o nuova sessione di sviluppo (B36+).
 
 ## MARIO è uno solo
 
@@ -77,14 +91,14 @@ Browser/App
 | mario-brain | ...DOMOTICA...\mario-brain | bianchi970/mario-brain.git | master |
 | mario-remote-bridge | ROMEO DITTA 2025\mario-remote-bridge | bianchi970/mario-remote-bridge.git | main |
 
-## Stato commit (B35.9)
+## Stato commit (B35.10 — FREEZE)
 
-| Componente | Commit locale | Commit VPS/Pi | Note |
+| Componente | Commit | Deploy | Note |
 |---|---|---|---|
-| mario-web | d2b639c (B35.9) | d2b639c (B35.9) | Live ✅ |
-| mario-hub | 3038d1a (B35.5) | 3038d1a (B35.5) | Pi ✅ |
-| mario-brain | 13751d9 (B34.6) | b9dc3dd (BLOCCO 14) | Non modificato |
-| mario-remote-bridge | 9846211 | 9846211 | Non modificato |
+| mario-web | b576756 (B35.10) | VPS ✅ | edit automazioni + UI completa |
+| mario-hub | 7adf185 (B35.10) | Pi ✅ | fix security ruoli utente |
+| mario-brain | 13751d9 (B34.6) | Pi ✅ | non modificato |
+| mario-remote-bridge | 9846211 | VPS + Pi ✅ | non modificato |
 
 ## Funzionalità completate (B35)
 
@@ -103,3 +117,18 @@ Browser/App
 
 - `GET  /api/hub/weather?project_id=X` — meteo Open-Meteo (cache 30min, fallback offline)
 - `PATCH /api/hub/projects/:id/location` — aggiorna lat/lon/city per il meteo
+
+## Funzionalità completate (B35.10)
+
+| Fix / Feature | Dettaglio | Stato |
+|---|---|---|
+| B35.10a | Sicurezza: GET /security/state + /events accettano ruolo 'utente' | ✅ |
+| B35.10b | Automazioni: bottone "Modifica" (installer) → wizard pre-popolato → PATCH | ✅ |
+
+## Ruoli e permessi sicurezza (aggiornato B35.10)
+
+| Endpoint | admin | installatore | utente |
+|---|---|---|---|
+| GET /security/state | ✅ | ✅ | ✅ |
+| GET /security/events | ✅ | ✅ | ✅ |
+| POST /security/state (cambia modalità) | ✅ | ✅ | ❌ |

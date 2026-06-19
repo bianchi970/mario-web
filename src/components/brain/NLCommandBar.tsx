@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle, Loader2, Send, XCircle } from 'lucide-react';
-import { brainInterpret, type BrainInterpretResult } from '@/lib/api/brain';
+import { AlertTriangle, CheckCircle, Loader2, Send, Stethoscope, XCircle } from 'lucide-react';
+import { brainInterpret, brainDiagnose, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
 import { fetchAPI } from '@/lib/api/client';
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
   devices?: unknown[];
 }
 
-type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error';
+type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done';
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [text, setText] = useState('');
@@ -18,6 +18,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [result, setResult] = useState<BrainInterpretResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [hubMsg, setHubMsg] = useState('');
+  const [diagnoseResult, setDiagnoseResult] = useState<BrainDiagnoseResult | null>(null);
 
   async function handleSend() {
     const trimmed = text.trim();
@@ -69,11 +70,26 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       if (firstFail) {
         setHubMsg(`Eseguito con errore: ${firstFail.error ?? 'dispatch_failed'}`);
       } else {
-        setHubMsg('Comando eseguito.');
+        const total = outcome.results?.length ?? 0;
+        const ok = outcome.results?.filter((x) => x.ok).length ?? 0;
+        setHubMsg(total > 1 ? `Fatto (${ok}/${total}).` : 'Fatto.');
       }
       setPhase('success');
     } catch (err) {
       setHubMsg(err instanceof Error ? err.message : 'Errore hub');
+      setPhase('error');
+    }
+  }
+
+  async function handleDiagnose() {
+    if (!text.trim()) return;
+    setPhase('loading');
+    try {
+      const r = await brainDiagnose(text.trim(), { project_id: projectId, devices });
+      setDiagnoseResult(r);
+      setPhase('diagnose_done');
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Errore diagnosi');
       setPhase('error');
     }
   }
@@ -84,6 +100,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     setResult(null);
     setErrorMsg('');
     setHubMsg('');
+    setDiagnoseResult(null);
   }
 
   const riskColor =
@@ -155,10 +172,21 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-amber-300">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <span>Comando non eseguibile — {result.reason ?? 'dispositivo non trovato'}</span>
-              <button onClick={reset} className="ml-auto text-white/40 hover:text-white/70">✕</button>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-xs text-amber-300">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>Comando non eseguibile — {result.reason ?? 'dispositivo non trovato'}</span>
+                <button onClick={reset} className="ml-auto text-white/40 hover:text-white/70">✕</button>
+              </div>
+              {result.suggest_diagnose && (
+                <button
+                  onClick={() => void handleDiagnose()}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-500/10 py-1.5 text-xs text-violet-300 active:bg-violet-500/20"
+                >
+                  <Stethoscope className="h-3.5 w-3.5" />
+                  Diagnosi consigliata
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -178,6 +206,29 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           <CheckCircle className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{hubMsg || 'Fatto.'}</span>
           <button onClick={reset} className="text-emerald-400/50 hover:text-emerald-300">✕</button>
+        </div>
+      )}
+
+      {/* Diagnose result */}
+      {phase === 'diagnose_done' && diagnoseResult && (
+        <div className="space-y-2 rounded-[18px] border border-violet-500/20 bg-violet-500/[0.06] p-3 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 font-medium text-violet-300">
+              <Stethoscope className="h-3.5 w-3.5" />
+              {diagnoseResult.category}
+            </span>
+            <button onClick={reset} className="text-white/40 hover:text-white/70">✕</button>
+          </div>
+          {diagnoseResult.cause && (
+            <div className="text-white/60">{diagnoseResult.cause}</div>
+          )}
+          {diagnoseResult.steps.length > 0 && (
+            <ol className="space-y-1 pl-3">
+              {diagnoseResult.steps.map((step, i) => (
+                <li key={i} className="list-decimal text-white/50">{step}</li>
+              ))}
+            </ol>
+          )}
         </div>
       )}
 

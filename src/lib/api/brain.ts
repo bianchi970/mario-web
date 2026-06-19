@@ -19,6 +19,7 @@ export interface BrainInterpretResult {
   reason: string | null;
   dispatchable: boolean;
   commands: unknown[];
+  suggest_diagnose: boolean;
   provider: string;
   input_text: string;
 }

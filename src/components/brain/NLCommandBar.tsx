@@ -1,16 +1,52 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle, Loader2, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle, Loader2, Send, Stethoscope, XCircle } from 'lucide-react';
 import { brainInterpret, brainDiagnose, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
+import { createAutomation } from '@/lib/api/automations';
 import { fetchAPI } from '@/lib/api/client';
+
+const ACTION_LABEL: Record<string, string> = {
+  turn_on: 'accendi',
+  turn_off: 'spegni',
+  open: 'apri',
+  close: 'chiudi',
+  stop: 'ferma',
+  set: 'imposta',
+};
+
+const MISSING_LABEL: Record<string, string> = {
+  target: 'dispositivo o stanza',
+  trigger: 'orario o condizione',
+  action: 'azione da eseguire',
+  'params.temperature': 'temperatura',
+};
+
+function buildUserMeaning(r: BrainInterpretResult): string {
+  const action = r.action ? (ACTION_LABEL[r.action] ?? r.action) : '';
+  const target = (r.target as Record<string, unknown> | null)?.room as string
+    ?? (r.target as Record<string, unknown> | null)?.selector as string
+    ?? (r.target as Record<string, unknown> | null)?.device_id as string
+    ?? '';
+  const at = r.parameters?.at as string | undefined;
+  const parts = [action, target, at ? `alle ${at}` : ''].filter(Boolean);
+  if (r.intent === 'scene_run') return `avvia scena: ${target}`;
+  if (r.intent === 'status_query') return `stato di: ${target}`;
+  if (r.intent === 'diagnosis') return `diagnosi: ${target || 'sistema'}`;
+  return parts.join(' ') || r.input_text;
+}
+
+function atToCron(at: string): string {
+  const [h = '0', m = '0'] = at.split(':');
+  return `${parseInt(m)} ${parseInt(h)} * * *`;
+}
 
 interface Props {
   projectId: string;
   devices?: unknown[];
 }
 
-type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done';
+type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done' | 'automation_creating';
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [text, setText] = useState('');
@@ -81,6 +117,35 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
   }
 
+  async function handleCreateAutomation() {
+    if (!result) return;
+    const at = result.parameters?.at as string | undefined;
+    if (!at) return;
+    setPhase('automation_creating');
+    try {
+      const target = result.target as Record<string, unknown> | null;
+      const deviceId = target?.device_id as string | undefined;
+      const selector = (target?.selector ?? target?.room ?? '') as string;
+      await createAutomation(projectId, {
+        name: buildUserMeaning(result),
+        enabled: true,
+        trigger_type: 'schedule',
+        trigger: { cron: atToCron(at), at },
+        conditions: [],
+        actions: [
+          deviceId
+            ? { type: 'device_command', device_id: deviceId, command: result.action, params: {} }
+            : { type: 'intent', intent: `${result.action ?? ''} ${selector}`.trim() },
+        ],
+      });
+      setHubMsg('Automazione creata.');
+      setPhase('success');
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Errore creazione automazione');
+      setPhase('error');
+    }
+  }
+
   async function handleDiagnose() {
     if (!text.trim()) return;
     setPhase('loading');
@@ -143,18 +208,63 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       {/* Preview */}
       {phase === 'preview' && result && (
         <div className="space-y-2 rounded-[18px] border border-white/10 bg-black/20 p-3 text-sm">
+          {/* UserMeaning */}
           <div className="flex items-center justify-between">
-            <span className="font-medium text-white">{result.intent}</span>
+            <span className="font-medium text-white">{buildUserMeaning(result)}</span>
             <span className={`text-xs font-semibold ${riskColor}`}>
               {result.risk === 'high' ? 'Rischio alto' : result.risk === 'medium' ? 'Rischio medio' : 'Sicuro'}
             </span>
           </div>
-          {result.reason && (
-            <div className="text-xs text-white/50">{result.reason}</div>
-          )}
           <div className="text-xs text-white/40">
             Confidenza: {Math.round(result.confidence * 100)}%
           </div>
+
+          {/* automation_draft */}
+          {result.reason === 'automation_draft' && (
+            <div className="space-y-1.5 rounded-[14px] border border-sky-500/20 bg-sky-500/[0.06] p-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-sky-300">
+                <CalendarClock className="h-3.5 w-3.5" />
+                Automazione rilevata
+              </div>
+              {(result.parameters?.at as string | undefined) && (
+                <div className="text-xs text-white/50">
+                  Orario: <span className="text-white/70">{result.parameters.at as string}</span>
+                </div>
+              )}
+              {result.action && (
+                <div className="text-xs text-white/50">
+                  Azione: <span className="text-white/70">{ACTION_LABEL[result.action] ?? result.action}</span>
+                </div>
+              )}
+              {result.parameters?.at ? (
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    onClick={() => void handleCreateAutomation()}
+                    className="flex-1 rounded-xl border border-sky-500/30 bg-sky-500/20 py-1.5 text-xs text-sky-300 active:bg-sky-500/30"
+                  >
+                    Crea automazione
+                  </button>
+                  <button
+                    onClick={reset}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50 active:bg-white/10"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="text-xs text-amber-300">
+                  Specifica un orario per creare l&apos;automazione.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Missing fields */}
+          {(result.missing?.length ?? 0) > 0 && result.reason !== 'automation_draft' && (
+            <div className="text-xs text-amber-300/80">
+              Manca: {result.missing!.map((m) => MISSING_LABEL[m] ?? m).join(', ')}
+            </div>
+          )}
 
           {result.dispatchable ? (
             <div className="flex gap-2 pt-1">
@@ -171,11 +281,11 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 Annulla
               </button>
             </div>
-          ) : (
+          ) : result.reason !== 'automation_draft' && (
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-amber-300">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>Comando non eseguibile — {result.reason ?? 'dispositivo non trovato'}</span>
+                <span>{result.reason === 'missing_fields' ? 'Comando incompleto' : `Non eseguibile — ${result.reason ?? 'dispositivo non trovato'}`}</span>
                 <button onClick={reset} className="ml-auto text-white/40 hover:text-white/70">✕</button>
               </div>
               {result.suggest_diagnose && (
@@ -189,6 +299,14 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Automation creating */}
+      {phase === 'automation_creating' && (
+        <div className="flex items-center gap-2 text-xs text-white/50">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>Creazione automazione...</span>
         </div>
       )}
 

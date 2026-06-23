@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { AlertTriangle, CalendarClock, CheckCircle, Loader2, Send, Stethoscope, XCircle } from 'lucide-react';
 import { brainInterpret, brainDiagnose, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
-import { fetchAPI } from '@/lib/api/client';
+import { executeUiCommand } from '@/lib/api/ui-command';
 
 const ACTION_LABEL: Record<string, string> = {
   turn_on: 'accendi',
@@ -83,33 +83,22 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   }
 
   async function dispatch(r: BrainInterpretResult) {
-    if (!r.dispatchable || !r.commands?.length) {
+    const deviceId = typeof r.target?.device_id === 'string' ? r.target.device_id.trim() : '';
+    const action = typeof r.action === 'string' ? r.action.trim() : '';
+
+    if (!r.dispatchable || !deviceId || !action) {
       setHubMsg('Nessun comando da eseguire.');
       setPhase('success');
       return;
     }
     setPhase('confirming');
     try {
-      const outcome = await fetchAPI<{ status?: string; results?: { ok: boolean; error?: string }[] }>(
-        `/api/hub/api/hub/${projectId}/dispatch`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            mode: r.commands.length > 1 ? 'parallel' : 'single',
-            project_id: projectId,
-            targets: r.commands,
-            deadline_ms: 5000,
-          }),
-        },
-      );
-      const firstFail = outcome.results?.find((x) => !x.ok);
-      if (firstFail) {
-        setHubMsg(`Eseguito con errore: ${firstFail.error ?? 'dispatch_failed'}`);
-      } else {
-        const total = outcome.results?.length ?? 0;
-        const ok = outcome.results?.filter((x) => x.ok).length ?? 0;
-        setHubMsg(total > 1 ? `Fatto (${ok}/${total}).` : 'Fatto.');
-      }
+      await executeUiCommand(projectId, {
+        device_id: deviceId,
+        action,
+        params: r.parameters ?? {},
+      });
+      setHubMsg('Fatto.');
       setPhase('success');
     } catch (err) {
       setHubMsg(err instanceof Error ? err.message : 'Errore hub');

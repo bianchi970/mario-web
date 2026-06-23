@@ -1,51 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  requireScenarioAuthorization,
+  resolveScenarioProjectId,
+  scenarioAuthHeaders,
+  scenarioProxyErrorStatus,
+  scenarioUpstreamUnavailableResponse,
+  toScenarioProxyError,
+} from '../../_project-bootstrap';
 
-const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
-const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
-const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
-const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
-const HUB_ID             = process.env.HUB_ID             || '';
+const BRAIN_URL = process.env.BRAIN_URL || 'http://localhost:4000';
 
 export async function POST(
   req: NextRequest,
   context: { params: { scenarioId: string } }
 ) {
-  const { scenarioId } = context.params;
-  const projectId = req.nextUrl.searchParams.get('projectId') || '';
-  if (!projectId) {
-    return NextResponse.json({ status: 'error', error: 'project_id_required' }, { status: 400 });
-  }
-
-  const userToken = req.cookies.get('mario_hub_token')?.value || '';
-  const auth = userToken ? `Bearer ${userToken}` : HUB_TOKEN ? `Bearer ${HUB_TOKEN}` : '';
-  const hubPath = `/api/hub/automations/${encodeURIComponent(projectId)}/${encodeURIComponent(scenarioId)}/run`;
-
   try {
-    let upstream: Response;
-    if (REMOTE_BRIDGE_URL) {
-      const relayPayload: Record<string, unknown> = {
-        method: 'POST',
-        path: hubPath,
-        headers: { 'content-type': 'application/json', authorization: auth },
-        body: null,
-      };
-      if (HUB_ID) relayPayload.hub_id = HUB_ID;
-      upstream = await fetch(`${REMOTE_BRIDGE_URL}/relay`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${BRIDGE_RELAY_TOKEN}` },
-        body: JSON.stringify(relayPayload),
-        signal: AbortSignal.timeout(10_000),
-      });
-    } else {
-      upstream = await fetch(`${HUB_URL}${hubPath}`, {
-        method: 'POST',
-        headers: { authorization: auth, 'content-type': 'application/json' },
-        signal: AbortSignal.timeout(8_000),
-      });
+    requireScenarioAuthorization(req);
+    const { scenarioId } = context.params;
+    const projectId = await resolveScenarioProjectId(req, req.nextUrl.searchParams.get('projectId'));
+
+    let upstream;
+    try {
+      upstream = await fetch(
+        `${BRAIN_URL}/projects/${encodeURIComponent(projectId)}/automations/${encodeURIComponent(scenarioId)}/run`,
+        {
+          method: 'POST',
+          headers: scenarioAuthHeaders(req, true),
+          body: JSON.stringify({}),
+          cache: 'no-store',
+          signal: AbortSignal.timeout(3_000),
+        },
+      );
+    } catch (error) {
+      return scenarioUpstreamUnavailableResponse();
     }
+
     const data = await upstream.json().catch(() => ({ status: 'error', error: 'invalid_json' }));
     return NextResponse.json(data, { status: upstream.status });
-  } catch {
-    return NextResponse.json({ status: 'error', error: 'hub_unavailable' }, { status: 502 });
+  } catch (error) {
+    const message = toScenarioProxyError(error).message;
+    if (message === 'UPSTREAM_UNAVAILABLE') {
+      return scenarioUpstreamUnavailableResponse();
+    }
+    return NextResponse.json(
+      { status: 'error', error: message },
+      { status: scenarioProxyErrorStatus(message) },
+    );
   }
 }

@@ -76,13 +76,18 @@ describe('CommandButton offline mode', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/hub/devices/dev-light-1/command',
+        '/api/brain/projects/default/actions/ui-command',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ project_id: 'default', action: 'turn_on', params: {} }),
+          body: JSON.stringify({ device_id: 'dev-light-1', action: 'turn_on', params: {} }),
         }),
       );
     });
+
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      '/api/hub/devices/dev-light-1/command',
+      expect.anything(),
+    );
   });
 
   it('shows structured hub error messages to the user', async () => {

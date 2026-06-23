@@ -56,6 +56,21 @@ function bridgeUnavailableResponse() {
   );
 }
 
+function readOnlyResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      data: null,
+      error: {
+        code: 'HUB_PROXY_READ_ONLY',
+        message: 'Il proxy Hub consente solo richieste di lettura',
+        source: 'web-hub-proxy',
+      },
+    },
+    { status: 405 },
+  );
+}
+
 function buildHubUrl(path: string[], req: NextRequest): string {
   return `${HUB_URL}/api/hub/${path.join('/')}${req.nextUrl.search}`;
 }
@@ -182,22 +197,23 @@ export async function GET(req: NextRequest, { params }: { params: { path: string
   catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function HEAD(req: NextRequest, { params }: { params: { path: string[] } }) {
   try { return await proxyRequest(req, params.path); }
   catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+}
+
+export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
+  return readOnlyResponse();
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxyRequest(req, params.path); }
-  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+  return readOnlyResponse();
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxyRequest(req, params.path); }
-  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+  return readOnlyResponse();
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxyRequest(req, params.path); }
-  catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+  return readOnlyResponse();
 }

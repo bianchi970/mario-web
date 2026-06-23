@@ -4,7 +4,9 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProjectId } from '@/hooks/useProjectId';
+import { ApiClientError } from '@/lib/api/client';
 import type { Device } from '@/lib/hub-types';
+import { executeUiCommand } from '@/lib/api/ui-command';
 
 const HUB_ERROR_CODES: Record<string, string> = {
   DEVICE_NOT_FOUND: 'Dispositivo non trovato',
@@ -18,15 +20,11 @@ const HUB_ERROR_CODES: Record<string, string> = {
   HUB_UNAVAILABLE: 'Hub non disponibile',
 };
 
-function formatCommandError(payload: Record<string, unknown> | null): string {
-  if (!payload) return 'Operazione non riuscita';
-  const err = payload.error;
-  if (err && typeof err === 'object') {
-    const e = err as Record<string, unknown>;
-    if (typeof e.message === 'string' && e.message) return e.message;
-    if (typeof e.code === 'string' && e.code) return HUB_ERROR_CODES[e.code] ?? 'Operazione non riuscita';
+function formatCommandError(error: unknown): string {
+  if (error instanceof ApiClientError) {
+    if (error.message) return error.message;
+    if (error.code) return HUB_ERROR_CODES[error.code] ?? 'Operazione non riuscita';
   }
-  if (typeof err === 'string' && err) return HUB_ERROR_CODES[err] ?? 'Operazione non riuscita';
   return 'Operazione non riuscita';
 }
 
@@ -37,15 +35,16 @@ async function sendCommand(
   params: Record<string, unknown> = {},
 ): Promise<{ ok: boolean; errorMessage: string | null }> {
   try {
-    const res = await fetch(`/api/hub/devices/${encodeURIComponent(deviceId)}/command`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ project_id: projectId, action, params }),
+    await executeUiCommand(projectId, {
+      device_id: deviceId,
+      action,
+      params,
     });
-    if (res.ok) return { ok: true, errorMessage: null };
-    const payload = await res.json().catch(() => null) as Record<string, unknown> | null;
-    return { ok: false, errorMessage: formatCommandError(payload) };
-  } catch {
+    return { ok: true, errorMessage: null };
+  } catch (error) {
+    if (error instanceof ApiClientError) {
+      return { ok: false, errorMessage: formatCommandError(error) };
+    }
     return { ok: false, errorMessage: 'Errore di comunicazione' };
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import TopBar from '@/components/layout/TopBar';
 import { fetchAPI } from '@/lib/api/client';
+import { executeUiCommand } from '@/lib/api/ui-command';
 import { listRooms } from '@/lib/api/rooms';
 import { useProjectId } from '@/hooks/useProjectId';
 import type { Room } from '@/lib/hub-types';
@@ -51,10 +52,11 @@ async function assignRoom(projectId: string, roomId: string, deviceId: string): 
   );
 }
 
-async function sendCommand(deviceId: string, command: 'turn_on' | 'turn_off'): Promise<void> {
-  await fetchAPI(`/api/hub/devices/${encodeURIComponent(deviceId)}/command`, {
-    method: 'POST',
-    body: JSON.stringify({ command }),
+async function sendCommand(projectId: string, deviceId: string, command: 'turn_on' | 'turn_off'): Promise<void> {
+  await executeUiCommand(projectId, {
+    device_id: deviceId,
+    action: command,
+    params: {},
   });
 }
 
@@ -188,7 +190,7 @@ export default function OnboardingPage() {
     if (!deviceId) return;
     const label = cmd === 'turn_on' ? 'ON' : 'OFF';
     try {
-      await sendCommand(deviceId, cmd);
+      await sendCommand(projectId, deviceId, cmd);
       setTestLog(l => [...l, `✓ ${label} inviato`]);
     } catch (err) {
       setTestLog(l => [...l, `✗ ${label}: ${err instanceof Error ? err.message : 'errore'}`]);

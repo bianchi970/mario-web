@@ -161,13 +161,13 @@ describe('Settings offline mode wiring', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/hub/devices/dev-cover-1/command',
+        '/api/brain/projects/default/actions/ui-command',
         expect.objectContaining({ method: 'POST' }),
       );
     });
 
     const callsBeforeOffline = (global.fetch as jest.Mock).mock.calls.filter((call) =>
-      String(call[0]).includes('/api/hub/devices/dev-cover-1/command'),
+      String(call[0]).includes('/api/brain/projects/default/actions/ui-command'),
     ).length;
 
     fireEvent.click(screen.getByLabelText('Stato offline di sistema'));
@@ -179,7 +179,7 @@ describe('Settings offline mode wiring', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sistema offline' }));
 
     const callsWhileOffline = (global.fetch as jest.Mock).mock.calls.filter((call) =>
-      String(call[0]).includes('/api/hub/devices/dev-cover-1/command'),
+      String(call[0]).includes('/api/brain/projects/default/actions/ui-command'),
     ).length;
     expect(callsWhileOffline).toBe(callsBeforeOffline);
 
@@ -193,7 +193,7 @@ describe('Settings offline mode wiring', () => {
 
     await waitFor(() => {
       const callsAfterOnline = (global.fetch as jest.Mock).mock.calls.filter((call) =>
-        String(call[0]).includes('/api/hub/devices/dev-cover-1/command'),
+        String(call[0]).includes('/api/brain/projects/default/actions/ui-command'),
       ).length;
       expect(callsAfterOnline).toBeGreaterThan(callsBeforeOffline);
     });

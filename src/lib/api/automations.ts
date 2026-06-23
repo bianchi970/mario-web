@@ -57,7 +57,7 @@ export async function runAutomation(
   const pid = projectId.trim();
   if (!pid) throw new Error('PROJECT_REQUIRED');
   return fetchAPI<{ status: string }>(
-    `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(id)}/run`,
+    `/api/scenarios/${encodeURIComponent(id)}/run?projectId=${encodeURIComponent(pid)}`,
     { method: 'POST' },
   );
 }

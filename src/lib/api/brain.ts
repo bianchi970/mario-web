@@ -59,11 +59,11 @@ export async function getBrainStatus(): Promise<BrainStatus> {
 
 export async function brainInterpret(
   text: string,
-  context: { project_id?: string; devices?: unknown[] },
+  context: { project_id?: string; devices?: unknown[]; session_id?: string },
 ): Promise<BrainInterpretResult> {
   return fetchAPI<BrainInterpretResult>('/api/brain/interpret', {
     method: 'POST',
-    body: JSON.stringify({ text, context }),
+    body: JSON.stringify({ text, context, session_id: context.session_id }),
   });
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, CalendarClock, CheckCircle, Loader2, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle, Loader2, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
+import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainConfirmAutomation, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
 import { executeUiCommand } from '@/lib/api/ui-command';
@@ -72,6 +73,7 @@ interface Props {
 type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done' | 'automation_creating' | 'automation_confirming';
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
+  const { sessionId, clearSession } = useConversationSession(projectId);
   const [text, setText] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
   const [result, setResult] = useState<BrainInterpretResult | null>(null);
@@ -88,7 +90,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     setHubMsg('');
 
     try {
-      const r = await brainInterpret(trimmed, { project_id: projectId, devices });
+      const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
       if (!r.dispatchable) {
         setPhase('preview');
@@ -227,6 +229,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           ) : (
             <Send className="h-4 w-4" />
           )}
+        </button>
+        <button
+          onClick={() => { clearSession(); reset(); }}
+          title="Nuova conversazione"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/40 active:bg-white/10"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
         </button>
       </div>
 

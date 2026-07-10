@@ -12,9 +12,11 @@ import {
   createAutomation,
   updateAutomation,
   deleteAutomation,
+  runAutomation,
+  listAutomationRuns,
 } from '@/lib/api/automations';
 import { listDevices } from '@/lib/api/devices';
-import type { Automation, Device } from '@/lib/hub-types';
+import type { Automation, AutomationRun, Device } from '@/lib/hub-types';
 
 export default function AutomazioniPage() {
   const [mounted, setMounted] = useState(false);
@@ -29,6 +31,7 @@ export default function AutomazioniPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [runsMap, setRunsMap] = useState<Record<string, AutomationRun[]>>({});
 
   const deviceNames = useMemo(() => {
     const m = new Map<string, string>();
@@ -58,6 +61,14 @@ export default function AutomazioniPage() {
     if (!projectId) return;
     void load();
   }, [projectId]);
+
+  async function handleRun(id: string) {
+    if (!projectId) return;
+    await runAutomation(projectId, id);
+    const runs = await listAutomationRuns(projectId, id);
+    setRunsMap(prev => ({ ...prev, [id]: runs }));
+    void load();
+  }
 
   async function handleToggle(id: string, enabled: boolean) {
     if (!projectId) return;
@@ -138,13 +149,26 @@ export default function AutomazioniPage() {
         )}
 
         {!loading && automations.map((a) => (
-          <AutomationCard
-            key={a.id}
-            automation={a}
-            deviceNames={deviceNames}
-            onToggle={handleToggle}
-            onDelete={handleDelete}
-          />
+          <div key={a.id}>
+            <AutomationCard
+              automation={a}
+              deviceNames={deviceNames}
+              onToggle={handleToggle}
+              onDelete={handleDelete}
+              onRun={handleRun}
+            />
+            {runsMap[a.id]?.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {runsMap[a.id].slice(0, 3).map(r => (
+                  <div key={r.id} className="flex items-center gap-2 text-[10px] text-hub-muted">
+                    <span className={r.status === 'completed' ? 'text-emerald-400' : r.status === 'failed' ? 'text-red-400' : 'text-amber-400'}>●</span>
+                    <span>{r.status}</span>
+                    <span className="ml-auto">{new Date(r.created_at).toLocaleString('it-IT')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </main>
 

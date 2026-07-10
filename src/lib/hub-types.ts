@@ -62,6 +62,17 @@ export interface Automation {
   last_run?: string | null;
 }
 
+export interface AutomationRun {
+  id: string;
+  automation_id: string;
+  project_id: string;
+  status: 'running' | 'completed' | 'failed' | 'waiting' | 'cancelled';
+  current_step: number | null;
+  resume_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Adapter {
   adapter_id: string;
   protocol: string;

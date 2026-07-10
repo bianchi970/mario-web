@@ -190,6 +190,12 @@ async function proxyRequest(req: NextRequest, path: string[]): Promise<Response>
   return proxyLocal(req, path);
 }
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function isAutomationsPath(path: string[]): boolean {
+  return path[0] === 'automations';
+}
+
 // ── Route handlers ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
@@ -203,10 +209,18 @@ export async function HEAD(req: NextRequest, { params }: { params: { path: strin
 }
 
 export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
+  if (isAutomationsPath(params.path)) {
+    try { return await proxyRequest(req, params.path); }
+    catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+  }
   return readOnlyResponse();
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
+  if (isAutomationsPath(params.path)) {
+    try { return await proxyRequest(req, params.path); }
+    catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+  }
   return readOnlyResponse();
 }
 
@@ -215,5 +229,9 @@ export async function PUT(req: NextRequest, { params }: { params: { path: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
+  if (isAutomationsPath(params.path)) {
+    try { return await proxyRequest(req, params.path); }
+    catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
+  }
   return readOnlyResponse();
 }

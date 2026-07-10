@@ -1,6 +1,6 @@
 'use client';
 
-import type { Automation } from '@/lib/hub-types';
+import type { Automation, AutomationRun } from '@/lib/hub-types';
 import { fetchAPI } from './client';
 
 export async function listAutomations(projectId: string): Promise<Automation[]> {
@@ -48,6 +48,20 @@ export async function deleteAutomation(
     `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
   );
+}
+
+export async function listAutomationRuns(
+  projectId: string,
+  automationId: string,
+  limit = 10,
+): Promise<AutomationRun[]> {
+  const pid = projectId.trim();
+  if (!pid) throw new Error('PROJECT_REQUIRED');
+  const base = `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(automationId)}`;
+  const payload = await fetchAPI<{ runs?: AutomationRun[] }>(
+    `${base}/runs?limit=${limit}`,
+  );
+  return Array.isArray(payload?.runs) ? payload.runs : [];
 }
 
 export async function runAutomation(

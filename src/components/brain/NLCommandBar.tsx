@@ -2,9 +2,32 @@
 
 import { useState } from 'react';
 import { AlertTriangle, CalendarClock, CheckCircle, Loader2, Send, Stethoscope, XCircle } from 'lucide-react';
-import { brainInterpret, brainDiagnose, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
+import { brainInterpret, brainDiagnose, brainConfirmAutomation, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
 import { executeUiCommand } from '@/lib/api/ui-command';
+
+function triggerLabel(trigger: Record<string, unknown>): string {
+  if (trigger.type === 'schedule') return `alle ${(trigger.at as string) || (trigger.cron as string)}`;
+  if (trigger.type === 'device_state') {
+    const prop = (trigger.property as string) || '';
+    const val  = trigger.value;
+    return `${prop} ${val === true ? '= sì' : val === false ? '= no' : `= ${val}`}`;
+  }
+  if (trigger.type === 'sun_event') return `al ${trigger.event as string}`;
+  return (trigger.type as string) || '—';
+}
+
+function actionsLabel(actions: Record<string, unknown>[]): string {
+  return actions
+    .filter(a => a.type !== 'delay')
+    .map(a => {
+      const cmd  = (a.command || a.action || a.type) as string;
+      const room = a.room as string;
+      const dev  = a.device_type as string;
+      return [cmd, dev, room].filter(Boolean).join(' ');
+    })
+    .join(', ') || '—';
+}
 
 const ACTION_LABEL: Record<string, string> = {
   turn_on: 'accendi',
@@ -46,7 +69,7 @@ interface Props {
   devices?: unknown[];
 }
 
-type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done' | 'automation_creating';
+type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done' | 'automation_creating' | 'automation_confirming';
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [text, setText] = useState('');
@@ -135,6 +158,19 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
   }
 
+  async function handleConfirmDraft() {
+    if (!result?._v2?.draft) return;
+    setPhase('automation_confirming');
+    try {
+      const res = await brainConfirmAutomation(result._v2.draft as AutomationDraft, projectId);
+      setHubMsg(`Automazione creata: ${res.automation?.name || ''}`);
+      setPhase('success');
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Errore creazione automazione');
+      setPhase('error');
+    }
+  }
+
   async function handleDiagnose() {
     if (!text.trim()) return;
     setPhase('loading');
@@ -207,6 +243,45 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           <div className="text-xs text-white/40">
             Confidenza: {Math.round(result.confidence * 100)}%
           </div>
+
+          {/* automation_intent — draft da Brain V2 */}
+          {result.intent === 'automation_intent' && result._v2?.draft && (
+            <div className="space-y-1.5 rounded-[14px] border border-sky-500/20 bg-sky-500/[0.06] p-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-sky-300">
+                <CalendarClock className="h-3.5 w-3.5" />
+                Nuova automazione
+              </div>
+              <div className="text-xs text-white/70 font-medium">{result._v2.draft.name}</div>
+              {result._v2.draft.trigger?.type && (
+                <div className="text-xs text-white/50">
+                  Quando: <span className="text-white/70">{triggerLabel(result._v2.draft.trigger)}</span>
+                </div>
+              )}
+              {result._v2.draft.actions?.length > 0 && (
+                <div className="text-xs text-white/50">
+                  Azione: <span className="text-white/70">{actionsLabel(result._v2.draft.actions)}</span>
+                </div>
+              )}
+              {result._v2.explanation && (
+                <div className="text-xs text-white/40 italic">{result._v2.explanation}</div>
+              )}
+              <div className="flex gap-2 pt-0.5">
+                <button
+                  onClick={() => void handleConfirmDraft()}
+                  disabled={phase === 'automation_confirming'}
+                  className="flex-1 rounded-xl border border-sky-500/30 bg-sky-500/20 py-1.5 text-xs text-sky-300 active:bg-sky-500/30 disabled:opacity-40"
+                >
+                  {phase === 'automation_confirming' ? '…' : 'Conferma'}
+                </button>
+                <button
+                  onClick={reset}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50"
+                >
+                  Annulla
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* automation_draft */}
           {result.reason === 'automation_draft' && (

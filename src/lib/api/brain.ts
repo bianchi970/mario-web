@@ -2,6 +2,14 @@
 
 import { fetchAPI } from './client';
 
+export interface AutomationDraft {
+  name: string;
+  trigger: Record<string, unknown>;
+  actions: Record<string, unknown>[];
+  conditions: Record<string, unknown>[];
+  status: 'draft';
+}
+
 export interface BrainStatus {
   mode: string;
   provider: string;
@@ -23,6 +31,12 @@ export interface BrainInterpretResult {
   missing?: string[];
   provider: string;
   input_text: string;
+  _v2?: {
+    outcome?: string;
+    draft?: AutomationDraft | null;
+    explanation?: string;
+    task_kind?: string;
+  };
 }
 
 export interface BrainDiagnoseResult {
@@ -50,6 +64,16 @@ export async function brainInterpret(
   return fetchAPI<BrainInterpretResult>('/api/brain/interpret', {
     method: 'POST',
     body: JSON.stringify({ text, context }),
+  });
+}
+
+export async function brainConfirmAutomation(
+  draft: AutomationDraft,
+  projectId: string,
+): Promise<{ ok: boolean; automation: { id: string; name: string } }> {
+  return fetchAPI('/api/brain/automation/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ draft, project_id: projectId }),
   });
 }
 

@@ -231,7 +231,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       </div>
 
       {/* Preview */}
-      {phase === 'preview' && result && (
+      {(phase === 'preview' || phase === 'automation_confirming') && result && (
         <div className="space-y-2 rounded-[18px] border border-white/10 bg-black/20 p-3 text-sm">
           {/* UserMeaning */}
           <div className="flex items-center justify-between">

@@ -252,7 +252,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 Nuova automazione
               </div>
               <div className="text-xs text-white/70 font-medium">{result._v2.draft.name}</div>
-              {result._v2.draft.trigger?.type && (
+              {!!(result._v2.draft.trigger?.type) && (
                 <div className="text-xs text-white/50">
                   Quando: <span className="text-white/70">{triggerLabel(result._v2.draft.trigger)}</span>
                 </div>

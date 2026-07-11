@@ -7,6 +7,7 @@ import Badge, { deviceTypeBadge } from '@/components/ui/Badge';
 import StatusDot from '@/components/ui/StatusDot';
 import CommandButton from './CommandButton';
 import { fetchAPI } from '@/lib/api/client';
+import { executeUiCommand } from '@/lib/api/ui-command';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 
 const DEVICE_ICONS: Record<string, string> = {
@@ -153,6 +154,7 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
 
   const [displayRoom, setDisplayRoom] = useState<string>(device.room_id ?? '');
   const [savingRoom, setSavingRoom]   = useState(false);
+  const [brightness, setBrightness]   = useState<number>(() => (device.state?.brightness as number ?? 100));
 
   async function handleRoomChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const roomId = e.target.value;
@@ -233,6 +235,37 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
         {device.vendor && <Badge variant="gray">{device.vendor}</Badge>}
         {!device.online && <Badge variant="red">Non in linea</Badge>}
       </div>
+
+      {device.capabilities.includes('brightness') && device.online && (
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min={1}
+            max={100}
+            value={brightness}
+            onChange={e => setBrightness(Number(e.target.value))}
+            onMouseUp={e => {
+              const val = Number((e.target as HTMLInputElement).value);
+              void executeUiCommand(device.project_id, {
+                device_id: device.id,
+                action: 'set_brightness',
+                params: { brightness: val },
+              }).catch(() => {});
+            }}
+            onTouchEnd={e => {
+              const val = Number((e.target as HTMLInputElement).value);
+              void executeUiCommand(device.project_id, {
+                device_id: device.id,
+                action: 'set_brightness',
+                params: { brightness: val },
+              }).catch(() => {});
+            }}
+            className="flex-1 accent-hub-accent"
+            aria-label="Luminosità"
+          />
+          <span className="text-xs text-hub-muted w-8 text-right">{brightness}%</span>
+        </div>
+      )}
 
       {device.type === 'camera' ? (
         <CameraState state={device.state as Record<string, unknown>} />

@@ -109,7 +109,7 @@ describe('NLCommandBar — Automation Builder (B37.3)', () => {
       .mockResolvedValueOnce(automationDraftResponse)
       .mockResolvedValueOnce({
         ok: true, status: 201,
-        json: async () => ({ id: 'auto-1', name: 'accendi luce cucina alle 18:00' }),
+        json: async () => ({ success: true, data: { automation: { id: 'auto-1', name: 'accendi luce cucina alle 18:00' } } }),
       });
 
     render(<NLCommandBar projectId="default" />);

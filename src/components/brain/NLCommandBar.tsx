@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, CalendarClock, CheckCircle, Loader2, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
-import { brainInterpret, brainDiagnose, brainConfirmAutomation, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
+import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
 import { executeUiCommand } from '@/lib/api/ui-command';
 
@@ -80,6 +80,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [errorMsg, setErrorMsg] = useState('');
   const [hubMsg, setHubMsg] = useState('');
   const [diagnoseResult, setDiagnoseResult] = useState<BrainDiagnoseResult | null>(null);
+  const [proactiveDismissed, setProactiveDismissed] = useState(false);
+  const [correcting, setCorrecting] = useState(false);
+  const [correctionText, setCorrectionText] = useState('');
+  const [correctionDone, setCorrectionDone] = useState(false);
 
   async function handleSend() {
     const trimmed = text.trim();
@@ -193,6 +197,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     setErrorMsg('');
     setHubMsg('');
     setDiagnoseResult(null);
+    setProactiveDismissed(false);
+    setCorrecting(false);
+    setCorrectionText('');
+    setCorrectionDone(false);
   }
 
   const riskColor =
@@ -358,7 +366,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-amber-300">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>{result.reason === 'missing_fields' ? 'Comando incompleto' : `Non eseguibile — ${result.reason ?? 'dispositivo non trovato'}`}</span>
+                <span>
+                  {result._v2?.outcome === 'ask' && result._v2.question
+                    ? result._v2.question
+                    : result.reason === 'missing_fields'
+                    ? 'Comando incompleto'
+                    : `Non eseguibile — ${result.reason ?? 'dispositivo non trovato'}`}
+                </span>
                 <button onClick={reset} className="ml-auto text-white/40 hover:text-white/70">✕</button>
               </div>
               {result.suggest_diagnose && (
@@ -397,6 +411,90 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           <CheckCircle className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{hubMsg || 'Fatto.'}</span>
           <button onClick={reset} className="text-emerald-400/50 hover:text-emerald-300">✕</button>
+        </div>
+      )}
+
+      {/* Proactive routine (3b) */}
+      {phase === 'success' && !proactiveDismissed && (() => {
+        const proactiveItem = result?._v2?.proactive?.find(p => p.type === 'routine_detected' && p.draft);
+        if (!proactiveItem) return null;
+        return (
+          <div className="space-y-2 rounded-[18px] border border-indigo-500/20 bg-indigo-500/[0.06] p-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-indigo-300">
+                Routine rilevata {proactiveItem.occurrences ?? ''} volte — Vuoi creare un&apos;automazione?
+              </span>
+              <button onClick={() => setProactiveDismissed(true)} className="text-white/40 hover:text-white/70">✕</button>
+            </div>
+            {proactiveItem.message && (
+              <div className="text-white/50">{proactiveItem.message}</div>
+            )}
+            <div className="flex gap-2 pt-0.5">
+              <button
+                onClick={async () => {
+                  try {
+                    await brainConfirmAutomation(proactiveItem.draft as unknown as AutomationDraft, projectId);
+                    setHubMsg('Automazione creata.');
+                    setProactiveDismissed(true);
+                  } catch { /* best effort */ }
+                }}
+                className="flex-1 rounded-xl border border-indigo-500/30 bg-indigo-500/20 py-1.5 text-xs text-indigo-300 active:bg-indigo-500/30"
+              >
+                Crea
+              </button>
+              <button
+                onClick={() => setProactiveDismissed(true)}
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50"
+              >
+                Non ora
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* "Hai sbagliato?" inline (3c) */}
+      {phase === 'success' && result?.dispatchable && (
+        <div className="text-xs">
+          {correctionDone ? (
+            <span className="text-emerald-400/70">Grazie, imparato.</span>
+          ) : correcting ? (
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={correctionText}
+                onChange={e => setCorrectionText(e.target.value)}
+                placeholder="Cosa intendevi?"
+                className="flex-1 rounded-xl border border-white/10 bg-black/20 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:outline-none"
+              />
+              <button
+                onClick={async () => {
+                  if (!correctionText.trim()) return;
+                  try {
+                    await brainLearn({
+                      wrong_phrase: result.input_text,
+                      correct_phrase: correctionText.trim(),
+                      project_id: projectId,
+                      feedback_type: 'correction',
+                    });
+                  } catch { /* best effort */ }
+                  setCorrectionDone(true);
+                  setTimeout(() => { setCorrecting(false); setCorrectionText(''); setCorrectionDone(false); }, 2000);
+                }}
+                className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300"
+              >
+                Invia
+              </button>
+              <button onClick={() => setCorrecting(false)} className="text-white/40 hover:text-white/70">✕</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setCorrecting(true)}
+              className="text-white/30 hover:text-white/60 underline underline-offset-2"
+            >
+              Hai sbagliato?
+            </button>
+          )}
         </div>
       )}
 

@@ -36,6 +36,14 @@ export interface BrainInterpretResult {
     draft?: AutomationDraft | null;
     explanation?: string;
     task_kind?: string;
+    question?: string | null;
+    proactive?: Array<{
+      type: string;
+      message: string;
+      draft?: Record<string, unknown>;
+      confidence?: number;
+      occurrences?: number;
+    }>;
   };
 }
 
@@ -75,6 +83,38 @@ export async function brainConfirmAutomation(
     method: 'POST',
     body: JSON.stringify({ draft, project_id: projectId }),
   });
+}
+
+export interface SequencePattern {
+  fingerprint: string;
+  devices: string[];
+  actions: string[];
+  time_of_day: string;
+  day_type: string;
+  occurrences: number;
+  confidence: number;
+  proposed_trigger: Record<string, unknown>;
+  proposed_actions: Array<{ device_id?: string; action: string; device_type?: string }>;
+}
+
+export async function brainLearn(payload: {
+  wrong_phrase: string;
+  correct_phrase: string;
+  correct_entity?: { type: string; id: string; name: string };
+  feedback_type?: 'correction' | 'success' | 'failure';
+  project_id?: string;
+}): Promise<{ ok: boolean; learned: { wrong_phrase: string; correct_phrase: string; error_type: string } }> {
+  return fetchAPI('/api/brain/learn', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getBrainSequences(projectId: string): Promise<SequencePattern[]> {
+  const res = await fetchAPI<{ sequences: SequencePattern[] }>(
+    `/api/brain/v2/sequences?project_id=${encodeURIComponent(projectId)}`,
+  );
+  return res.sequences ?? [];
 }
 
 export async function brainDiagnose(

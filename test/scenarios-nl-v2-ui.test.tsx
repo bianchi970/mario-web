@@ -80,7 +80,7 @@ describe('NL V2 draft flow', () => {
         json: async () => ({ success: true, status: 'draft', data: DRAFT_DATA }),
       })
       // createAutomation → Hub POST
-      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => savedAuto })
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ success: true, data: { automation: savedAuto } }) })
       // loadAutomations dopo confirm (listAutomations + listDevices)
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ automations: [savedAuto] }) })
       .mockResolvedValueOnce(devsWithOne);

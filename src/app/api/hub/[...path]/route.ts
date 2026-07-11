@@ -196,6 +196,10 @@ function isAutomationsPath(path: string[]): boolean {
   return path[0] === 'automations';
 }
 
+function isNotificationsPath(path: string[]): boolean {
+  return path[0] === 'notifications';
+}
+
 // ── Route handlers ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
@@ -217,7 +221,7 @@ export async function POST(req: NextRequest, { params }: { params: { path: strin
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
-  if (isAutomationsPath(params.path)) {
+  if (isAutomationsPath(params.path) || isNotificationsPath(params.path)) {
     try { return await proxyRequest(req, params.path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
@@ -229,7 +233,7 @@ export async function PUT(req: NextRequest, { params }: { params: { path: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
-  if (isAutomationsPath(params.path)) {
+  if (isAutomationsPath(params.path) || isNotificationsPath(params.path)) {
     try { return await proxyRequest(req, params.path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }

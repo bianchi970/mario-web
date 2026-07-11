@@ -16,7 +16,15 @@ import {
   listAutomationRuns,
 } from '@/lib/api/automations';
 import { listDevices } from '@/lib/api/devices';
+import { getBrainSequences, brainConfirmAutomation, type SequencePattern } from '@/lib/api/brain';
 import type { Automation, AutomationRun, Device } from '@/lib/hub-types';
+
+const TIME_MAP: Record<string, string> = {
+  morning: '07:00',
+  afternoon: '13:00',
+  evening: '19:00',
+  night: '23:00',
+};
 
 export default function AutomazioniPage() {
   const [mounted, setMounted] = useState(false);
@@ -28,6 +36,7 @@ export default function AutomazioniPage() {
 
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [sequences, setSequences] = useState<SequencePattern[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -44,12 +53,14 @@ export default function AutomazioniPage() {
     setLoading(true);
     setError(null);
     try {
-      const [auts, devs] = await Promise.all([
+      const [auts, devs, seqs] = await Promise.all([
         listAutomations(projectId),
         listDevices(projectId),
+        getBrainSequences(projectId).catch(() => [] as SequencePattern[]),
       ]);
       setAutomations(auts);
       setDevices(devs);
+      setSequences(seqs);
     } catch {
       setError(AUTOMATION_COPY.errorLoad);
     } finally {
@@ -137,6 +148,50 @@ export default function AutomazioniPage() {
 
         {loading && (
           <div className="card text-sm text-hub-muted">{AUTOMATION_COPY.loading}</div>
+        )}
+
+        {/* Routine suggerite da SequenceDetector */}
+        {!loading && sequences.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-hub-muted px-1">Routine suggerite</p>
+            {sequences.map((seq) => (
+              <div key={seq.fingerprint} className="card space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-hub-text">{seq.fingerprint}</span>
+                  <span className="text-xs text-hub-muted">{Math.round(seq.confidence * 100)}% conf.</span>
+                </div>
+                <div className="text-xs text-hub-muted">
+                  {seq.occurrences}× · {seq.time_of_day} · {seq.day_type === 'weekday' ? 'feriali' : seq.day_type === 'weekend' ? 'weekend' : seq.day_type}
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!projectId) return;
+                    const time = TIME_MAP[seq.time_of_day] ?? '08:00';
+                    const draft = {
+                      name: seq.fingerprint,
+                      status: 'draft' as const,
+                      trigger: { type: 'time', time_of_day: seq.time_of_day, at: time },
+                      conditions: [],
+                      actions: seq.proposed_actions.map(a => ({
+                        type: 'device_command',
+                        device_id: a.device_id,
+                        command: a.action,
+                        params: {},
+                      })),
+                    };
+                    try {
+                      const res = await brainConfirmAutomation(draft, projectId);
+                      setAutomations(prev => [...prev, res.automation as unknown as Automation]);
+                      setSequences(prev => prev.filter(s => s.fingerprint !== seq.fingerprint));
+                    } catch { /* best effort */ }
+                  }}
+                  className="w-full rounded-lg border border-hub-accent/30 bg-hub-accent/10 py-1.5 text-xs text-hub-accent hover:bg-hub-accent/20 transition-colors"
+                >
+                  Crea automazione
+                </button>
+              </div>
+            ))}
+          </div>
         )}
 
         {!loading && automations.length === 0 && !error && (

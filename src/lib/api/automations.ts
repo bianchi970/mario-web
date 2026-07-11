@@ -3,14 +3,18 @@
 import type { Automation, AutomationRun } from '@/lib/hub-types';
 import { fetchAPI } from './client';
 
+/** Formato risposta Hub normalizzato (B86) */
+type HubResponse<T> = { success: boolean; data: T | null; error: unknown };
+
 export async function listAutomations(projectId: string): Promise<Automation[]> {
   const pid = projectId.trim();
   if (!pid) throw new Error('PROJECT_REQUIRED');
-  const payload = await fetchAPI<{ automations?: Automation[] }>(
+  const payload = await fetchAPI<HubResponse<{ automations?: Automation[] }>>(
     `/api/hub/automations/${encodeURIComponent(pid)}`,
     { method: 'GET' },
   );
-  return Array.isArray(payload?.automations) ? payload.automations : [];
+  const list = payload?.data?.automations;
+  return Array.isArray(list) ? list : [];
 }
 
 export async function createAutomation(
@@ -19,10 +23,12 @@ export async function createAutomation(
 ): Promise<Automation> {
   const pid = projectId.trim();
   if (!pid) throw new Error('PROJECT_REQUIRED');
-  return fetchAPI<Automation>(`/api/hub/automations/${encodeURIComponent(pid)}`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  const payload = await fetchAPI<HubResponse<{ automation: Automation }>>(
+    `/api/hub/automations/${encodeURIComponent(pid)}`,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+  if (!payload?.data?.automation) throw new Error('CREATE_FAILED');
+  return payload.data.automation;
 }
 
 export async function updateAutomation(
@@ -32,10 +38,12 @@ export async function updateAutomation(
 ): Promise<Automation> {
   const pid = projectId.trim();
   if (!pid) throw new Error('PROJECT_REQUIRED');
-  return fetchAPI<Automation>(
+  const payload = await fetchAPI<HubResponse<{ automation: Automation }>>(
     `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(id)}`,
     { method: 'PATCH', body: JSON.stringify(patch) },
   );
+  if (!payload?.data?.automation) throw new Error('UPDATE_FAILED');
+  return payload.data.automation;
 }
 
 export async function deleteAutomation(
@@ -44,10 +52,11 @@ export async function deleteAutomation(
 ): Promise<{ ok: boolean }> {
   const pid = projectId.trim();
   if (!pid) throw new Error('PROJECT_REQUIRED');
-  return fetchAPI<{ ok: boolean }>(
+  const payload = await fetchAPI<HubResponse<{ deleted?: boolean }>>(
     `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
   );
+  return { ok: payload?.success === true };
 }
 
 export async function listAutomationRuns(
@@ -58,10 +67,11 @@ export async function listAutomationRuns(
   const pid = projectId.trim();
   if (!pid) throw new Error('PROJECT_REQUIRED');
   const base = `/api/hub/automations/${encodeURIComponent(pid)}/${encodeURIComponent(automationId)}`;
-  const payload = await fetchAPI<{ runs?: AutomationRun[] }>(
+  const payload = await fetchAPI<HubResponse<{ runs?: AutomationRun[] }>>(
     `${base}/runs?limit=${limit}`,
   );
-  return Array.isArray(payload?.runs) ? payload.runs : [];
+  const list = payload?.data?.runs;
+  return Array.isArray(list) ? list : [];
 }
 
 export async function runAutomation(

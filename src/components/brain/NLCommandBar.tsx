@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, CalendarClock, CheckCircle, Loader2, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
-import { executeUiCommand } from '@/lib/api/ui-command';
+import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, type ExecutionRun } from '@/lib/api/ui-command';
 
 function triggerLabel(trigger: Record<string, unknown>): string {
   if (trigger.type === 'schedule') return `alle ${(trigger.at as string) || (trigger.cron as string)}`;
@@ -70,7 +70,15 @@ interface Props {
   devices?: unknown[];
 }
 
-type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'success' | 'error' | 'diagnose_done' | 'automation_creating' | 'automation_confirming';
+type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'executing' | 'success' | 'error' | 'diagnose_done' | 'automation_creating' | 'automation_confirming';
+
+const _EXEC_TERMINAL = new Set(['succeeded', 'failed', 'partially_succeeded', 'cancelled']);
+
+function _isCompoundDispatchable(r: BrainInterpretResult): boolean {
+  return r.commands.some(c =>
+    c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0 || c.selector),
+  );
+}
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const { sessionId, clearSession } = useConversationSession(projectId);
@@ -84,6 +92,40 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [correcting, setCorrecting] = useState(false);
   const [correctionText, setCorrectionText] = useState('');
   const [correctionDone, setCorrectionDone] = useState(false);
+  const [executionRun, setExecutionRun] = useState<ExecutionRun | null>(null);
+  const stopPollRef = useRef<AbortController | null>(null);
+
+  // Recovery esecuzione composta dopo refresh di pagina
+  useEffect(() => {
+    const execKey = `mario_exec_${projectId}`;
+    const savedId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(execKey) : null;
+    if (!savedId) return;
+    const controller = new AbortController();
+    stopPollRef.current = controller;
+    (async () => {
+      try {
+        const existing = await getExecution(projectId, savedId);
+        if (_EXEC_TERMINAL.has(existing.status)) {
+          sessionStorage.removeItem(execKey);
+          return;
+        }
+        setExecutionRun(existing);
+        setPhase('executing');
+        const final = await pollExecution(projectId, savedId, setExecutionRun, controller.signal);
+        setExecutionRun(final);
+        sessionStorage.removeItem(execKey);
+        if (final.status === 'succeeded') { setHubMsg('Tutti i comandi completati.'); setPhase('success'); }
+        else if (final.status === 'partially_succeeded') { setHubMsg(`${final.steps_done} di ${final.steps_total} riusciti.`); setPhase('success'); }
+        else { setHubMsg('Esecuzione fallita.'); setPhase('error'); }
+      } catch {
+        sessionStorage.removeItem(execKey);
+      } finally {
+        stopPollRef.current = null;
+      }
+    })();
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   async function handleSend() {
     const trimmed = text.trim();
@@ -96,7 +138,8 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     try {
       const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
-      if (!r.dispatchable) {
+      const canDispatch = r.dispatchable || _isCompoundDispatchable(r);
+      if (!canDispatch) {
         setPhase('preview');
         return;
       }
@@ -112,6 +155,16 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   }
 
   async function dispatch(r: BrainInterpretResult) {
+    // Compound: 1+ step con target valido
+    const validCommands = r.commands.filter(c =>
+      c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0 || c.selector),
+    );
+    if (validCommands.length > 0) {
+      await dispatchCompound(r, validCommands);
+      return;
+    }
+
+    // Legacy single-device
     const deviceId = typeof r.target?.device_id === 'string' ? r.target.device_id.trim() : '';
     const action = typeof r.action === 'string' ? r.action.trim() : '';
 
@@ -133,6 +186,67 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       setHubMsg(err instanceof Error ? err.message : 'Errore hub');
       setPhase('error');
     }
+  }
+
+  async function dispatchCompound(r: BrainInterpretResult, steps: BrainInterpretResult['commands']) {
+    setPhase('executing');
+    setExecutionRun(null);
+    const controller = new AbortController();
+    stopPollRef.current = controller;
+    const execKey = `mario_exec_${projectId}`;
+    try {
+      const run = await executeCompoundPlan(
+        projectId,
+        steps.map(s => ({
+          device_id:       s.device_id,
+          device_ids:      s.device_ids,
+          action:          s.action!,
+          params:          s.params,
+          step_index:      s.step_index,
+          dependency_type: s.dependency_type,
+          depends_on:      s.depends_on,
+          selector:        s.selector,
+          target_type:     s.target_type,
+          room_id:         s.room_id,
+          excluded_ids:    s.excluded_ids,
+          description:     s.description,
+        })),
+        undefined,
+        sessionId ?? undefined,
+      );
+
+      try { sessionStorage.setItem(execKey, run.execution_id); } catch { /* */ }
+      setExecutionRun(run);
+
+      if (!_EXEC_TERMINAL.has(run.status)) {
+        const finalRun = await pollExecution(projectId, run.execution_id, setExecutionRun, controller.signal);
+        setExecutionRun(finalRun);
+        try { sessionStorage.removeItem(execKey); } catch { /* */ }
+        if (finalRun.status === 'succeeded') {
+          setHubMsg(`${finalRun.steps_done} di ${finalRun.steps_total} comand${finalRun.steps_total === 1 ? 'o' : 'i'} esegu${finalRun.steps_total === 1 ? 'ito' : 'iti'}.`);
+          setPhase('success');
+        } else if (finalRun.status === 'partially_succeeded') {
+          setHubMsg(`${finalRun.steps_done} di ${finalRun.steps_total} riusciti, ${finalRun.steps_failed} falliti.`);
+          setPhase('success');
+        } else {
+          setHubMsg('Esecuzione fallita.');
+          setPhase('error');
+        }
+      } else {
+        try { sessionStorage.removeItem(execKey); } catch { /* */ }
+        if (run.status === 'succeeded') { setHubMsg('Fatto.'); setPhase('success'); }
+        else { setHubMsg('Esecuzione fallita.'); setPhase('error'); }
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      try { sessionStorage.removeItem(execKey); } catch { /* */ }
+      setHubMsg(err instanceof Error ? err.message : 'Errore esecuzione');
+      setPhase('error');
+    } finally {
+      stopPollRef.current = null;
+    }
+    // suppress unused var lint — r.input_text used indirectly
+    void r;
   }
 
   async function handleCreateAutomation() {
@@ -191,6 +305,9 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   }
 
   function reset() {
+    stopPollRef.current?.abort();
+    stopPollRef.current = null;
+    try { sessionStorage.removeItem(`mario_exec_${projectId}`); } catch { /* */ }
     setPhase('idle');
     setText('');
     setResult(null);
@@ -201,6 +318,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     setCorrecting(false);
     setCorrectionText('');
     setCorrectionDone(false);
+    setExecutionRun(null);
   }
 
   const riskColor =
@@ -223,13 +341,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
-          disabled={phase === 'loading' || phase === 'confirming'}
+          disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}
           placeholder="es. accendi la luce del soggiorno"
           className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none disabled:opacity-50"
         />
         <button
           onClick={() => void handleSend()}
-          disabled={!text.trim() || phase === 'loading' || phase === 'confirming'}
+          disabled={!text.trim() || phase === 'loading' || phase === 'confirming' || phase === 'executing'}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/20 text-blue-300 active:bg-blue-500/40 disabled:opacity-40"
         >
           {phase === 'loading' ? (
@@ -347,7 +465,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             </div>
           )}
 
-          {result.dispatchable ? (
+          {(result.dispatchable || _isCompoundDispatchable(result)) ? (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => void dispatch(result)}
@@ -389,6 +507,40 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         </div>
       )}
 
+      {/* Executing compound plan — per-step progress */}
+      {phase === 'executing' && (
+        <div className="space-y-1.5 rounded-[18px] border border-blue-500/20 bg-blue-500/[0.04] p-3">
+          <div className="flex items-center gap-2 text-xs text-white/50">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>Esecuzione in corso...</span>
+          </div>
+          {(executionRun?.steps ?? []).map(step => (
+            <div key={step.id} className="flex items-center gap-2 text-xs">
+              {step.status === 'succeeded' ? (
+                <CheckCircle className="h-3 w-3 shrink-0 text-emerald-400" />
+              ) : step.status === 'failed' || step.status === 'blocked' ? (
+                <XCircle className="h-3 w-3 shrink-0 text-red-400" />
+              ) : step.status === 'running' ? (
+                <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-400" />
+              ) : (
+                <div className="h-3 w-3 shrink-0 rounded-full border border-white/20" />
+              )}
+              <span className={
+                step.status === 'succeeded' ? 'text-emerald-300/70' :
+                step.status === 'failed' || step.status === 'blocked' ? 'text-red-300/70' :
+                step.status === 'running' ? 'text-white/70' :
+                'text-white/35'
+              }>
+                {step.description || step.action}
+              </span>
+              {step.error && (
+                <span className="ml-auto text-red-400/60">{step.error}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Automation creating */}
       {phase === 'automation_creating' && (
         <div className="flex items-center gap-2 text-xs text-white/50">
@@ -407,10 +559,28 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Success */}
       {phase === 'success' && (
-        <div className="flex items-center gap-2 rounded-[16px] border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-xs text-emerald-300">
-          <CheckCircle className="h-3.5 w-3.5 shrink-0" />
-          <span className="flex-1">{hubMsg || 'Fatto.'}</span>
-          <button onClick={reset} className="text-emerald-400/50 hover:text-emerald-300">✕</button>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 rounded-[16px] border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-xs text-emerald-300">
+            <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+            <span className="flex-1">{hubMsg || 'Fatto.'}</span>
+            <button onClick={reset} className="text-emerald-400/50 hover:text-emerald-300">✕</button>
+          </div>
+          {executionRun && executionRun.steps.length > 1 && (
+            <div className="space-y-1 rounded-[14px] border border-white/5 bg-black/10 px-3 py-2">
+              {executionRun.steps.map(step => (
+                <div key={step.id} className="flex items-center gap-2 text-xs">
+                  {step.status === 'succeeded' ? (
+                    <CheckCircle className="h-2.5 w-2.5 shrink-0 text-emerald-400/70" />
+                  ) : (
+                    <XCircle className="h-2.5 w-2.5 shrink-0 text-red-400/70" />
+                  )}
+                  <span className={step.status === 'succeeded' ? 'text-white/40' : 'text-red-300/50'}>
+                    {step.description || step.action}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

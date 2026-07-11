@@ -26,7 +26,20 @@ export interface BrainInterpretResult {
   confidence: number;
   reason: string | null;
   dispatchable: boolean;
-  commands: unknown[];
+  commands: Array<{
+    device_id: string | null;
+    device_ids?: string[];
+    action: string | null;
+    params: Record<string, unknown>;
+    step_index: number;
+    dependency_type: 'parallel' | 'sequential';
+    depends_on: number | null;
+    selector?: string | null;
+    target_type?: string | null;
+    room_id?: string | null;
+    excluded_ids?: string[];
+    description?: string | null;
+  }>;
   suggest_diagnose: boolean;
   missing?: string[];
   provider: string;
@@ -43,6 +56,14 @@ export interface BrainInterpretResult {
       draft?: Record<string, unknown>;
       confidence?: number;
       occurrences?: number;
+    }>;
+    steps?: Array<{
+      index: number;
+      description: string;
+      action: string;
+      dependency_type: 'parallel' | 'sequential';
+      depends_on: number | null;
+      device_count: number;
     }>;
   };
 }

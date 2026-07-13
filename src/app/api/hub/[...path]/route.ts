@@ -202,39 +202,44 @@ function isNotificationsPath(path: string[]): boolean {
 
 // ── Route handlers ───────────────────────────────────────────────────────────
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxyRequest(req, params.path); }
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params;
+  try { return await proxyRequest(req, path); }
   catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
-export async function HEAD(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxyRequest(req, params.path); }
+export async function HEAD(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params;
+  try { return await proxyRequest(req, path); }
   catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
-  if (isAutomationsPath(params.path)) {
-    try { return await proxyRequest(req, params.path); }
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params;
+  if (isAutomationsPath(path)) {
+    try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
   return readOnlyResponse();
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
-  if (isAutomationsPath(params.path) || isNotificationsPath(params.path)) {
-    try { return await proxyRequest(req, params.path); }
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params;
+  if (isAutomationsPath(path) || isNotificationsPath(path)) {
+    try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
   return readOnlyResponse();
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return readOnlyResponse();
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
-  if (isAutomationsPath(params.path) || isNotificationsPath(params.path)) {
-    try { return await proxyRequest(req, params.path); }
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path } = await params;
+  if (isAutomationsPath(path) || isNotificationsPath(path)) {
+    try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
   return readOnlyResponse();

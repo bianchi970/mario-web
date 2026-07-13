@@ -8,9 +8,9 @@ const HUB_TOKEN = process.env.HUB_TOKEN || '';
 const HUB_ID = process.env.HUB_ID || '';
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 };
 
 type JsonObject = Record<string, unknown>;
@@ -186,7 +186,8 @@ async function proxyBridge(projectId: string, payload: JsonObject): Promise<Resp
   return NextResponse.json(data ?? { success: true }, { status: upstream.status });
 }
 
-export async function POST(req: NextRequest, context: RouteContext) {
+export async function POST(req: NextRequest, { params: paramsPromise }: RouteContext) {
+  const context = { params: await paramsPromise };
   const hasProxyAuth = REMOTE_BRIDGE_URL ? Boolean(HUB_TOKEN) : Boolean(BRAIN_TOKEN);
   if (!hasProxyAuth) {
     return authRequiredResponse();

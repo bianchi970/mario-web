@@ -84,12 +84,12 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   return proxyLocal(req, path);
 }
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxy(req, params.path); }
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  try { return await proxy(req, (await params).path); }
   catch { return unavailable(); }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
-  try { return await proxy(req, params.path); }
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  try { return await proxy(req, (await params).path); }
   catch { return unavailable(); }
 }

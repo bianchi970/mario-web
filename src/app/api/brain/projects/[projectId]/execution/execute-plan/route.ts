@@ -13,7 +13,7 @@ const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
 const HUB_ID             = process.env.HUB_ID             || '';
 
-type RouteContext = { params: { projectId: string } };
+type RouteContext = { params: Promise<{ projectId: string }> };
 
 function unavailable() {
   return NextResponse.json({ error: 'Brain non raggiungibile' }, { status: 502 });
@@ -67,11 +67,12 @@ async function proxyBridge(projectId: string, body: unknown): Promise<Response> 
   });
 }
 
-export async function POST(req: NextRequest, context: RouteContext) {
+export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
+    const { projectId } = await params;
     const body = await req.json().catch(() => ({}));
-    if (REMOTE_BRIDGE_URL) return await proxyBridge(context.params.projectId, body);
-    return await proxyLocal(context.params.projectId, body);
+    if (REMOTE_BRIDGE_URL) return await proxyBridge(projectId, body);
+    return await proxyLocal(projectId, body);
   } catch {
     return unavailable();
   }

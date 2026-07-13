@@ -12,11 +12,11 @@ const BRAIN_URL = process.env.BRAIN_URL || 'http://localhost:4000';
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { scenarioId: string } }
+  context: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
     requireScenarioAuthorization(req);
-    const { scenarioId } = context.params;
+    const { scenarioId } = await context.params;
     const projectId = await resolveScenarioProjectId(req, req.nextUrl.searchParams.get('projectId'));
     const body = await req.json().catch(() => ({}));
 
@@ -61,11 +61,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { scenarioId: string } }
+  context: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
     requireScenarioAuthorization(req);
-    const { scenarioId } = context.params;
+    const { scenarioId } = await context.params;
     const projectId = await resolveScenarioProjectId(req, req.nextUrl.searchParams.get('projectId'));
 
     let upstream;

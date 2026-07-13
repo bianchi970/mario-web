@@ -7,6 +7,7 @@ import { InstallerModeProvider } from '@/context/InstallerModeContext';
 import { GatewayProvider } from '@/context/GatewayContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { SessionProvider } from '@/context/SessionContext';
 
 export const metadata: Metadata = {
   title: 'HomeMARIO',
@@ -55,18 +56,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen" style={{ backgroundColor: 'var(--bg-app)' }}>
         <ThemeProvider>
           <ToastProvider>
-            <GatewayProvider>
-              <ProjectProvider>
-                <InstallerModeProvider>
-                  <OfflineModeProvider>
-                    <Sidebar />
-                    <div className="flex-1 flex flex-col min-h-screen overflow-auto pb-16 md:pb-0">
-                      {children}
-                    </div>
-                  </OfflineModeProvider>
-                </InstallerModeProvider>
-              </ProjectProvider>
-            </GatewayProvider>
+            <SessionProvider>
+              <GatewayProvider>
+                <ProjectProvider>
+                  <InstallerModeProvider>
+                      <OfflineModeProvider>
+                      <Sidebar />
+                      <div className="flex-1 flex flex-col min-h-screen overflow-auto pb-16 md:pb-0">
+                        {children}
+                      </div>
+                    </OfflineModeProvider>
+                  </InstallerModeProvider>
+                </ProjectProvider>
+              </GatewayProvider>
+            </SessionProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

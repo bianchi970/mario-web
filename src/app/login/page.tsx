@@ -1,18 +1,28 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import { useToast } from '@/components/ui/ToastProvider';
 
 function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const from         = searchParams.get('from') ?? '/';
+  const expired      = searchParams.get('expired') === '1';
+  const { showToast } = useToast();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
+
+  // Toast sessione scaduta (una volta sola al mount)
+  useEffect(() => {
+    if (expired) showToast('Sessione scaduta. Accedi nuovamente.', 'warning');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -34,9 +44,9 @@ function LoginForm() {
         if (data.error === 'invalid_credentials') {
           setError('Credenziali non valide.');
         } else if (data.error === 'hub_unreachable') {
-          setError('Hub non raggiungibile.');
+          setError('Hub non raggiungibile. Verifica la connessione.');
         } else {
-          setError('Errore di accesso.');
+          setError('Errore di accesso. Riprova.');
         }
       }
     } catch {
@@ -47,54 +57,63 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-hub-bg px-4">
+    <div className="min-h-screen flex items-center justify-center px-4"
+         style={{ backgroundColor: 'var(--bg-app)' }}>
       <div className="w-full max-w-sm">
-        {/* Logo */}
+
+        {/* Logo HomeMARIO */}
         <div className="text-center mb-8">
-          <span className="font-bold text-2xl tracking-tight text-white">MARIO</span>
-          <p className="mt-2 text-xs text-hub-muted">Accesso remoto</p>
+          <div className="inline-flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center
+              text-white text-base font-bold shadow-lg">
+              M
+            </div>
+            <span className="font-bold text-2xl tracking-tight text-text">HomeMARIO</span>
+          </div>
+          <p className="text-sm text-text-2">Accesso remoto</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4">
-          <div>
-            <label className="text-xs text-hub-muted block mb-1">Utente</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoFocus
-              required
-              autoComplete="username"
-              placeholder="admin"
-              className="w-full px-3 py-2 rounded-lg border border-hub-border bg-hub-bg text-hub-text text-sm focus:outline-none focus:border-hub-accent"
-            />
-          </div>
+        {/* Card form */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4"
+        >
+          <Input
+            label="Utente"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoFocus
+            required
+            autoComplete="username"
+            placeholder="admin"
+          />
 
-          <div>
-            <label className="text-xs text-hub-muted block mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="w-full px-3 py-2 rounded-lg border border-hub-border bg-hub-bg text-hub-text text-sm focus:outline-none focus:border-hub-accent"
-            />
-          </div>
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            placeholder="••••••••"
+          />
 
           {error && (
-            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-xs text-danger">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            className="w-full"
             disabled={loading || !username || !password}
-            className="w-full py-2 rounded-lg bg-hub-accent text-white text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
+            loading={loading}
           >
-            {loading ? 'Accesso…' : 'Entra'}
-          </button>
+            Entra
+          </Button>
         </form>
+
       </div>
     </div>
   );

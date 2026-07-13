@@ -48,9 +48,14 @@ export default function SettingsClient({
   const [currentMode, setCurrentMode] = useState<ProjectMode | null>(null);
   const [modeChanging, setModeChanging] = useState(false);
   const [me, setMe] = useState<{ id: string | null; role: string | null } | null>(null);
-  const { projectId, setProjectId } = useProject();
+  const { projectId, setProjectId, authorizedProjects, projectsStatus, fetchAuthorizedProjects } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
+
+  // B96: carica lista progetti autorizzati al mount della pagina Settings
+  useEffect(() => {
+    void fetchAuthorizedProjects();
+  }, [fetchAuthorizedProjects]);
 
   useEffect(() => {
     void fetch('/api/auth/me')
@@ -246,16 +251,37 @@ export default function SettingsClient({
             <h2 className="text-sm font-medium text-hub-text">Project</h2>
             <div className="flex items-center gap-3">
               <label className="text-sm text-hub-muted shrink-0">Project ID</label>
-              <input
-                type="text"
-                value={projectId ?? ''}
-                onChange={(e) => setProjectId(e.target.value)}
-                className="flex-1 bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
-                placeholder="Project ID"
-              />
+              {projectsStatus === 'loading' ? (
+                <span className="text-sm text-hub-muted italic">Caricamento...</span>
+              ) : projectsStatus === 'empty' ? (
+                <span className="text-sm text-red-500 font-medium">
+                  Nessuna casa autorizzata. Contatta l&apos;amministratore.
+                </span>
+              ) : authorizedProjects.length > 0 ? (
+                <select
+                  value={projectId ?? ''}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  className="flex-1 bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
+                >
+                  {authorizedProjects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name || p.id}</option>
+                  ))}
+                </select>
+              ) : (
+                /* unauthenticated o offline → input libero (modalità locale) */
+                <input
+                  type="text"
+                  value={projectId ?? ''}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  className="flex-1 bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
+                  placeholder="Project ID"
+                />
+              )}
             </div>
             <p className="text-xs text-hub-muted">
-              Salvato nel browser. E&apos; la sorgente unica per dispositivi, stanze e scenari.
+              {projectsStatus === 'empty'
+                ? 'Operazioni bloccate: contatta il proprietario della casa per ricevere accesso.'
+                : 'Salvato nel browser. E\u2019 la sorgente unica per dispositivi, stanze e scenari.'}
             </p>
           </div>
 

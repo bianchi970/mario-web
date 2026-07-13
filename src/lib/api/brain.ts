@@ -124,7 +124,11 @@ export async function brainLearn(payload: {
   correct_entity?: { type: string; id: string; name: string };
   feedback_type?: 'correction' | 'success' | 'failure';
   project_id?: string;
-}): Promise<{ ok: boolean; learned: { wrong_phrase: string; correct_phrase: string; error_type: string } }> {
+  session_id?: string;
+  execution_id?: string;
+  step_index?: number;
+  outcome?: string;
+}): Promise<{ success: boolean; data: { learned: { wrong_phrase: string; correct_phrase: string; error_type: string } }; error: string | null }> {
   return fetchAPI('/api/brain/learn', {
     method: 'POST',
     body: JSON.stringify(payload),

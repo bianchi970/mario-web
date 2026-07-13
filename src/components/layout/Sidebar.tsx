@@ -7,15 +7,18 @@ import { useInstallerMode } from '@/context/InstallerModeContext';
 import { useTheme } from '@/context/ThemeContext';
 
 // mobileHidden: non appare nella bottom nav mobile (solo sidebar desktop)
+// Routine (B97-C) e Storico (B97-C) aggiunti al nav utente solo dopo che le
+// rispettive pagine sono completate e autorizzate.
 const NAV_ALL = [
   { href: '/',           label: 'Casa',         icon: '□',  installerOnly: false, mobileHidden: false },
   { href: '/rooms',      label: 'Stanze',       icon: '⬜', installerOnly: false, mobileHidden: false },
-  { href: '/routines',   label: 'Routine',      icon: '↺',  installerOnly: false, mobileHidden: false },
   { href: '/scenarios',  label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false, mobileHidden: false },
   { href: '/settings',   label: 'Impostazioni', icon: '⚙', installerOnly: false, mobileHidden: false },
-  { href: '/storico',    label: 'Storico',      icon: '◷', installerOnly: false, mobileHidden: true },
   { href: '/security',   label: 'Sicurezza',    icon: '🛡', installerOnly: false, mobileHidden: true },
   { href: '/energy',     label: 'Energia',      icon: '⚡', installerOnly: false, mobileHidden: true },
+  // Storico: diventa visibile a tutti in B97-C (ora solo installatore)
+  { href: '/storico',    label: 'Storico',      icon: '◷', installerOnly: true,  mobileHidden: true },
+  // Routine: aggiunto in B97-C quando la pagina sarà disponibile
   { href: '/devices',    label: 'Dispositivi',  icon: '◈', installerOnly: true,  mobileHidden: true },
   { href: '/onboarding', label: 'Aggiungi',     icon: '+',  installerOnly: true,  mobileHidden: true },
   { href: '/gateways',   label: 'Gateway',      icon: '⊞', installerOnly: true,  mobileHidden: true },

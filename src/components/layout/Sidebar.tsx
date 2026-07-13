@@ -1,27 +1,38 @@
 'use client';
 
+import {
+  Home, LayoutGrid, Wand2, Settings, Shield, Zap,
+  Clock, Cpu, Plus, Router, type LucideIcon,
+} from 'lucide-react';
 import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 import { useTheme } from '@/context/ThemeContext';
 
+interface NavItem {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  installerOnly: boolean;
+  mobileHidden: boolean;
+}
+
 // mobileHidden: non appare nella bottom nav mobile (solo sidebar desktop)
-// Routine (B97-C) e Storico (B97-C) aggiunti al nav utente solo dopo che le
-// rispettive pagine sono completate e autorizzate.
-const NAV_ALL = [
-  { href: '/',           label: 'Casa',         icon: '□',  installerOnly: false, mobileHidden: false },
-  { href: '/rooms',      label: 'Stanze',       icon: '⬜', installerOnly: false, mobileHidden: false },
-  { href: '/scenarios',  label: SCENARIO_COPY.pageTitle, icon: '▣', installerOnly: false, mobileHidden: false },
-  { href: '/settings',   label: 'Impostazioni', icon: '⚙', installerOnly: false, mobileHidden: false },
-  { href: '/security',   label: 'Sicurezza',    icon: '🛡', installerOnly: false, mobileHidden: true },
-  { href: '/energy',     label: 'Energia',      icon: '⚡', installerOnly: false, mobileHidden: true },
-  // Storico: diventa visibile a tutti in B97-C (ora solo installatore)
-  { href: '/storico',    label: 'Storico',      icon: '◷', installerOnly: true,  mobileHidden: true },
+// Routine e Storico aggiunti al nav utente in B97-C dopo che le pagine sono pronte.
+const NAV_ALL: NavItem[] = [
+  { href: '/',           label: 'Casa',                      Icon: Home,       installerOnly: false, mobileHidden: false },
+  { href: '/rooms',      label: 'Stanze',                    Icon: LayoutGrid, installerOnly: false, mobileHidden: false },
+  { href: '/scenarios',  label: SCENARIO_COPY.pageTitle,     Icon: Wand2,      installerOnly: false, mobileHidden: false },
+  { href: '/settings',   label: 'Impostazioni',              Icon: Settings,   installerOnly: false, mobileHidden: false },
+  { href: '/security',   label: 'Sicurezza',                 Icon: Shield,     installerOnly: false, mobileHidden: true },
+  { href: '/energy',     label: 'Energia',                   Icon: Zap,        installerOnly: false, mobileHidden: true },
+  // Storico: visibile a tutti in B97-C (ora solo installatore)
+  { href: '/storico',    label: 'Storico',                   Icon: Clock,      installerOnly: true,  mobileHidden: true },
   // Routine: aggiunto in B97-C quando la pagina sarà disponibile
-  { href: '/devices',    label: 'Dispositivi',  icon: '◈', installerOnly: true,  mobileHidden: true },
-  { href: '/onboarding', label: 'Aggiungi',     icon: '+',  installerOnly: true,  mobileHidden: true },
-  { href: '/gateways',   label: 'Gateway',      icon: '⊞', installerOnly: true,  mobileHidden: true },
+  { href: '/devices',    label: 'Dispositivi',               Icon: Cpu,        installerOnly: true,  mobileHidden: true },
+  { href: '/onboarding', label: 'Aggiungi',                  Icon: Plus,       installerOnly: true,  mobileHidden: true },
+  { href: '/gateways',   label: 'Gateway',                   Icon: Router,     installerOnly: true,  mobileHidden: true },
 ];
 
 const THEME_LABELS: { value: 'light' | 'dark' | 'auto'; label: string }[] = [
@@ -52,8 +63,8 @@ export default function Sidebar() {
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV.map(({ href, label, icon }) => {
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {NAV.map(({ href, label, Icon }) => {
             const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
             return (
               <Link
@@ -61,11 +72,11 @@ export default function Sidebar() {
                 href={href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                   active
-                    ? 'bg-primary/20 text-primary font-medium'
+                    ? 'bg-primary/15 text-primary font-medium'
                     : 'text-text-2 hover:text-text hover:bg-surface-2'
                 }`}
               >
-                <span className="text-base">{icon}</span>
+                <Icon size={16} strokeWidth={active ? 2.5 : 1.8} />
                 {label}
               </Link>
             );
@@ -77,7 +88,6 @@ export default function Sidebar() {
           {installerMode && (
             <div className="text-xs text-primary font-medium px-1">Modalità installatore</div>
           )}
-          {/* Selettore tema dark/light/auto */}
           <div className="flex items-center gap-1" role="group" aria-label="Tema">
             {THEME_LABELS.map(({ value, label }) => (
               <button
@@ -102,17 +112,17 @@ export default function Sidebar() {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border flex"
         aria-label="Navigazione principale"
       >
-        {MOBILE_NAV.map(({ href, label, icon }) => {
+        {MOBILE_NAV.map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-xs transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-xs transition-colors ${
                 active ? 'text-primary' : 'text-text-2'
               }`}
             >
-              <span className="text-lg leading-none">{icon}</span>
+              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
               <span>{label}</span>
             </Link>
           );

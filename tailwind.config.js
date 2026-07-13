@@ -30,7 +30,7 @@ module.exports = {
           surface:  '#1a1d27',
           border:   '#2a2d3a',
           text:     '#e2e8f0',
-          muted:    '#64748b',
+          muted:    '#9aa3b2',   /* alzato da #64748b → contrasto ~5:1 su dark bg */
           accent:   '#3b82f6',
           green:    '#22c55e',
           red:      '#ef4444',

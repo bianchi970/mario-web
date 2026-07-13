@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, CalendarClock, CheckCircle, Loader2, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
@@ -82,6 +82,25 @@ function _isCompoundDispatchable(r: BrainInterpretResult): boolean {
 }
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
+  // Interfaccia minimale Web Speech API (non inclusa nei tipi standard TypeScript)
+  interface _SpeechResult { transcript: string }
+  interface _SpeechEvent { results: ArrayLike<ArrayLike<_SpeechResult>> }
+  interface _SR {
+    lang: string; continuous: boolean; interimResults: boolean;
+    onstart: (() => void) | null;
+    onresult: ((e: _SpeechEvent) => void) | null;
+    onerror: (() => void) | null;
+    onend: (() => void) | null;
+    start(): void; stop(): void;
+  }
+  type _SRConstructor = new () => _SR;
+
+  function _getSR(): _SRConstructor | undefined {
+    if (typeof window === 'undefined') return undefined;
+    const w = window as unknown as Record<string, unknown>;
+    return (w['SpeechRecognition'] ?? w['webkitSpeechRecognition']) as _SRConstructor | undefined;
+  }
+
   const { sessionId, clearSession } = useConversationSession(projectId);
   const [text, setText] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
@@ -94,7 +113,40 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [correctionText, setCorrectionText] = useState('');
   const [correctionDone, setCorrectionDone] = useState(false);
   const [executionRun, setExecutionRun] = useState<ExecutionRun | null>(null);
+  const [listening, setListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const stopPollRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<_SR | null>(null);
+
+  // Verifica supporto Web Speech API al mount (client-only)
+  useEffect(() => {
+    setSpeechSupported(!!_getSR());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function startListening() {
+    const SR = _getSR();
+    if (!SR) return;
+    const r = new SR();
+    r.lang = 'it-IT';
+    r.continuous = false;
+    r.interimResults = false;
+    r.onstart  = () => setListening(true);
+    r.onresult = (e) => {
+      const transcript = e.results[0]?.[0]?.transcript ?? '';
+      setText(transcript);
+      setListening(false);
+    };
+    r.onerror = () => setListening(false);
+    r.onend   = () => setListening(false);
+    recognitionRef.current = r;
+    r.start();
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+    setListening(false);
+  }
 
   // Recovery esecuzione composta dopo refresh di pagina
   useEffect(() => {
@@ -406,9 +458,27 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
           disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}
-          placeholder="es. accendi la luce del soggiorno"
+          placeholder={listening ? 'Sto ascoltando…' : 'es. accendi la luce del soggiorno'}
           className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none disabled:opacity-50"
         />
+
+        {/* Pulsante microfono — Web Speech API */}
+        {speechSupported && (
+          <button
+            onClick={listening ? stopListening : startListening}
+            disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}
+            title={listening ? 'Ferma ascolto' : 'Parla (it-IT)'}
+            aria-label={listening ? 'Ferma ascolto' : 'Avvia riconoscimento vocale'}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40 ${
+              listening
+                ? 'border-red-500/50 bg-red-500/20 text-red-300 animate-pulse'
+                : 'border-white/10 bg-white/5 text-white/50 active:bg-white/10 hover:text-white/80'
+            }`}
+          >
+            {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
+        )}
+
         <button
           onClick={() => void handleSend()}
           disabled={!text.trim() || phase === 'loading' || phase === 'confirming' || phase === 'executing'}

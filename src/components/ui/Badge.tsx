@@ -1,4 +1,6 @@
-type BadgeVariant = 'green' | 'red' | 'amber' | 'blue' | 'gray';
+// Varianti semantiche B97 + alias legacy (green/red/amber/blue) per compatibilità
+type BadgeVariant = 'success' | 'danger' | 'warning' | 'primary' | 'gray'
+  | 'green' | 'red' | 'amber' | 'blue'; // alias legacy → token semantici
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -7,16 +9,25 @@ interface BadgeProps {
 }
 
 const VARIANTS: Record<BadgeVariant, string> = {
-  green: 'bg-hub-green/20 text-hub-green border-hub-green/30',
-  red:   'bg-hub-red/20  text-hub-red  border-hub-red/30',
-  amber: 'bg-hub-amber/20 text-hub-amber border-hub-amber/30',
-  blue:  'bg-hub-accent/20 text-hub-accent border-hub-accent/30',
-  gray:  'bg-hub-border/50 text-hub-muted  border-hub-border',
+  // Token semantici B97
+  success: 'bg-success/20 text-success border-success/30',
+  danger:  'bg-danger/20  text-danger  border-danger/30',
+  warning: 'bg-warning/20 text-warning border-warning/30',
+  primary: 'bg-primary/20 text-primary border-primary/30',
+  gray:    'bg-surface-2  text-text-2  border-border',
+  // Alias legacy
+  green:   'bg-success/20 text-success border-success/30',
+  red:     'bg-danger/20  text-danger  border-danger/30',
+  amber:   'bg-warning/20 text-warning border-warning/30',
+  blue:    'bg-primary/20 text-primary border-primary/30',
 };
 
 export default function Badge({ children, variant = 'gray', className = '' }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium ${VARIANTS[variant]} ${className}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium
+        ${VARIANTS[variant]} ${className}`}
+    >
       {children}
     </span>
   );
@@ -24,11 +35,11 @@ export default function Badge({ children, variant = 'gray', className = '' }: Ba
 
 export function deviceTypeBadge(type: string): BadgeVariant {
   const map: Record<string, BadgeVariant> = {
-    light: 'amber', rgb_light: 'amber',
-    thermostat: 'red', boiler: 'red',
-    inverter: 'green', battery: 'green', meter: 'green',
-    alarm_panel: 'red', siren: 'red',
-    plug: 'blue', ev_charger: 'blue',
+    light: 'warning', rgb_light: 'warning',
+    thermostat: 'danger', boiler: 'danger',
+    inverter: 'success', battery: 'success', meter: 'success',
+    alarm_panel: 'danger', siren: 'danger',
+    plug: 'primary', ev_charger: 'primary',
     sensor: 'gray', motion_sensor: 'gray',
   };
   return map[type] ?? 'gray';

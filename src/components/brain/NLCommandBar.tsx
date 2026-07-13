@@ -85,11 +85,12 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   // Interfaccia minimale Web Speech API (non inclusa nei tipi standard TypeScript)
   interface _SpeechResult { transcript: string }
   interface _SpeechEvent { results: ArrayLike<ArrayLike<_SpeechResult>> }
+  interface _SRError { error: string }
   interface _SR {
     lang: string; continuous: boolean; interimResults: boolean;
     onstart: (() => void) | null;
     onresult: ((e: _SpeechEvent) => void) | null;
-    onerror: (() => void) | null;
+    onerror: ((e: _SRError) => void) | null;
     onend: (() => void) | null;
     start(): void; stop(): void;
   }
@@ -100,6 +101,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     const w = window as unknown as Record<string, unknown>;
     return (w['SpeechRecognition'] ?? w['webkitSpeechRecognition']) as _SRConstructor | undefined;
   }
+
+  const MIC_ERRORS: Record<string, string> = {
+    'not-allowed':    'Permesso microfono negato. Controlla le impostazioni del browser.',
+    'audio-capture':  'Microfono non trovato o già in uso.',
+    'network':        'Errore di rete. Il riconoscimento vocale richiede connessione.',
+    'service-not-allowed': 'Riconoscimento vocale non disponibile su questa pagina.',
+  };
 
   const { sessionId, clearSession } = useConversationSession(projectId);
   const [text, setText] = useState('');
@@ -124,21 +132,45 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function startListening() {
+  async function startListening() {
     const SR = _getSR();
     if (!SR) return;
+
+    // Su Android Chrome, getUserMedia sblocca il permesso microfono prima di
+    // avviare SpeechRecognition — senza questo passaggio fallisce silenziosamente.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // fermiamo subito lo stream — serve solo per il permesso
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      setErrorMsg('Permesso microfono negato. Consenti l\'accesso al microfono dal browser.');
+      setPhase('error');
+      return;
+    }
+
     const r = new SR();
     r.lang = 'it-IT';
     r.continuous = false;
     r.interimResults = false;
-    r.onstart  = () => setListening(true);
+
+    r.onstart = () => setListening(true);
+
     r.onresult = (e) => {
       const transcript = e.results[0]?.[0]?.transcript ?? '';
       setText(transcript);
       setListening(false);
     };
-    r.onerror = () => setListening(false);
-    r.onend   = () => setListening(false);
+
+    r.onerror = (e) => {
+      setListening(false);
+      if (e.error === 'no-speech') return; // normale, nessun errore visibile
+      const msg = MIC_ERRORS[e.error] ?? `Errore microfono: ${e.error}`;
+      setErrorMsg(msg);
+      setPhase('error');
+    };
+
+    r.onend = () => setListening(false);
+
     recognitionRef.current = r;
     r.start();
   }

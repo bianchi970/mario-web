@@ -494,8 +494,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none disabled:opacity-50"
         />
 
-        {/* Pulsante microfono — Web Speech API */}
-        {speechSupported && (
+        {/* Pulsante microfono — disabilitato fino a B97-B (voce locale Pi)
+            Web Speech API invia audio a Google: non usare senza consenso esplicito.
+            speechSupported mantenuto per riattivazione in B97-B. */}
+        {false && speechSupported && (
           <button
             onClick={listening ? stopListening : startListening}
             disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}

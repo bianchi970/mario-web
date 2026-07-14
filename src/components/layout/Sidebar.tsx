@@ -2,13 +2,14 @@
 
 import {
   Home, LayoutGrid, Wand2, Settings, Shield, Zap,
-  Clock, Cpu, Plus, Router, type LucideIcon,
+  Clock, Cpu, Plus, Router, Download, type LucideIcon,
 } from 'lucide-react';
 import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 import { useTheme } from '@/context/ThemeContext';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 interface NavItem {
   href: string;
@@ -45,6 +46,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { installerMode } = useInstallerMode();
   const { theme, setTheme } = useTheme();
+  const { canInstall, install } = usePWAInstall();
 
   const NAV        = NAV_ALL.filter((item) => !item.installerOnly || installerMode);
   const MOBILE_NAV = NAV.filter((item) => !item.mobileHidden);
@@ -83,8 +85,17 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Footer: modalità installatore + selettore tema */}
+        {/* Footer: installa PWA + modalità installatore + selettore tema */}
         <div className="px-4 py-4 border-t border-border space-y-3">
+          {canInstall && (
+            <button
+              onClick={() => void install()}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+            >
+              <Download size={14} />
+              Installa app
+            </button>
+          )}
           {installerMode && (
             <div className="text-xs text-primary font-medium px-1">Modalità installatore</div>
           )}

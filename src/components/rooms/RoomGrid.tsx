@@ -3,7 +3,7 @@
 import type { Room } from '@/lib/hub-types';
 import RoomCard from './RoomCard';
 
-export default function RoomGrid({ rooms }: { rooms: Room[] }) {
+export default function RoomGrid({ rooms, deviceCounts = {} }: { rooms: Room[]; deviceCounts?: Record<string, { total: number; online: number }> }) {
   if (rooms.length === 0) {
     return (
       <div className="card text-center py-16 text-hub-muted">
@@ -17,7 +17,7 @@ export default function RoomGrid({ rooms }: { rooms: Room[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {rooms.map((room) => (
-        <RoomCard key={room.id} room={room} />
+        <RoomCard key={room.id} room={room} devicesTotal={deviceCounts[room.id]?.total} devicesOnline={deviceCounts[room.id]?.online} />
       ))}
     </div>
   );

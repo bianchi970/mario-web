@@ -233,6 +233,10 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
         <Badge variant={deviceTypeBadge(device.type)}>{device.type}</Badge>
         <Badge variant="gray">{device.protocol}</Badge>
         {device.vendor && <Badge variant="gray">{device.vendor}</Badge>}
+        {!installerMode && device.room_id && (() => {
+          const room = rooms.find((r) => r.id === device.room_id);
+          return room ? <Badge variant="gray">📍 {room.name}</Badge> : null;
+        })()}
         {!device.online && <Badge variant="red">Non in linea</Badge>}
       </div>
 

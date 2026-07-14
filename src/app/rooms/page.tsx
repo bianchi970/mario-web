@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge';
 import RoomGrid from '@/components/rooms/RoomGrid';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listRooms, createRoom } from '@/lib/api/rooms';
+import { listDevices } from '@/lib/api/devices';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 import type { Room } from '@/lib/hub-types';
 
@@ -13,6 +14,7 @@ export default function RoomsPage() {
   const projectId = useProjectId();
   const { installerMode } = useInstallerMode();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [deviceCounts, setDeviceCounts] = useState<Record<string, { total: number; online: number }>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -33,9 +35,21 @@ export default function RoomsPage() {
       setLoading(true);
       setError(null);
       try {
-        const items = await listRooms(projectId!);
+        const [items, deviceItems] = await Promise.all([
+          listRooms(projectId!),
+          listDevices(projectId!).catch(() => []),
+        ]);
         if (cancelled) return;
         setRooms(items);
+        // Calcola conteggi online/totale per stanza
+        const counts: Record<string, { total: number; online: number }> = {};
+        for (const d of deviceItems) {
+          if (!d.room_id) continue;
+          if (!counts[d.room_id]) counts[d.room_id] = { total: 0, online: 0 };
+          counts[d.room_id].total++;
+          if (d.online) counts[d.room_id].online++;
+        }
+        setDeviceCounts(counts);
       } catch (err) {
         if (cancelled) return;
         setRooms([]);
@@ -134,7 +148,7 @@ export default function RoomsPage() {
                 className="w-full rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text placeholder:text-hub-muted focus:outline-none focus:ring-1 focus:ring-hub-accent"
               />
             </div>
-            <RoomGrid rooms={filtered} />
+            <RoomGrid rooms={filtered} deviceCounts={deviceCounts} />
           </>
         )}
       </main>

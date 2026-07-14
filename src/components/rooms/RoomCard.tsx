@@ -13,7 +13,7 @@ const ROOM_ICONS: Record<string, string> = {
   laundry: 'ðŸ«§', cellar: 'ðŸª£', attic: 'ðŸ ',
 };
 
-export default function RoomCard({ room }: { room: Room }) {
+export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: Room; devicesTotal?: number; devicesOnline?: number }) {
   const [open, setOpen] = useState(false);
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,14 @@ export default function RoomCard({ room }: { room: Room }) {
             {room.floor && <p className="text-xs text-hub-muted">Piano {room.floor}</p>}
           </div>
         </div>
-        <span className={`text-hub-muted text-sm transition-transform ${open ? 'rotate-180' : ''}`}>â–¾</span>
+        <div className="flex items-center gap-2 shrink-0">
+          {devicesTotal !== undefined && devicesTotal > 0 && (
+            <span className={`text-xs font-medium tabular-nums ${devicesOnline === devicesTotal ? 'text-emerald-400' : devicesOnline === 0 ? 'text-hub-red' : 'text-amber-400'}`}>
+              {devicesOnline ?? 0}/{devicesTotal}
+            </span>
+          )}
+          <span className={`text-hub-muted text-sm transition-transform ${open ? 'rotate-180' : ''}`}>â–¾</span>
+        </div>
       </div>
 
       {open && (

@@ -82,32 +82,6 @@ function _isCompoundDispatchable(r: BrainInterpretResult): boolean {
 }
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
-  // Interfaccia minimale Web Speech API (non inclusa nei tipi standard TypeScript)
-  interface _SpeechResult { transcript: string }
-  interface _SpeechEvent { results: ArrayLike<ArrayLike<_SpeechResult>> }
-  interface _SRError { error: string }
-  interface _SR {
-    lang: string; continuous: boolean; interimResults: boolean;
-    onstart: (() => void) | null;
-    onresult: ((e: _SpeechEvent) => void) | null;
-    onerror: ((e: _SRError) => void) | null;
-    onend: (() => void) | null;
-    start(): void; stop(): void;
-  }
-  type _SRConstructor = new () => _SR;
-
-  function _getSR(): _SRConstructor | undefined {
-    if (typeof window === 'undefined') return undefined;
-    const w = window as unknown as Record<string, unknown>;
-    return (w['SpeechRecognition'] ?? w['webkitSpeechRecognition']) as _SRConstructor | undefined;
-  }
-
-  const MIC_ERRORS: Record<string, string> = {
-    'not-allowed':    'Permesso microfono negato. Controlla le impostazioni del browser.',
-    'audio-capture':  'Microfono non trovato o già in uso.',
-    'network':        'Errore di rete. Il riconoscimento vocale richiede connessione.',
-    'service-not-allowed': 'Riconoscimento vocale non disponibile su questa pagina.',
-  };
 
   const { sessionId, clearSession } = useConversationSession(projectId);
   const [text, setText] = useState('');
@@ -121,63 +95,76 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [correctionText, setCorrectionText] = useState('');
   const [correctionDone, setCorrectionDone] = useState(false);
   const [executionRun, setExecutionRun] = useState<ExecutionRun | null>(null);
-  const [listening, setListening] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
   const stopPollRef = useRef<AbortController | null>(null);
-  const recognitionRef = useRef<_SR | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef   = useRef<Blob[]>([]);
 
-  // Verifica supporto Web Speech API al mount (client-only)
-  useEffect(() => {
-    setSpeechSupported(!!_getSR());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function startListening() {
-    const SR = _getSR();
-    if (!SR) return;
-
-    // Su Android Chrome, getUserMedia sblocca il permesso microfono prima di
-    // avviare SpeechRecognition — senza questo passaggio fallisce silenziosamente.
+  async function startVoiceRecording() {
+    if (voiceRecording) return;
+    setVoiceError('');
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // fermiamo subito lo stream — serve solo per il permesso
-      stream.getTracks().forEach((t) => t.stop());
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      setErrorMsg('Permesso microfono negato. Consenti l\'accesso al microfono dal browser.');
-      setPhase('error');
+      setVoiceError('Permesso microfono negato. Consenti l\'accesso al microfono dal browser.');
       return;
     }
 
-    const r = new SR();
-    r.lang = 'it-IT';
-    r.continuous = false;
-    r.interimResults = false;
+    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    audioChunksRef.current = [];
 
-    r.onstart = () => setListening(true);
-
-    r.onresult = (e) => {
-      const transcript = e.results[0]?.[0]?.transcript ?? '';
-      setText(transcript);
-      setListening(false);
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
     };
 
-    r.onerror = (e) => {
-      setListening(false);
-      if (e.error === 'no-speech') return; // normale, nessun errore visibile
-      const msg = MIC_ERRORS[e.error] ?? `Errore microfono: ${e.error}`;
-      setErrorMsg(msg);
-      setPhase('error');
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      setVoiceRecording(false);
+
+      const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      if (blob.size < 1000) return; // silenzio o click accidentale
+
+      const form = new FormData();
+      form.append('audio', blob, 'voice.webm');
+      form.append('lang', 'it');
+
+      try {
+        const res = await fetch('/api/brain/voice/transcribe', {
+          method: 'POST',
+          body: form,
+        });
+        if (!res.ok) {
+          const status = res.status;
+          if (status === 503) {
+            setVoiceError('Voce temporaneamente non disponibile. Scrivi il comando.');
+          } else {
+            setVoiceError('Errore trascrizione. Scrivi il comando.');
+          }
+          return;
+        }
+        const data = (await res.json()) as { success: boolean; data?: { text: string } };
+        const transcript = data.data?.text?.trim() ?? '';
+        if (transcript) {
+          setText(transcript);
+          setVoiceError('');
+        } else {
+          setVoiceError('Nessun testo riconosciuto. Riprova.');
+        }
+      } catch {
+        setVoiceError('Voce temporaneamente non disponibile. Scrivi il comando.');
+      }
     };
 
-    r.onend = () => setListening(false);
-
-    recognitionRef.current = r;
-    r.start();
+    mediaRecorderRef.current = recorder;
+    recorder.start();
+    setVoiceRecording(true);
   }
 
-  function stopListening() {
-    recognitionRef.current?.stop();
-    setListening(false);
+  function stopVoiceRecording() {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
   }
 
   // Recovery esecuzione composta dopo refresh di pagina
@@ -490,26 +477,24 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
           disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}
-          placeholder={listening ? 'Sto ascoltando…' : 'es. accendi la luce del soggiorno'}
+          placeholder={voiceRecording ? 'Sto ascoltando…' : 'es. accendi la luce del soggiorno'}
           className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none disabled:opacity-50"
         />
 
-        {/* Pulsante microfono — disabilitato fino a B97-B (voce locale Pi)
-            Web Speech API invia audio a Google: non usare senza consenso esplicito.
-            speechSupported mantenuto per riattivazione in B97-B. */}
-        {false && speechSupported && (
+        {/* Pulsante microfono — voce locale Pi via Whisper (B97-B) */}
+        {typeof window !== 'undefined' && !!navigator.mediaDevices && (
           <button
-            onClick={listening ? stopListening : startListening}
+            onClick={voiceRecording ? stopVoiceRecording : () => void startVoiceRecording()}
             disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}
-            title={listening ? 'Ferma ascolto' : 'Parla (it-IT)'}
-            aria-label={listening ? 'Ferma ascolto' : 'Avvia riconoscimento vocale'}
+            title={voiceRecording ? 'Ferma registrazione' : 'Parla in italiano'}
+            aria-label={voiceRecording ? 'Ferma registrazione' : 'Avvia registrazione vocale'}
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40 ${
-              listening
+              voiceRecording
                 ? 'border-red-500/50 bg-red-500/20 text-red-300 animate-pulse'
                 : 'border-white/10 bg-white/5 text-white/50 active:bg-white/10 hover:text-white/80'
             }`}
           >
-            {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            {voiceRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </button>
         )}
 
@@ -532,6 +517,15 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Banner voce — non silenzioso se STT non disponibile */}
+      {voiceError && (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span>{voiceError}</span>
+          <button onClick={() => setVoiceError('')} className="ml-auto text-amber-400/60 hover:text-amber-300">✕</button>
+        </div>
+      )}
 
       {/* Preview */}
       {(phase === 'preview' || phase === 'automation_confirming') && result && (

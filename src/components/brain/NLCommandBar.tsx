@@ -107,8 +107,21 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setVoiceError('Permesso microfono negato. Consenti l\'accesso al microfono dal browser.');
+    } catch (err) {
+      const e = err as DOMException;
+      let msg: string;
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        msg = `Microfono bloccato (${e.name}). Controlla le autorizzazioni del sito o le impostazioni browser.`;
+      } else if (e.name === 'SecurityError') {
+        msg = `Microfono vietato dalla policy di sicurezza (${e.name}). Contatta il supporto.`;
+      } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+        msg = `Nessun microfono trovato (${e.name}). Collega un microfono e riprova.`;
+      } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+        msg = `Microfono occupato da un'altra applicazione (${e.name}).`;
+      } else {
+        msg = `Errore microfono: ${e.name} — ${e.message}`;
+      }
+      setVoiceError(msg);
       return;
     }
 

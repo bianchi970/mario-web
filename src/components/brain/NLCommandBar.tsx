@@ -75,6 +75,24 @@ type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'executing' | 'succ
 
 const _EXEC_TERMINAL = new Set(['succeeded', 'failed', 'partially_succeeded', 'cancelled']);
 
+/**
+ * Sceglie il MIME type supportato da MediaRecorder sul dispositivo corrente.
+ * Necessario per compatibilità Android Chrome / iOS Safari / Desktop.
+ */
+function chooseMimeType(): string {
+  const CANDIDATES = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/mp4',
+  ];
+  if (typeof MediaRecorder === 'undefined') return '';
+  for (const t of CANDIDATES) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return '';
+}
+
 function _isCompoundDispatchable(r: BrainInterpretResult): boolean {
   return r.commands.some(c =>
     c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0 || c.selector),
@@ -125,7 +143,18 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       return;
     }
 
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    // Selezione MIME con fallback (Android / iOS / Desktop)
+    const mimeType = chooseMimeType();
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    } catch (err) {
+      stream.getTracks().forEach((t) => t.stop());
+      setVoiceError(`Formato audio non supportato (${(err as Error).message}). Scrivi il comando.`);
+      return;
+    }
+
+    const actualMime = recorder.mimeType || mimeType || 'audio/webm';
     audioChunksRef.current = [];
 
     recorder.ondataavailable = (e) => {
@@ -136,24 +165,44 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       stream.getTracks().forEach((t) => t.stop());
       setVoiceRecording(false);
 
-      const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      if (blob.size < 1000) return; // silenzio o click accidentale
+      const blob = new Blob(audioChunksRef.current, { type: actualMime });
+      if (blob.size === 0) {
+        setVoiceError('Nessun audio registrato. Riprova.');
+        return;
+      }
 
-      const form = new FormData();
-      form.append('audio', blob, 'voice.webm');
-      form.append('lang', 'it');
+      // Converti in base64 JSON — necessario per attraversare il relay JSON (Pi→VPS bridge).
+      // Il relay serializza il body come stringa JSON: multipart/form-data binario verrebbe
+      // corrotto da req.text(); base64 + application/json è testo puro e passa intatto.
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      // Chunk-based: String.fromCharCode.apply su blocchi da 32 KB evita sia
+      // O(n²) della concatenazione carattere per carattere sia lo stack overflow
+      // dello spread (...bytes) su buffer grandi (es. audio 10s ≈ 80 KB).
+      const CHUNK = 0x8000; // 32 KB
+      let binary = '';
+      for (let offset = 0; offset < bytes.byteLength; offset += CHUNK) {
+        binary += String.fromCharCode.apply(
+          null,
+          bytes.subarray(offset, offset + CHUNK) as unknown as number[],
+        );
+      }
+      const audio_base64 = btoa(binary);
 
       try {
         const res = await fetch('/api/brain/voice/transcribe', {
           method: 'POST',
-          body: form,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio_base64, mime: actualMime, lang: 'it' }),
         });
         if (!res.ok) {
           const status = res.status;
           if (status === 503) {
             setVoiceError('Voce temporaneamente non disponibile. Scrivi il comando.');
+          } else if (status === 401 || status === 403) {
+            setVoiceError(`Accesso negato (${status}). Effettua il login e riprova.`);
           } else {
-            setVoiceError('Errore trascrizione. Scrivi il comando.');
+            setVoiceError(`Errore trascrizione (${status}). Scrivi il comando.`);
           }
           return;
         }

@@ -1,5 +1,17 @@
 import '@testing-library/jest-dom';
 
+// Polyfill Blob.prototype.arrayBuffer per jsdom (mancante nelle versioni < 22)
+if (typeof Blob !== 'undefined' && typeof Blob.prototype.arrayBuffer === 'undefined') {
+  Blob.prototype.arrayBuffer = function (): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(this);
+    });
+  };
+}
+
 // Polyfill crypto.randomUUID per jsdom (non disponibile di default)
 if (typeof globalThis.crypto === 'undefined' || typeof globalThis.crypto.randomUUID !== 'function') {
   let _uuid_counter = 0;

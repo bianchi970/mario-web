@@ -22,9 +22,13 @@ function unavailable() {
   return NextResponse.json({ error: 'Brain non raggiungibile' }, { status: 502 });
 }
 
+// Route AI: pipeline Ollama/Gemma può richiedere ~90 s.
+const AI_BRAIN_PATHS = ['interpret', 'diagnose'];
+
 async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   const body      = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.from(await req.arrayBuffer());
   const userToken = req.cookies.get('mario_hub_token')?.value || BRAIN_TOKEN;
+  const isAi      = AI_BRAIN_PATHS.some(p => path.includes(p));
 
   const upstreamRes = await fetch(`${BRAIN_URL}/api/brain/${path.join('/')}${req.nextUrl.search}`, {
     method:  req.method,
@@ -35,7 +39,7 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
     body,
     // @ts-expect-error duplex required for streaming body
     duplex: 'half',
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(isAi ? 130_000 : 15_000),
   });
 
   const responseBody = await upstreamRes.text();
@@ -50,6 +54,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
   const hubPath  = `/api/hub/brain/${path.join('/')}${req.nextUrl.search}`;
   const bodyText = ['GET', 'HEAD'].includes(req.method) ? null : await req.text();
   const userToken = req.cookies.get('mario_hub_token')?.value || '';
+  const isAi      = AI_BRAIN_PATHS.some(p => path.includes(p));
 
   const relayPayload: Record<string, unknown> = {
     method:  req.method,
@@ -69,7 +74,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
       'Authorization': `Bearer ${BRIDGE_RELAY_TOKEN}`,
     },
     body:   JSON.stringify(relayPayload),
-    signal: AbortSignal.timeout(18_000),
+    signal: AbortSignal.timeout(isAi ? 135_000 : 18_000),
   });
 
   const responseBody = await relayRes.text();

@@ -1,6 +1,6 @@
-// MARIO Service Worker v3 — online-first, icone e manifest in cache
+// MARIO Service Worker v4 — online-first, icone e manifest in cache
 // Aggiorna CACHE_V ad ogni release per invalidare la cache precedente.
-const CACHE_V = 'mario-v3';
+const CACHE_V = 'mario-v4';
 const STATIC_CACHE = [
   '/manifest.json',
   '/icons/icon-192x192.png',
@@ -32,6 +32,12 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = request.url;
+
+  // Pipeline AI (~90 s) — non intercettare: il browser gestisce la lunga attesa
+  // senza dipendere dalla vita del service worker (che il browser può terminare).
+  if (url.includes('/api/brain/interpret') || url.includes('/api/brain/diagnose')) {
+    return;
+  }
 
   // POST e chiamate API: sempre network diretto (no cache)
   if (request.method !== 'GET' || url.includes('/api/')) {

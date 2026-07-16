@@ -118,6 +118,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const stopPollRef = useRef<AbortController | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
+  const voiceTimeoutRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function startVoiceRecording() {
     if (voiceRecording) return;
@@ -221,10 +222,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
     mediaRecorderRef.current = recorder;
     recorder.start();
+    // Auto-stop dopo 30 s: 30 s × 64 kbps ≈ 240 KB raw → ~320 KB base64, ben sotto il limite 2 MB Hub.
+    voiceTimeoutRef.current = setTimeout(() => stopVoiceRecording(), 30_000);
     setVoiceRecording(true);
   }
 
   function stopVoiceRecording() {
+    if (voiceTimeoutRef.current) { clearTimeout(voiceTimeoutRef.current); voiceTimeoutRef.current = null; }
     mediaRecorderRef.current?.stop();
     mediaRecorderRef.current = null;
   }
@@ -711,6 +715,8 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 <span>
                   {result._v2?.outcome === 'ask' && result._v2.question
                     ? result._v2.question
+                    : result._v2?.outcome === 'defer' && result._v2?.explanation
+                    ? result._v2.explanation
                     : result.reason === 'missing_fields'
                     ? 'Comando incompleto'
                     : `Non eseguibile — ${result.reason ?? 'dispositivo non trovato'}`}

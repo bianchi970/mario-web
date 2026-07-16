@@ -95,6 +95,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
-  try { return await proxy(req, (await params).path); }
-  catch { return unavailable(); }
+  const p = (await params).path;
+  const t0 = Date.now();
+  console.log(`[brain-proxy] POST /${p.join('/')} start bridge=${!!REMOTE_BRIDGE_URL}`);
+  try {
+    const res = await proxy(req, p);
+    console.log(`[brain-proxy] POST /${p.join('/')} done status=${res.status} ms=${Date.now()-t0}`);
+    return res;
+  } catch (err) {
+    console.error(`[brain-proxy] POST /${p.join('/')} error ms=${Date.now()-t0}`, err);
+    return unavailable();
+  }
 }

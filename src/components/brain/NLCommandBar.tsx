@@ -715,11 +715,11 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 <span>
                   {result._v2?.outcome === 'ask' && result._v2.question
                     ? result._v2.question
-                    : result._v2?.outcome === 'defer' && result._v2?.explanation
+                    : result._v2?.explanation
                     ? result._v2.explanation
                     : result.reason === 'missing_fields'
                     ? 'Comando incompleto'
-                    : `Non eseguibile — ${result.reason ?? 'dispositivo non trovato'}`}
+                    : 'Comando non riconosciuto'}
                 </span>
                 <button onClick={reset} className="ml-auto text-white/40 hover:text-white/70">✕</button>
               </div>

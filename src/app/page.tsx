@@ -25,6 +25,7 @@ import type { ScenarioRecord, ScenarioAuditItem } from '@/lib/api/scenarios';
 import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import PushEnableBanner from '@/components/notifications/PushEnableBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
 
@@ -459,6 +460,9 @@ export default function DashboardPage() {
             {projectId && (
               <NLCommandBar projectId={projectId} devices={devices ?? []} />
             )}
+
+            {/* Notifiche push — abilita se non ancora iscritto */}
+            {projectId && <PushEnableBanner projectId={projectId} />}
 
             {/* Notifiche persistenti dal DB */}
             {projectId && (

@@ -1,10 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Bell, BellOff, X } from 'lucide-react';
+import { AlertTriangle, BellOff, X } from 'lucide-react';
 import { listNotifications, dismissNotification } from '@/lib/api/notifications';
 import type { HubNotification } from '@/lib/api/notifications';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -47,7 +46,6 @@ export default function NotificationCenter({
 }) {
   const [items, setItems] = useState<HubNotification[]>([]);
   const [dismissing, setDismissing] = useState<Set<string>>(new Set());
-  const { status: pushStatus, subscribe } = usePushNotifications(projectId);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -87,35 +85,13 @@ export default function NotificationCenter({
     }
   }
 
-  const showPushBanner = pushStatus === 'idle' || pushStatus === 'denied';
-  if (items.length === 0 && !showPushBanner) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      {/* Banner abilita notifiche push */}
-      {pushStatus === 'idle' && (
-        <div className="flex items-center gap-3 rounded-[20px] border border-blue-500/20 bg-blue-500/[0.06] px-4 py-3">
-          <Bell className="h-4 w-4 shrink-0 text-blue-400" />
-          <span className="flex-1 text-sm text-white/70">Abilita notifiche push</span>
-          <button
-            onClick={() => void subscribe()}
-            className="rounded-xl border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-xs text-blue-300 active:bg-blue-500/30"
-          >
-            Abilita
-          </button>
-        </div>
-      )}
-      {pushStatus === 'denied' && (
-        <div className="flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-2">
-          <BellOff className="h-3.5 w-3.5 shrink-0 text-white/30" />
-          <span className="text-xs text-white/30">Notifiche bloccate — abilita nelle impostazioni browser</span>
-        </div>
-      )}
-      {items.length > 0 && (
       <div className="px-1 text-xs font-semibold uppercase tracking-[0.15em] text-white/40">
         Notifiche
       </div>
-      )}
       {items.map((n) => (
         <div
           key={n.id}

@@ -1,6 +1,6 @@
-// MARIO Service Worker v4 — online-first, icone e manifest in cache
+// MARIO Service Worker v5 — online-first, icone e manifest in cache
 // Aggiorna CACHE_V ad ogni release per invalidare la cache precedente.
-const CACHE_V = 'mario-v4';
+const CACHE_V = 'mario-v5';
 const STATIC_CACHE = [
   '/manifest.json',
   '/icons/icon-192x192.png',

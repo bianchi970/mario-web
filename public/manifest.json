@@ -1,17 +1,18 @@
 {
-  "name": "MARIO",
+  "name": "MARIO — Casa Intelligente",
   "short_name": "MARIO",
   "id": "/",
-  "description": "Domotica locale — controllo casa",
-  "start_url": "/",
+  "description": "Controllo domotica locale — luci, tapparelle, clima e automazioni",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone"],
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait",
   "background_color": "#0f1117",
   "theme_color": "#0f1117",
   "lang": "it",
-  "categories": ["utilities"],
+  "categories": ["utilities", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -50,13 +51,29 @@
       "purpose": "maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Luci",
+      "short_name": "Luci",
+      "description": "Controlla le luci di casa",
+      "url": "/?shortcut=luci",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Stato Casa",
+      "short_name": "Stato",
+      "description": "Vedi lo stato di tutti i dispositivi",
+      "url": "/?shortcut=stato",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
   "screenshots": [
     {
       "src": "/screenshots/screenshot-mobile.png",
       "sizes": "540x1170",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "MARIO — Controllo casa"
+      "label": "MARIO — Controllo dispositivi di casa"
     }
   ]
 }

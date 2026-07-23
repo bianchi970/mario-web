@@ -90,7 +90,7 @@ describe('NLCommandBar — Brain Diagnose UI', () => {
     fireEvent.click(screen.getByRole('button', { name: '' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Non eseguibile/i)).toBeInTheDocument();
+      expect(screen.getByText(/Comando non riconosciuto/i)).toBeInTheDocument();
     });
 
     expect(screen.queryByText('Diagnosi consigliata')).not.toBeInTheDocument();

@@ -99,6 +99,11 @@ function _isCompoundDispatchable(r: BrainInterpretResult): boolean {
   );
 }
 
+/** B86: outcome=plan con array semplice [{device_id, action}] dal compound alias fast path */
+function _isPlanDispatchable(r: BrainInterpretResult): boolean {
+  return r._v2?.outcome === 'plan' && Array.isArray(r._v2?.plan) && (r._v2.plan as unknown[]).length > 0;
+}
+
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
   const { sessionId, clearSession } = useConversationSession(projectId);
@@ -276,7 +281,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     try {
       const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
-      const canDispatch = r.dispatchable || _isCompoundDispatchable(r);
+      const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
       if (!canDispatch) {
         setPhase('preview');
         return;
@@ -300,6 +305,22 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     if (validCommands.length > 0) {
       await dispatchCompound(r, validCommands);
       return;
+    }
+
+    // B86 compound alias fast path: outcome=plan con array [{device_id, action}]
+    if (r._v2?.outcome === 'plan' && Array.isArray(r._v2?.plan)) {
+      const planItems = r._v2.plan as Array<{ device_id: string; action: string }>;
+      if (planItems.length > 0) {
+        await dispatchCompound(r, planItems.map((p, i) => ({
+          device_id:       p.device_id,
+          action:          p.action,
+          params:          {} as Record<string, unknown>,
+          step_index:      i,
+          dependency_type: 'parallel' as const,
+          depends_on:      null,
+        })));
+        return;
+      }
     }
 
     // Legacy single-device
@@ -693,7 +714,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             </div>
           )}
 
-          {(result.dispatchable || _isCompoundDispatchable(result)) ? (
+          {(result.dispatchable || _isCompoundDispatchable(result) || _isPlanDispatchable(result)) ? (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => void dispatch(result)}

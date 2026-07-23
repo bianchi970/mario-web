@@ -50,6 +50,8 @@ export interface BrainInterpretResult {
     explanation?: string;
     task_kind?: string;
     question?: string | null;
+    /** B86 compound alias fast path: array semplice [{device_id, action}] */
+    plan?: Array<{ device_id: string; action: string }> | Record<string, unknown> | null;
     proactive?: Array<{
       type: string;
       message: string;

@@ -36,7 +36,7 @@ export function useEventStream(projectId: string | null) {
     const TYPES = [
       'device.state.changed', 'device.online', 'device.offline',
       'command.executed', 'command.failed', 'sensor.motion.detected',
-      'device.discovered',
+      'device.discovered', 'proactive.suggestion',
     ];
     for (const type of TYPES) {
       es.addEventListener(type, (e: MessageEvent) => {

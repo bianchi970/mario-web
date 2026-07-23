@@ -7,18 +7,22 @@ export default function PushEnableBanner({ projectId }: { projectId: string }) {
   const [status, setStatus] = useState<'checking' | 'idle' | 'denied' | 'subscribed' | 'unsupported'>('checking');
 
   useEffect(() => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        setStatus('unsupported');
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        setStatus('denied');
+        return;
+      }
+      navigator.serviceWorker.ready
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((sub) => setStatus(sub ? 'subscribed' : 'idle'))
+        .catch(() => setStatus('idle'));
+    } catch {
       setStatus('unsupported');
-      return;
     }
-    if (Notification.permission === 'denied') {
-      setStatus('denied');
-      return;
-    }
-    navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setStatus(sub ? 'subscribed' : 'idle'))
-      .catch(() => setStatus('idle'));
   }, []);
 
   async function handleSubscribe() {

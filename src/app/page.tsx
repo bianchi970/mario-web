@@ -25,7 +25,11 @@ import type { ScenarioRecord, ScenarioAuditItem } from '@/lib/api/scenarios';
 import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
-import PushEnableBanner from '@/components/notifications/PushEnableBanner';
+import dynamic from 'next/dynamic';
+const PushEnableBanner = dynamic(
+  () => import('@/components/notifications/PushEnableBanner'),
+  { ssr: false },
+);
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
 

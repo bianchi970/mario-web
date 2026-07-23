@@ -56,3 +56,26 @@ self.addEventListener('fetch', (event) => {
   // Tutto il resto (pagine HTML, chunks JS): network-first → nessun fallback offline
   event.respondWith(fetch(request));
 });
+
+// ── Web Push ──────────────────────────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  const data  = event.data?.json() ?? {};
+  const title = data.title || 'MARIO';
+  const body  = data.body  || data.message || '';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon:     '/icons/icon-192x192.png',
+      badge:    '/icons/icon-192x192-maskable.png',
+      tag:      data.tag || 'mario',
+      renotify: true,
+      data:     data.data || {},
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow('/'));
+});

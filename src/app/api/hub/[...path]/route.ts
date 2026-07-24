@@ -200,6 +200,10 @@ function isNotificationsPath(path: string[]): boolean {
   return path[0] === 'notifications';
 }
 
+function isPushPath(path: string[]): boolean {
+  return path[0] === 'push';
+}
+
 // ── Route handlers ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
@@ -216,7 +220,7 @@ export async function HEAD(req: NextRequest, { params }: { params: Promise<{ pat
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path)) {
+  if (isAutomationsPath(path) || isPushPath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
@@ -238,7 +242,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ path
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isNotificationsPath(path)) {
+  if (isAutomationsPath(path) || isNotificationsPath(path) || isPushPath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }

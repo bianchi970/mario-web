@@ -647,7 +647,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
           disabled={phase === 'loading' || phase === 'confirming' || phase === 'executing'}
           placeholder={voiceRecording ? 'Sto ascoltando…' : 'es. accendi la luce del soggiorno'}
-          className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none disabled:opacity-50"
+          className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-text-2/50 focus:outline-none disabled:opacity-50"
         />
 
         {/* Pulsante microfono — voce locale Pi via Whisper (B97-B) */}
@@ -660,7 +660,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40 ${
               voiceRecording
                 ? 'border-red-500/50 bg-red-500/20 text-red-300 animate-pulse'
-                : 'border-white/10 bg-white/5 text-white/50 active:bg-white/10 hover:text-white/80'
+                : 'border-border bg-surface-2 text-text-2 active:bg-surface hover:text-text'
             }`}
           >
             {voiceRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -681,7 +681,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         <button
           onClick={() => { clearSession(); reset(); }}
           title="Nuova conversazione"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/40 active:bg-white/10"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-2 text-text-2 active:bg-surface"
         >
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
@@ -696,7 +696,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               <button
                 key={label}
                 onClick={() => void handleChip(cmd)}
-                className="shrink-0 rounded-full border border-indigo-500/25 bg-indigo-500/[0.08] px-3.5 py-2 text-xs text-indigo-200/70 hover:text-indigo-100 hover:bg-indigo-500/15 active:bg-indigo-500/25 transition-colors min-h-[36px] whitespace-nowrap"
+                className="shrink-0 rounded-full border border-primary/25 bg-primary/[0.08] px-3.5 py-2 text-xs text-primary/80 hover:text-primary hover:bg-primary/15 active:bg-primary/25 transition-colors min-h-[36px] whitespace-nowrap"
               >
                 {label}
               </button>
@@ -708,7 +708,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               <button
                 key={label}
                 onClick={() => void handleChip(cmd)}
-                className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors min-h-[36px] whitespace-nowrap"
+                className="shrink-0 rounded-full border border-border bg-surface-2 px-3.5 py-2 text-xs text-text-2 hover:text-text hover:bg-surface active:bg-surface transition-colors min-h-[36px] whitespace-nowrap"
               >
                 {label}
               </button>
@@ -721,7 +721,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       {pushStatus === 'idle' && (
         <div className="flex items-center gap-3 rounded-[20px] border border-primary/20 bg-primary/[0.06] px-4 py-2.5">
           <Bell className="h-3.5 w-3.5 shrink-0 text-primary" />
-          <span className="flex-1 text-xs text-white/60">Abilita notifiche push per MARIO</span>
+          <span className="flex-1 text-xs text-text-2">Abilita notifiche push per MARIO</span>
           <button
             onClick={() => void handlePushSubscribe()}
             className="rounded-xl border border-primary/30 bg-primary/20 px-3 py-1 text-xs text-primary active:bg-primary/30"
@@ -731,9 +731,9 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         </div>
       )}
       {pushStatus === 'denied' && (
-        <div className="flex items-center gap-2 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-2">
-          <BellOff className="h-3.5 w-3.5 shrink-0 text-white/30" />
-          <span className="text-xs text-white/30">Notifiche bloccate — abilita nelle impostazioni browser</span>
+        <div className="flex items-center gap-2 rounded-[20px] border border-border bg-surface-2 px-4 py-2">
+          <BellOff className="h-3.5 w-3.5 shrink-0 text-text-2/60" />
+          <span className="text-xs text-text-2/60">Notifiche bloccate — abilita nelle impostazioni browser</span>
         </div>
       )}
 
@@ -748,15 +748,15 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Preview */}
       {(phase === 'preview' || phase === 'automation_confirming') && result && (
-        <div className="space-y-2 rounded-[18px] border border-white/10 bg-black/20 p-3 text-sm">
+        <div className="space-y-2 rounded-[18px] border border-border bg-surface-2 p-3 text-sm">
           {/* UserMeaning */}
           <div className="flex items-center justify-between">
-            <span className="font-medium text-white">{buildUserMeaning(result)}</span>
+            <span className="font-medium text-text">{buildUserMeaning(result)}</span>
             <span className={`text-xs font-semibold ${riskColor}`}>
               {result.risk === 'high' ? 'Rischio alto' : result.risk === 'medium' ? 'Rischio medio' : 'Sicuro'}
             </span>
           </div>
-          <div className="text-xs text-white/40">
+          <div className="text-xs text-text-2/70">
             Confidenza: {Math.round(result.confidence * 100)}%
           </div>
 
@@ -767,19 +767,19 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 <CalendarClock className="h-3.5 w-3.5" />
                 Nuova automazione
               </div>
-              <div className="text-xs text-white/70 font-medium">{result._v2.draft.name}</div>
+              <div className="text-xs text-text font-medium">{result._v2.draft.name}</div>
               {!!(result._v2.draft.trigger?.type) && (
-                <div className="text-xs text-white/50">
-                  Quando: <span className="text-white/70">{triggerLabel(result._v2.draft.trigger)}</span>
+                <div className="text-xs text-text-2">
+                  Quando: <span className="text-text">{triggerLabel(result._v2.draft.trigger)}</span>
                 </div>
               )}
               {result._v2.draft.actions?.length > 0 && (
-                <div className="text-xs text-white/50">
-                  Azione: <span className="text-white/70">{actionsLabel(result._v2.draft.actions)}</span>
+                <div className="text-xs text-text-2">
+                  Azione: <span className="text-text">{actionsLabel(result._v2.draft.actions)}</span>
                 </div>
               )}
               {result._v2.explanation && (
-                <div className="text-xs text-white/40 italic">{result._v2.explanation}</div>
+                <div className="text-xs text-text-2/70 italic">{result._v2.explanation}</div>
               )}
               <div className="flex gap-2 pt-0.5">
                 <button
@@ -791,7 +791,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 </button>
                 <button
                   onClick={reset}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50"
+                  className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-2"
                 >
                   Annulla
                 </button>
@@ -807,13 +807,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 Automazione rilevata
               </div>
               {(result.parameters?.at as string | undefined) && (
-                <div className="text-xs text-white/50">
-                  Orario: <span className="text-white/70">{result.parameters.at as string}</span>
+                <div className="text-xs text-text-2">
+                  Orario: <span className="text-text">{result.parameters.at as string}</span>
                 </div>
               )}
               {result.action && (
-                <div className="text-xs text-white/50">
-                  Azione: <span className="text-white/70">{ACTION_LABEL[result.action] ?? result.action}</span>
+                <div className="text-xs text-text-2">
+                  Azione: <span className="text-text">{ACTION_LABEL[result.action] ?? result.action}</span>
                 </div>
               )}
               {result.parameters?.at ? (
@@ -826,7 +826,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                   </button>
                   <button
                     onClick={reset}
-                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50 active:bg-white/10"
+                    className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-2 active:bg-surface"
                   >
                     ✕
                   </button>
@@ -856,7 +856,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               </button>
               <button
                 onClick={reset}
-                className="flex-1 rounded-xl border border-white/10 bg-white/5 py-1.5 text-xs text-white/50 active:bg-white/10"
+                className="flex-1 rounded-xl border border-border bg-surface-2 py-1.5 text-xs text-text-2 active:bg-surface"
               >
                 Annulla
               </button>
@@ -874,7 +874,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                     ? 'Comando incompleto'
                     : 'Comando non riconosciuto'}
                 </span>
-                <button onClick={reset} className="ml-auto text-white/40 hover:text-white/70">✕</button>
+                <button onClick={reset} className="ml-auto text-text-2/70 hover:text-text">✕</button>
               </div>
               {result.suggest_diagnose && (
                 <button
@@ -894,7 +894,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       {phase === 'executing' && (
         executionRun
           ? <ExecutionProgressCard run={executionRun} phase="executing" />
-          : <div className="flex items-center gap-2 text-xs text-white/50">
+          : <div className="flex items-center gap-2 text-xs text-text-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <span>Avvio esecuzione…</span>
             </div>
@@ -902,7 +902,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Automation creating */}
       {phase === 'automation_creating' && (
-        <div className="flex items-center gap-2 text-xs text-white/50">
+        <div className="flex items-center gap-2 text-xs text-text-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           <span>Creazione automazione...</span>
         </div>
@@ -910,7 +910,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Confirming */}
       {phase === 'confirming' && (
-        <div className="flex items-center gap-2 text-xs text-white/50">
+        <div className="flex items-center gap-2 text-xs text-text-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           <span>Invio a Hub...</span>
         </div>
@@ -948,10 +948,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               <span className="font-medium text-indigo-300">
                 Routine rilevata {proactiveItem.occurrences ?? ''} volte — Vuoi creare un&apos;automazione?
               </span>
-              <button onClick={() => setProactiveDismissed(true)} className="text-white/40 hover:text-white/70">✕</button>
+              <button onClick={() => setProactiveDismissed(true)} className="text-text-2/70 hover:text-text">✕</button>
             </div>
             {proactiveItem.message && (
-              <div className="text-white/50">{proactiveItem.message}</div>
+              <div className="text-text-2">{proactiveItem.message}</div>
             )}
             <div className="flex gap-2 pt-0.5">
               <button
@@ -968,7 +968,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               </button>
               <button
                 onClick={() => setProactiveDismissed(true)}
-                className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50"
+                className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-2"
               >
                 Non ora
               </button>
@@ -989,7 +989,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 value={correctionText}
                 onChange={e => setCorrectionText(e.target.value)}
                 placeholder="Cosa intendevi?"
-                className="flex-1 rounded-xl border border-white/10 bg-black/20 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:outline-none"
+                className="flex-1 rounded-xl border border-border bg-surface px-2 py-1 text-xs text-text placeholder:text-text-2/50 focus:outline-none"
               />
               <button
                 onClick={async () => {
@@ -1009,12 +1009,12 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               >
                 Invia
               </button>
-              <button onClick={() => setCorrecting(false)} className="text-white/40 hover:text-white/70">✕</button>
+              <button onClick={() => setCorrecting(false)} className="text-text-2/70 hover:text-text">✕</button>
             </div>
           ) : (
             <button
               onClick={() => setCorrecting(true)}
-              className="text-white/30 hover:text-white/60 underline underline-offset-2"
+              className="text-text-2/60 hover:text-text-2 underline underline-offset-2"
             >
               Hai sbagliato?
             </button>
@@ -1030,15 +1030,15 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               <Stethoscope className="h-3.5 w-3.5" />
               {diagnoseResult.category}
             </span>
-            <button onClick={reset} className="text-white/40 hover:text-white/70">✕</button>
+            <button onClick={reset} className="text-text-2/70 hover:text-text">✕</button>
           </div>
           {diagnoseResult.cause && (
-            <div className="text-white/60">{diagnoseResult.cause}</div>
+            <div className="text-text-2">{diagnoseResult.cause}</div>
           )}
           {diagnoseResult.steps.length > 0 && (
             <ol className="space-y-1 pl-3">
               {diagnoseResult.steps.map((step, i) => (
-                <li key={i} className="list-decimal text-white/50">{step}</li>
+                <li key={i} className="list-decimal text-text-2">{step}</li>
               ))}
             </ol>
           )}

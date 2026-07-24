@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import {
   Home, LayoutGrid, Wand2, Settings, Shield, Zap,
-  Clock, Cpu, Plus, Router, Download, Lightbulb, type LucideIcon,
+  Clock, Cpu, Plus, Router, Download, type LucideIcon,
 } from 'lucide-react';
 import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import Link from 'next/link';
@@ -55,11 +56,17 @@ export default function Sidebar() {
     <>
       {/* ── Sidebar desktop ─────────────────────────────────────────── */}
       <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface border-r border-border">
-        {/* Logo HomeMARIO — lightbulb con operai (concept logo) */}
+        {/* Logo HomeMARIO — circuit-M */}
         <div className="px-5 py-5 border-b border-border flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0
-            shadow-sm shadow-primary/40">
-            <Lightbulb className="w-4 h-4 text-white" strokeWidth={2} />
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-black/30">
+            <Image
+              src="/logo-circuit.png"
+              alt="HomeMARIO"
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-sm tracking-tight text-text leading-tight">HomeMARIO</span>

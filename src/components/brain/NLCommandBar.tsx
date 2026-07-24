@@ -254,18 +254,24 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   }
 
   // Controlla stato notifiche push al mount
+  // Timeout 3s: se serviceWorker.ready non risponde, mostra banner comunque
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setPushStatus((prev) => prev === 'checking' ? 'idle' : prev);
+    }, 3000);
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        clearTimeout(timer);
         setPushStatus('unsupported');
         return;
       }
-      if (Notification.permission === 'denied') { setPushStatus('denied'); return; }
+      if (Notification.permission === 'denied') { clearTimeout(timer); setPushStatus('denied'); return; }
       navigator.serviceWorker.ready
         .then((reg) => reg.pushManager.getSubscription())
-        .then((sub) => setPushStatus(sub ? 'subscribed' : 'idle'))
-        .catch(() => setPushStatus('idle'));
-    } catch { setPushStatus('unsupported'); }
+        .then((sub) => { clearTimeout(timer); setPushStatus(sub ? 'subscribed' : 'idle'); })
+        .catch(() => { clearTimeout(timer); setPushStatus('idle'); });
+    } catch { clearTimeout(timer); setPushStatus('unsupported'); }
+    return () => clearTimeout(timer);
   }, []);
 
   async function handlePushSubscribe() {
@@ -627,8 +633,8 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       : 'text-emerald-300';
 
   return (
-    <div className="rounded-[24px] border border-blue-500/20 bg-blue-500/[0.04] p-4 space-y-3">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400/70">
+    <div className="rounded-[24px] border border-primary/20 bg-primary/[0.04] p-4 space-y-3">
+      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">
         Comando Vocale
       </div>
 
@@ -664,7 +670,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         <button
           onClick={() => void handleSend()}
           disabled={!text.trim() || phase === 'loading' || phase === 'confirming' || phase === 'executing'}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/20 text-blue-300 active:bg-blue-500/40 disabled:opacity-40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/20 text-primary active:bg-primary/40 disabled:opacity-40"
         >
           {phase === 'loading' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -713,12 +719,12 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Banner notifiche push — idle o denied */}
       {pushStatus === 'idle' && (
-        <div className="flex items-center gap-3 rounded-[20px] border border-blue-500/20 bg-blue-500/[0.06] px-4 py-2.5">
-          <Bell className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+        <div className="flex items-center gap-3 rounded-[20px] border border-primary/20 bg-primary/[0.06] px-4 py-2.5">
+          <Bell className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="flex-1 text-xs text-white/60">Abilita notifiche push per MARIO</span>
           <button
             onClick={() => void handlePushSubscribe()}
-            className="rounded-xl border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-xs text-blue-300 active:bg-blue-500/30"
+            className="rounded-xl border border-primary/30 bg-primary/20 px-3 py-1 text-xs text-primary active:bg-primary/30"
           >
             Abilita
           </button>

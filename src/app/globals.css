@@ -6,7 +6,7 @@
 /* Valori come canali R G B separati da spazio per supportare /opacity Tailwind */
 :root,
 [data-theme="dark"] {
-  --color-primary:    25 118 210;      /* #1976d2 */
+  --color-primary:    234 88 12;       /* #ea580c — arancio HomeMARIO */
   --color-surface:    26 29 39;        /* #1a1d27 */
   --color-surface-2:  42 45 62;        /* #2a2d3e */
   --color-text:       232 234 246;     /* #e8eaf6 */
@@ -23,7 +23,7 @@
 
 /* ── CSS Custom Properties — Light ──────────────────────────────────────── */
 [data-theme="light"] {
-  --color-primary:    13 71 161;       /* #0d47a1 — brand HomeMARIO */
+  --color-primary:    234 88 12;       /* #ea580c — arancio HomeMARIO */
   --color-surface:    255 255 255;     /* #ffffff */
   --color-surface-2:  245 245 245;     /* #f5f5f5 */
   --color-text:       33 33 33;        /* #212121 */
@@ -41,7 +41,7 @@
 /* ── Auto: tema OS light quando nessun data-theme esplicito ─────────────── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]):not([data-theme="light"]) {
-    --color-primary:    13 71 161;
+    --color-primary:    234 88 12;       /* #ea580c — arancio HomeMARIO */
     --color-surface:    255 255 255;
     --color-surface-2:  245 245 245;
     --color-text:       33 33 33;

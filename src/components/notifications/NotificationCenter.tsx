@@ -10,18 +10,18 @@ import type { HubNotification } from '@/lib/api/notifications';
 function severityStyle(severity: HubNotification['severity']) {
   switch (severity) {
     case 'critical':
-      return 'border-red-500/30 bg-red-500/10 text-red-100';
+      return 'border-danger/30 bg-danger/10 text-danger';
     case 'warning':
-      return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
+      return 'border-warning/30 bg-warning/10 text-warning';
     default:
-      return 'border-white/10 bg-white/5 text-white/80';
+      return 'border-border bg-surface-2 text-text';
   }
 }
 
 function severityIcon(severity: HubNotification['severity']) {
   const cls =
-    severity === 'critical' ? 'text-red-400' :
-    severity === 'warning'  ? 'text-amber-400' : 'text-white/40';
+    severity === 'critical' ? 'text-danger' :
+    severity === 'warning'  ? 'text-warning' : 'text-text-2';
   return <AlertTriangle className={`h-4 w-4 shrink-0 ${cls}`} />;
 }
 
@@ -89,7 +89,7 @@ export default function NotificationCenter({
 
   return (
     <div className="space-y-2">
-      <div className="px-1 text-xs font-semibold uppercase tracking-[0.15em] text-white/40">
+      <div className="px-1 text-xs font-semibold uppercase tracking-[0.15em] text-text-2">
         Notifiche
       </div>
       {items.map((n) => (
@@ -126,10 +126,10 @@ export function NotificationsBell({
 }: {
   count: number;
 }) {
-  if (count === 0) return <BellOff className="h-5 w-5 text-white/30" />;
+  if (count === 0) return <BellOff className="h-5 w-5 text-text-2" />;
   return (
     <div className="relative">
-      <div className="h-5 w-5 text-white/70">🔔</div>
+      <div className="h-5 w-5 text-text">🔔</div>
       <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
         {count > 9 ? '9+' : count}
       </span>

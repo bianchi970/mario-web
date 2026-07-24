@@ -80,7 +80,7 @@ function ScenarioSwitch({
       onClick={onClick}
       disabled={disabled}
       className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
-        checked ? 'border-blue-400/60 bg-blue-500/80' : 'border-white/10 bg-white/10'
+        checked ? 'border-primary/60 bg-primary/80' : 'border-border bg-surface-2'
       } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
     >
       <span
@@ -102,16 +102,15 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[24px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
+    <section className="rounded-[24px] border border-border bg-surface p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-white/60">{title}</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-text-2">{title}</h2>
         {action}
       </div>
       {children}
     </section>
   );
 }
-
 
 function RoomCard({
   room,
@@ -136,16 +135,15 @@ function RoomCard({
         ? 'border-amber-500/20 bg-amber-500/[0.05]'
         : motionActive
         ? 'border-orange-500/20 bg-orange-500/[0.04]'
-        : 'border-white/8 bg-black/15'
+        : 'border-border bg-surface'
     }`}>
-      {/* Header stanza */}
       <div className="flex items-center justify-between mb-3">
-        <div className="font-medium text-white text-sm">{room.name}</div>
+        <div className="font-medium text-text text-sm">{room.name}</div>
         {lightsTotal > 0 && (
           <div className={`text-xs px-2 py-0.5 rounded-full border ${
             lightsActive
-              ? 'border-amber-500/30 bg-amber-500/15 text-amber-300'
-              : 'border-white/10 bg-white/5 text-white/30'
+              ? 'border-amber-500/30 bg-amber-500/15 text-amber-600'
+              : 'border-border bg-surface-2 text-text-2'
           }`}>
             {lightsOn}/{lightsTotal}
           </div>
@@ -155,25 +153,25 @@ function RoomCard({
         <div className="grid grid-cols-2 gap-1.5">
           {temperature !== null && (
             <div className="flex items-center gap-1.5">
-              <Thermometer className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-              <span className="text-xs text-white/70">{temperature.toFixed(1)}°</span>
+              <Thermometer className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+              <span className="text-xs text-text-2">{temperature.toFixed(1)}°</span>
             </div>
           )}
           {lux !== null && (
             <div className="flex items-center gap-1.5">
-              <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span className="text-xs text-white/70">{Math.round(lux)} lx</span>
+              <Sun className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <span className="text-xs text-text-2">{Math.round(lux)} lx</span>
             </div>
           )}
           {motionActive && (
             <div className="flex items-center gap-1.5 col-span-2">
-              <Eye className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-              <span className="text-xs text-orange-300">Movimento</span>
+              <Eye className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+              <span className="text-xs text-orange-600">Movimento</span>
             </div>
           )}
         </div>
       ) : (
-        <div className="text-xs text-white/25">Nessun sensore</div>
+        <div className="text-xs text-text-2/60">Nessun sensore</div>
       )}
     </div>
   );
@@ -181,7 +179,7 @@ function RoomCard({
 
 // Scene rapide — pattern Apple Home Favorites / Google Home 2026
 const SCENE_SHORTCUTS = [
-  { label: 'Buonanotte',  icon: Moon,   color: 'indigo', cmd: 'vado a dormire' },
+  { label: 'Buonanotte',   icon: Moon,   color: 'indigo',  cmd: 'vado a dormire' },
   { label: 'Sono tornato', icon: Shield, color: 'emerald', cmd: 'sono tornato a casa' },
   { label: 'Uscita',       icon: Zap,    color: 'amber',   cmd: 'sto per uscire' },
   { label: 'Ospiti',       icon: Users,  color: 'violet',  cmd: 'stasera vengono ospiti' },
@@ -189,11 +187,11 @@ const SCENE_SHORTCUTS = [
 ] as const;
 
 const COLOR_MAP = {
-  indigo:  { border: 'border-indigo-500/25',  bg: 'bg-indigo-500/[0.08]',  bgActive: 'active:bg-indigo-500/20',  text: 'text-indigo-300',  icon: 'text-indigo-400' },
-  emerald: { border: 'border-emerald-500/25', bg: 'bg-emerald-500/[0.08]', bgActive: 'active:bg-emerald-500/20', text: 'text-emerald-300', icon: 'text-emerald-400' },
-  amber:   { border: 'border-amber-500/25',   bg: 'bg-amber-500/[0.08]',   bgActive: 'active:bg-amber-500/20',   text: 'text-amber-300',   icon: 'text-amber-400' },
-  violet:  { border: 'border-violet-500/25',  bg: 'bg-violet-500/[0.08]',  bgActive: 'active:bg-violet-500/20',  text: 'text-violet-300',  icon: 'text-violet-400' },
-  sky:     { border: 'border-sky-500/25',     bg: 'bg-sky-500/[0.08]',     bgActive: 'active:bg-sky-500/20',     text: 'text-sky-300',     icon: 'text-sky-400' },
+  indigo:  { border: 'border-indigo-500/25',  bg: 'bg-indigo-500/[0.08]',  bgActive: 'active:bg-indigo-500/20',  text: 'text-text', icon: 'text-indigo-500' },
+  emerald: { border: 'border-emerald-500/25', bg: 'bg-emerald-500/[0.08]', bgActive: 'active:bg-emerald-500/20', text: 'text-text', icon: 'text-emerald-500' },
+  amber:   { border: 'border-amber-500/25',   bg: 'bg-amber-500/[0.08]',   bgActive: 'active:bg-amber-500/20',   text: 'text-text', icon: 'text-amber-500' },
+  violet:  { border: 'border-violet-500/25',  bg: 'bg-violet-500/[0.08]',  bgActive: 'active:bg-violet-500/20',  text: 'text-text', icon: 'text-violet-500' },
+  sky:     { border: 'border-sky-500/25',     bg: 'bg-sky-500/[0.08]',     bgActive: 'active:bg-sky-500/20',     text: 'text-text', icon: 'text-sky-500' },
 };
 
 /* ─── pagina principale ───────────────────────────────── */
@@ -282,7 +280,6 @@ export default function DashboardPage() {
 
     void load();
 
-    // Polling silenzioso ogni 2s — solo device state, solo quando visibile
     const timer = setInterval(() => {
       if (controller.signal.aborted || document.visibilityState !== 'visible') return;
       listDevices(projectId!, controller.signal).then((items) => {
@@ -296,7 +293,6 @@ export default function DashboardPage() {
     };
   }, [projectId, retryCount]);
 
-  // Polling meteo ogni 30 min
   useEffect(() => {
     if (!projectId) { setWeather(null); return; }
     getWeatherData(projectId).then(setWeather).catch(() => {});
@@ -307,7 +303,6 @@ export default function DashboardPage() {
     return () => { if (weatherTimer.current) clearInterval(weatherTimer.current); };
   }, [projectId]);
 
-  // Carica statistiche di ieri quando si seleziona il toggle
   useEffect(() => {
     if (viewDay !== 'ieri' || !projectId) return;
     const now = Date.now();
@@ -346,7 +341,6 @@ export default function DashboardPage() {
     setSceneMsg(null);
     try {
       const r = await brainInterpret(cmd, { project_id: projectId, devices: devices ?? [] });
-      // Mostra la risposta di MARIO (explanation o question)
       const msg = r._v2?.explanation ?? r._v2?.question ?? `${label} → ricevuto`;
       setSceneMsg(typeof msg === 'string' ? msg : `${label} → ok`);
     } catch {
@@ -386,42 +380,42 @@ export default function DashboardPage() {
     [devices, rooms],
   );
 
+  void brainOnline; // usato in futuro per badge Brain
+
   return (
     <>
       <TopBar title="Casa" />
-      <main className="flex-1 space-y-5 px-4 py-5 text-white xl:px-8">
+      <main className="flex-1 space-y-5 px-4 py-5 xl:px-8">
 
-        {/* Header — KPI strip pattern */}
+        {/* Header — KPI strip */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-white/40">HomeMARIO</div>
-            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-white">Casa</h1>
+            <div className="text-xs uppercase tracking-[0.2em] text-text-2">HomeMARIO</div>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-text">Casa</h1>
           </div>
           <div className="flex items-center gap-2">
-            {/* Device online count */}
             {devices && (
-              <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                <Smartphone className="h-3 w-3 text-white/40" />
-                <span className="text-xs text-white/60">
+              <div className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5">
+                <Smartphone className="h-3 w-3 text-text-2" />
+                <span className="text-xs text-text-2">
                   {devices.filter(d => d.online).length}/{devices.length}
                 </span>
               </div>
             )}
-            {/* Hub status */}
-            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5">
               <span className={`h-2 w-2 rounded-full ${serviceDot(hubOnline)}`} />
-              <span className="text-xs text-white/70">{hubOnline ? 'Online' : 'Offline'}</span>
+              <span className="text-xs text-text">{hubOnline ? 'Online' : 'Offline'}</span>
             </div>
           </div>
         </div>
 
-        {/* Banner: nessun progetto — solo installer */}
+        {/* Banner: nessun progetto */}
         {!effectiveProjectId && installerMode ? (
-          <div className="flex items-start gap-3 rounded-[22px] border border-amber-500/25 bg-amber-500/10 p-5 text-amber-100">
+          <div className="flex items-start gap-3 rounded-[22px] border border-amber-500/25 bg-amber-500/10 p-5 text-amber-700">
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="flex-1">
               <div className="font-medium">Seleziona un progetto.</div>
-              <div className="mt-1 text-sm text-amber-100/70">
+              <div className="mt-1 text-sm text-amber-700/70">
                 Dispositivi e scenari non si caricano senza un progetto attivo.
               </div>
               <div className="mt-3 flex gap-2">
@@ -433,13 +427,11 @@ export default function DashboardPage() {
                     if (e.key === 'Enter' && searchInput.trim()) setProjectId(searchInput.trim());
                   }}
                   placeholder="Nome progetto..."
-                  className="flex-1 rounded-xl border border-amber-500/30 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-amber-100/40 focus:outline-none"
+                  className="flex-1 rounded-xl border border-amber-500/30 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-amber-700/50 focus:outline-none"
                 />
                 <button
-                  onClick={() => {
-                    if (searchInput.trim()) setProjectId(searchInput.trim());
-                  }}
-                  className="rounded-xl border border-amber-500/30 bg-amber-500/20 px-4 py-2 text-sm text-amber-100 active:bg-amber-500/30"
+                  onClick={() => { if (searchInput.trim()) setProjectId(searchInput.trim()); }}
+                  className="rounded-xl border border-amber-500/30 bg-amber-500/20 px-4 py-2 text-sm text-amber-700 active:bg-amber-500/30"
                 >
                   Carica
                 </button>
@@ -447,16 +439,16 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : loading ? (
-          <div className="rounded-[22px] border border-white/10 bg-white/5 p-5 text-sm text-white/50">
+          <div className="rounded-[22px] border border-border bg-surface p-5 text-sm text-text-2">
             Caricamento...
           </div>
         ) : error ? (
-          <div className="flex items-center gap-3 rounded-[22px] border border-red-500/25 bg-red-500/10 p-4 text-red-100">
+          <div className="flex items-center gap-3 rounded-[22px] border border-danger/25 bg-danger/10 p-4 text-danger">
             <ShieldAlert className="h-5 w-5 shrink-0" />
             <span className="flex-1 text-sm">{error}</span>
             <button
               onClick={() => setRetryCount((c) => c + 1)}
-              className="rounded-xl border border-red-500/30 bg-red-500/20 px-3 py-1.5 text-sm active:bg-red-500/30"
+              className="rounded-xl border border-danger/30 bg-danger/20 px-3 py-1.5 text-sm active:bg-danger/30"
             >
               Riprova
             </button>
@@ -466,21 +458,20 @@ export default function DashboardPage() {
         {hasData && casa && (
           <>
             {/* SEZIONE 1 — Hero Stato Casa */}
-            <div className="rounded-[28px] border border-white/12 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-6 backdrop-blur-sm">
+            <div className="rounded-[28px] border border-border bg-surface p-6">
               <div className="mb-5 flex items-center justify-between">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-text-2">
                   Stato Casa
                 </div>
-                {/* Toggle Oggi / Ieri */}
-                <div className="flex items-center rounded-full border border-white/10 bg-white/5 p-0.5">
+                <div className="flex items-center rounded-full border border-border bg-surface-2 p-0.5">
                   {(['oggi', 'ieri'] as const).map((d) => (
                     <button
                       key={d}
                       onClick={() => setViewDay(d)}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                         viewDay === d
-                          ? 'bg-white/15 text-white'
-                          : 'text-white/40 hover:text-white/60'
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-text-2'
                       }`}
                     >
                       {d === 'oggi' ? 'Oggi' : 'Ieri'}
@@ -489,100 +480,97 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Dati ieri */}
               {viewDay === 'ieri' && (
                 yLoading ? (
-                  <div className="text-xs text-white/40 py-4 text-center">Caricamento dati ieri…</div>
+                  <div className="text-xs text-text-2 py-4 text-center">Caricamento dati ieri…</div>
                 ) : yStats ? (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="flex items-center gap-2 text-sky-300">
+                      <div className="flex items-center gap-2 text-sky-500">
                         <Thermometer className="h-5 w-5" />
-                        <span className="text-2xl font-semibold text-white">
+                        <span className="text-2xl font-semibold text-text">
                           {yStats.tempMin !== null && yStats.tempMax !== null
                             ? `${yStats.tempMin.toFixed(1)}–${yStats.tempMax.toFixed(1)}°`
                             : '—'}
                         </span>
                       </div>
-                      <div className="mt-1 text-xs text-white/40">Temp ieri (min–max)</div>
+                      <div className="mt-1 text-xs text-text-2">Temp ieri (min–max)</div>
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 text-amber-300">
+                      <div className="flex items-center gap-2 text-amber-500">
                         <Sun className="h-5 w-5" />
-                        <span className="text-2xl font-semibold text-white">
+                        <span className="text-2xl font-semibold text-text">
                           {yStats.luxMax !== null ? `${Math.round(yStats.luxMax)}` : '—'}
                         </span>
                       </div>
-                      <div className="mt-1 text-xs text-white/40">Lux max ieri</div>
+                      <div className="mt-1 text-xs text-text-2">Lux max ieri</div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-white/30 py-4 text-center">
+                  <div className="text-xs text-text-2 py-4 text-center">
                     Nessun dato storico disponibile per ieri.
                   </div>
                 )
               )}
 
-              {/* Dati oggi */}
               {viewDay === 'oggi' && (
-              <div className="grid grid-cols-2 gap-4">
-                {/* Temperatura */}
-                <div>
-                  <div className="flex items-center gap-2 text-sky-300">
-                    <Thermometer className="h-5 w-5" />
-                    <span className="text-2xl font-semibold text-white">
-                      {casa.temperature !== null ? `${casa.temperature.toFixed(1)}°` : '—'}
-                    </span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-sky-500">
+                      <Thermometer className="h-5 w-5" />
+                      <span className="text-2xl font-semibold text-text">
+                        {casa.temperature !== null ? `${casa.temperature.toFixed(1)}°` : '—'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-text-2">Temperatura</div>
                   </div>
-                  <div className="mt-1 text-xs text-white/40">Temperatura</div>
+                  <div>
+                    <div className="flex items-center gap-2 text-amber-500">
+                      <Sun className="h-5 w-5" />
+                      <span className="text-2xl font-semibold text-text">
+                        {casa.lux !== null ? `${Math.round(casa.lux)}` : '—'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-text-2">
+                      {casa.lux !== null ? 'lux' : 'Luminosità'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className={`flex items-center gap-2 ${casa.motionActive ? 'text-orange-500' : 'text-text-2'}`}>
+                      <Eye className="h-5 w-5" />
+                      <span className={`text-lg font-semibold ${casa.motionActive ? 'text-orange-600' : 'text-text-2'}`}>
+                        {casa.motionActive ? 'Rilevato' : 'Assente'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-text-2">Movimento</div>
+                  </div>
+                  <div>
+                    <div className={`flex items-center gap-2 ${casa.batteryWarnings > 0 ? 'text-danger' : 'text-success'}`}>
+                      <Battery className="h-5 w-5" />
+                      <span className={`text-lg font-semibold ${casa.batteryWarnings > 0 ? 'text-danger' : 'text-text-2'}`}>
+                        {casa.batteryWarnings > 0 ? `${casa.batteryWarnings} basse` : 'OK'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-text-2">Batterie</div>
+                  </div>
                 </div>
-
-                {/* Luminosità */}
-                <div>
-                  <div className="flex items-center gap-2 text-amber-300">
-                    <Sun className="h-5 w-5" />
-                    <span className="text-2xl font-semibold text-white">
-                      {casa.lux !== null ? `${Math.round(casa.lux)}` : '—'}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-white/40">
-                    {casa.lux !== null ? 'lux' : 'Luminosità'}
-                  </div>
-                </div>
-
-                {/* Movimento */}
-                <div>
-                  <div className={`flex items-center gap-2 ${casa.motionActive ? 'text-orange-300' : 'text-white/40'}`}>
-                    <Eye className="h-5 w-5" />
-                    <span className={`text-lg font-semibold ${casa.motionActive ? 'text-orange-200' : 'text-white/60'}`}>
-                      {casa.motionActive ? 'Rilevato' : 'Assente'}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-white/40">Movimento</div>
-                </div>
-
-                {/* Batterie */}
-                <div>
-                  <div className={`flex items-center gap-2 ${casa.batteryWarnings > 0 ? 'text-red-300' : 'text-emerald-300'}`}>
-                    <Battery className="h-5 w-5" />
-                    <span className={`text-lg font-semibold ${casa.batteryWarnings > 0 ? 'text-red-200' : 'text-white/60'}`}>
-                      {casa.batteryWarnings > 0 ? `${casa.batteryWarnings} basse` : 'OK'}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-white/40">Batterie</div>
-                </div>
-              </div>
               )}
             </div>
 
-            {/* ── Quick Scene Strip — pattern Apple Home Favorites 2026 ── */}
+            {/* ── Notifiche — sempre visibili in cima ── */}
+            {projectId && (
+              <NotificationCenter
+                projectId={projectId}
+                audience={installerMode ? 'installer' : 'client'}
+              />
+            )}
+
+            {/* ── Quick Scene Strip ── */}
             {projectId && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/30">Scene rapide</div>
-                </div>
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-text-2">Scene rapide</div>
                 {sceneMsg && (
-                  <div className="rounded-[16px] border border-blue-500/20 bg-blue-500/[0.06] px-3 py-2 text-xs text-blue-200/80">
+                  <div className="rounded-[16px] border border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs text-primary">
                     💬 {sceneMsg}
                   </div>
                 )}
@@ -610,21 +598,21 @@ export default function DashboardPage() {
             {weather && (
               <div className="rounded-[24px] border border-sky-500/20 bg-sky-500/[0.04] p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400/70">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-500/80">
                     {weather.city ?? 'Meteo'}
                   </div>
-                  <span className="text-[10px] text-white/30">Open-Meteo</span>
+                  <span className="text-[10px] text-text-2">Open-Meteo</span>
                 </div>
                 <div className="flex items-end gap-4">
                   <div>
-                    <div className="text-3xl font-semibold text-white">
+                    <div className="text-3xl font-semibold text-text">
                       {weather.temperature !== null ? `${Math.round(weather.temperature)}°` : '—'}
                     </div>
                     {weather.condition && (
-                      <div className="mt-0.5 text-xs text-white/50">{weather.condition}</div>
+                      <div className="mt-0.5 text-xs text-text-2">{weather.condition}</div>
                     )}
                   </div>
-                  <div className="flex-1 space-y-0.5 text-xs text-white/50">
+                  <div className="flex-1 space-y-0.5 text-xs text-text-2">
                     {weather.feels_like !== null && (
                       <div>Percepita {Math.round(weather.feels_like)}°</div>
                     )}
@@ -647,32 +635,24 @@ export default function DashboardPage() {
               <NLCommandBar projectId={projectId} devices={devices ?? []} />
             )}
 
-            {/* Notifiche persistenti dal DB */}
-            {projectId && (
-              <NotificationCenter
-                projectId={projectId}
-                audience={installerMode ? 'installer' : 'client'}
-              />
-            )}
-
             {/* Dispositivi offline */}
             {(() => {
               const offline = (devices ?? []).filter((d) => !d.online);
               if (offline.length === 0) return null;
               return (
-                <div className="rounded-[24px] border border-red-500/20 bg-red-500/[0.05] p-4">
-                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-red-400/70">
+                <div className="rounded-[24px] border border-danger/20 bg-danger/[0.05] p-4">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-danger/80">
                     Offline ({offline.length})
                   </div>
                   <div className="space-y-2">
                     {offline.slice(0, 4).map((d) => (
                       <div key={d.id} className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
-                        <span className="flex-1 text-sm text-white/70 truncate">{d.name}</span>
+                        <span className="h-1.5 w-1.5 rounded-full bg-danger shrink-0" />
+                        <span className="flex-1 text-sm text-text-2 truncate">{d.name}</span>
                       </div>
                     ))}
                     {offline.length > 4 && (
-                      <Link href="/devices" className="text-xs text-white/40 hover:text-white/60">
+                      <Link href="/devices" className="text-xs text-text-2">
                         +{offline.length - 4} altri →
                       </Link>
                     )}
@@ -689,19 +669,19 @@ export default function DashboardPage() {
               );
               if (active.length === 0) return null;
               return (
-                <div className="rounded-[24px] border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
-                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400/70">
+                <div className="rounded-[24px] border border-success/20 bg-success/[0.05] p-4">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-success/80">
                     Accesi ora ({active.length})
                   </div>
                   <div className="space-y-2">
                     {active.slice(0, 5).map((d) => (
                       <div key={d.id} className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
-                        <span className="flex-1 text-sm text-white truncate">{d.name}</span>
+                        <span className="h-1.5 w-1.5 rounded-full bg-success shrink-0" />
+                        <span className="flex-1 text-sm text-text truncate">{d.name}</span>
                       </div>
                     ))}
                     {active.length > 5 && (
-                      <Link href="/devices" className="text-xs text-white/40 hover:text-white/60">
+                      <Link href="/devices" className="text-xs text-text-2">
                         +{active.length - 5} altri →
                       </Link>
                     )}
@@ -712,8 +692,8 @@ export default function DashboardPage() {
 
             {/* Esecuzioni recenti */}
             {auditItems.length > 0 && (
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+              <div className="rounded-[24px] border border-border bg-surface p-4">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-text-2">
                   Esecuzioni recenti
                 </div>
                 <div className="space-y-2">
@@ -721,23 +701,20 @@ export default function DashboardPage() {
                     <div key={item.scenario_id + i} className="flex items-center gap-2">
                       <span
                         className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                          item.status === 'executed' ? 'bg-emerald-400' : 'bg-amber-400'
+                          item.status === 'executed' ? 'bg-success' : 'bg-warning'
                         }`}
                       />
-                      <span className="flex-1 text-sm text-white/70 truncate">
+                      <span className="flex-1 text-sm text-text-2 truncate">
                         {item.scenario_name ?? item.scenario_id}
                       </span>
                       {item.executed_at && (
-                        <span className="text-[10px] text-white/30 shrink-0">
+                        <span className="text-[10px] text-text-2/60 shrink-0">
                           {(() => {
                             try {
                               return new Date(item.executed_at!).toLocaleTimeString('it-IT', {
-                                hour: '2-digit',
-                                minute: '2-digit',
+                                hour: '2-digit', minute: '2-digit',
                               });
-                            } catch {
-                              return '';
-                            }
+                            } catch { return ''; }
                           })()}
                         </span>
                       )}
@@ -747,15 +724,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* SEZIONE 3 — Stanze */}
+            {/* Stanze */}
             {roomStates.length > 0 && (
               <SectionCard
                 title="Stanze"
                 action={
-                  <Link
-                    href="/rooms"
-                    className="text-xs text-white/40 active:text-white/70"
-                  >
+                  <Link href="/rooms" className="text-xs text-text-2 active:text-text">
                     Gestisci →
                   </Link>
                 }
@@ -781,7 +755,7 @@ export default function DashboardPage() {
               <SectionCard
                 title="Scenari"
                 action={
-                  <Link href="/scenarios" className="text-xs text-white/40 active:text-white/70">
+                  <Link href="/scenarios" className="text-xs text-text-2 active:text-text">
                     Tutti →
                   </Link>
                 }
@@ -791,11 +765,11 @@ export default function DashboardPage() {
                     scenarios.slice(0, 5).map((scenario) => (
                       <div
                         key={scenario.id}
-                        className="flex items-center justify-between rounded-[18px] border border-white/8 bg-black/10 px-4 py-3"
+                        className="flex items-center justify-between rounded-[18px] border border-border bg-surface-2 px-4 py-3"
                       >
                         <div>
-                          <div className="font-medium text-white">{scenario.name}</div>
-                          <div className="mt-0.5 text-xs text-white/40">
+                          <div className="font-medium text-text">{scenario.name}</div>
+                          <div className="mt-0.5 text-xs text-text-2">
                             {formatTrigger(scenario.trigger)}
                           </div>
                         </div>
@@ -807,7 +781,7 @@ export default function DashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="py-2 text-sm text-white/40">Nessuno scenario</p>
+                    <p className="py-2 text-sm text-text-2">Nessuno scenario</p>
                   )}
                 </div>
               </SectionCard>
@@ -815,41 +789,41 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* SEZIONE 4 — Azioni rapide */}
+        {/* Azioni rapide */}
         <div className="grid grid-cols-2 gap-3 pb-4">
           <Link
             href="/scenarios"
             className="flex flex-col gap-2 rounded-[22px] border border-violet-500/25 bg-violet-500/10 px-4 py-5 active:bg-violet-500/20"
           >
-            <Zap className="h-6 w-6 text-violet-400" />
-            <div className="font-medium text-white">Scenari</div>
-            <div className="text-xs text-white/40">{enabledScenarios} attivi</div>
+            <Zap className="h-6 w-6 text-violet-500" />
+            <div className="font-medium text-text">Scenari</div>
+            <div className="text-xs text-text-2">{enabledScenarios} attivi</div>
           </Link>
           <Link
             href="/security"
-            className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-5 active:bg-white/[0.07]"
+            className="flex flex-col gap-2 rounded-[22px] border border-border bg-surface px-4 py-5 active:bg-surface-2"
           >
-            <Shield className="h-6 w-6 text-white/50" />
-            <div className="font-medium text-white">Sicurezza</div>
-            <div className="text-xs text-white/40">Stato e allarmi</div>
+            <Shield className="h-6 w-6 text-text-2" />
+            <div className="font-medium text-text">Sicurezza</div>
+            <div className="text-xs text-text-2">Stato e allarmi</div>
           </Link>
           {installerMode && (
             <>
               <Link
                 href="/onboarding"
-                className="flex flex-col gap-2 rounded-[22px] border border-blue-500/25 bg-blue-500/10 px-4 py-5 active:bg-blue-500/20"
+                className="flex flex-col gap-2 rounded-[22px] border border-primary/25 bg-primary/10 px-4 py-5 active:bg-primary/20"
               >
-                <PlusCircle className="h-6 w-6 text-blue-400" />
-                <div className="font-medium text-white">Aggiungi</div>
-                <div className="text-xs text-white/40">Nuovo dispositivo</div>
+                <PlusCircle className="h-6 w-6 text-primary" />
+                <div className="font-medium text-text">Aggiungi</div>
+                <div className="text-xs text-text-2">Nuovo dispositivo</div>
               </Link>
               <Link
                 href="/devices"
-                className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-5 active:bg-white/[0.07]"
+                className="flex flex-col gap-2 rounded-[22px] border border-border bg-surface px-4 py-5 active:bg-surface-2"
               >
-                <Smartphone className="h-6 w-6 text-white/50" />
-                <div className="font-medium text-white">Dispositivi</div>
-                <div className="text-xs text-white/40">{devices?.length ?? 0} totali</div>
+                <Smartphone className="h-6 w-6 text-text-2" />
+                <div className="font-medium text-text">Dispositivi</div>
+                <div className="text-xs text-text-2">{devices?.length ?? 0} totali</div>
               </Link>
             </>
           )}

@@ -24,36 +24,36 @@
 /* ── CSS Custom Properties — Light ──────────────────────────────────────── */
 [data-theme="light"] {
   --color-primary:    234 88 12;       /* #ea580c — arancio HomeMARIO */
-  --color-surface:    212 204 195;     /* #d4ccc3 — pietra calda */
-  --color-surface-2:  198 190 181;     /* #c6beb5 — pietra più scura */
-  --color-text:       30 23 17;        /* #1e1711 — quasi nero caldo */
-  --color-text-2:     90 76 64;        /* #5a4c40 — marrone medio */
-  --color-border:     170 160 148;     /* #aaa094 — bordo visibile */
+  --color-surface:    210 202 194;     /* #d2cac2 — pietra chiara */
+  --color-surface-2:  196 188 180;     /* #c4bcb4 — pietra media */
+  --color-text:       22 16 10;        /* #16100a — quasi nero caldo */
+  --color-text-2:     80 66 54;        /* #504236 — marrone medio */
+  --color-border:     152 142 132;     /* #988e84 — bordo visibile */
   --color-success:    40 110 45;       /* #286e2d */
   --color-warning:    155 80 8;        /* #9b5008 */
   --color-danger:     160 30 30;       /* #a01e1e */
   --color-offline:    115 103 91;      /* #73675b */
   --color-focus:      155 55 5;        /* #9b3705 */
-  --color-disabled:   160 150 138;     /* #a0968a */
-  --bg-app:           #c0b8ae;         /* grigio caldo medio — chiaramente non bianco */
+  --color-disabled:   140 130 120;     /* #8c8278 */
+  --bg-app:           #6e6560;         /* marrone scuro caldo — più vicino al dark mode */
 }
 
 /* ── Auto: tema OS light quando nessun data-theme esplicito ─────────────── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]):not([data-theme="light"]) {
     --color-primary:    234 88 12;
-    --color-surface:    212 204 195;
-    --color-surface-2:  198 190 181;
-    --color-text:       30 23 17;
-    --color-text-2:     90 76 64;
-    --color-border:     170 160 148;
+    --color-surface:    210 202 194;
+    --color-surface-2:  196 188 180;
+    --color-text:       22 16 10;
+    --color-text-2:     80 66 54;
+    --color-border:     152 142 132;
     --color-success:    40 110 45;
     --color-warning:    155 80 8;
     --color-danger:     160 30 30;
     --color-offline:    115 103 91;
     --color-focus:      155 55 5;
-    --color-disabled:   160 150 138;
-    --bg-app:           #c0b8ae;
+    --color-disabled:   140 130 120;
+    --bg-app:           #6e6560;
   }
 }
 

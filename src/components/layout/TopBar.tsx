@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProjectId } from '@/hooks/useProjectId';
-import { listNotifications, dismissNotification, type HubNotification } from '@/lib/api/notifications';
+import { listNotifications, dismissNotification, dismissAllNotifications, type HubNotification } from '@/lib/api/notifications';
 import HouseStatusBar from '@/components/dashboard/HouseStatusBar';
 
 // ── Severity helpers ──────────────────────────────────────────────────────────
@@ -79,7 +79,16 @@ export default function TopBar({ title }: { title: string }) {
     }
   }
 
-  const count = notifications.length;
+  async function handleDismissAll() {
+    if (!projectId || notifications.length === 0) return;
+    try {
+      await dismissAllNotifications(projectId);
+      setNotifications([]);
+      setBellOpen(false);
+    } catch { /* silent */ }
+  }
+
+    const count = notifications.length;
 
   return (
     <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface md:bg-transparent">
@@ -110,10 +119,19 @@ export default function TopBar({ title }: { title: string }) {
             {/* Dropdown */}
             {bellOpen && (
               <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-border bg-surface shadow-xl">
-                <div className="px-4 py-2.5 border-b border-border">
+                <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-text-2">
                     Notifiche {count > 0 && `(${count})`}
                   </span>
+                  {count > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDismissAll()}
+                      className="text-[10px] text-text-2 hover:text-danger transition-colors"
+                    >
+                      Cancella tutte
+                    </button>
+                  )}
                 </div>
 
                 {count === 0 ? (

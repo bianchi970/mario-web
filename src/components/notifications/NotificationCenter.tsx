@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BellOff, X } from 'lucide-react';
-import { listNotifications, dismissNotification } from '@/lib/api/notifications';
+import { listNotifications, dismissNotification, dismissAllNotifications } from '@/lib/api/notifications';
 import type { HubNotification } from '@/lib/api/notifications';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -85,12 +85,25 @@ export default function NotificationCenter({
     }
   }
 
-  if (items.length === 0) return null;
+  async function handleDismissAll() {
+    try {
+      await dismissAllNotifications(projectId);
+      setItems([]);
+    } catch { /* silent */ }
+  }
+
+    if (items.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      <div className="px-1 text-xs font-semibold uppercase tracking-[0.15em] text-text-2">
-        Notifiche
+      <div className="flex items-center justify-between px-1 mb-1">
+        <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-2">Notifiche</span>
+        <button
+          onClick={() => void handleDismissAll()}
+          className="text-xs text-text-2 hover:text-danger transition-colors"
+        >
+          Cancella tutte
+        </button>
       </div>
       {items.map((n) => (
         <div

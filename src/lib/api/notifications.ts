@@ -30,6 +30,14 @@ export async function listNotifications(
   return res.data?.notifications ?? (res as { notifications?: HubNotification[] }).notifications ?? [];
 }
 
+export async function dismissAllNotifications(projectId: string): Promise<number> {
+  const res = await fetchAPI<{ dismissed?: number; data?: { dismissed?: number } }>(
+    `/api/hub/notifications/${encodeURIComponent(projectId)}/dismiss-all`,
+    { method: "PATCH" },
+  );
+  return res.data?.dismissed ?? (res as { dismissed?: number }).dismissed ?? 0;
+}
+
 export async function dismissNotification(
   projectId: string,
   id: string,

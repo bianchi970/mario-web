@@ -23,11 +23,11 @@ export async function listNotifications(
   if (audience) params.set('audience', audience);
   const qs = params.toString() ? `?${params.toString()}` : '';
 
-  const res = await fetchAPI<{ notifications: HubNotification[] }>(
+  const res = await fetchAPI<{ notifications?: HubNotification[]; data?: { notifications?: HubNotification[] } }>(
     `/api/hub/notifications/${encodeURIComponent(projectId)}${qs}`,
     { signal },
   );
-  return res.notifications ?? [];
+  return res.data?.notifications ?? (res as { notifications?: HubNotification[] }).notifications ?? [];
 }
 
 export async function dismissNotification(

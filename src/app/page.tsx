@@ -5,12 +5,15 @@ import Link from 'next/link';
 import {
   Battery,
   Eye,
+  Moon,
+  Music,
   PlusCircle,
   Shield,
   ShieldAlert,
   Smartphone,
   Sun,
   Thermometer,
+  Users,
   Zap,
 } from 'lucide-react';
 import TopBar from '@/components/layout/TopBar';
@@ -27,6 +30,8 @@ import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
+import { getDeviceHistory } from '@/lib/api/history';
+import { brainInterpret } from '@/lib/api/brain';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
@@ -124,42 +129,72 @@ function RoomCard({
   lightsTotal: number;
 }) {
   const hasData = temperature !== null || lux !== null || motionActive || lightsTotal > 0;
+  const lightsActive = lightsOn > 0;
   return (
-    <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
-      <div className="mb-3 font-medium text-white">{room.name}</div>
+    <div className={`rounded-[22px] border p-4 transition-colors ${
+      lightsActive
+        ? 'border-amber-500/20 bg-amber-500/[0.05]'
+        : motionActive
+        ? 'border-orange-500/20 bg-orange-500/[0.04]'
+        : 'border-white/8 bg-black/15'
+    }`}>
+      {/* Header stanza */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-medium text-white text-sm">{room.name}</div>
+        {lightsTotal > 0 && (
+          <div className={`text-xs px-2 py-0.5 rounded-full border ${
+            lightsActive
+              ? 'border-amber-500/30 bg-amber-500/15 text-amber-300'
+              : 'border-white/10 bg-white/5 text-white/30'
+          }`}>
+            {lightsOn}/{lightsTotal}
+          </div>
+        )}
+      </div>
       {hasData ? (
-        <div className="space-y-1.5 text-sm text-white/70">
+        <div className="grid grid-cols-2 gap-1.5">
           {temperature !== null && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Thermometer className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-              <span>{temperature.toFixed(1)}°</span>
+              <span className="text-xs text-white/70">{temperature.toFixed(1)}°</span>
             </div>
           )}
           {lux !== null && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span>{Math.round(lux)} lux</span>
+              <span className="text-xs text-white/70">{Math.round(lux)} lx</span>
             </div>
           )}
           {motionActive && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 col-span-2">
               <Eye className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-              <span className="text-orange-300">Movimento</span>
-            </div>
-          )}
-          {lightsTotal > 0 && (
-            <div className="flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-violet-400 shrink-0" />
-              <span>{lightsOn}/{lightsTotal} luci</span>
+              <span className="text-xs text-orange-300">Movimento</span>
             </div>
           )}
         </div>
       ) : (
-        <div className="text-sm text-white/30">Nessun sensore</div>
+        <div className="text-xs text-white/25">Nessun sensore</div>
       )}
     </div>
   );
 }
+
+// Scene rapide — pattern Apple Home Favorites / Google Home 2026
+const SCENE_SHORTCUTS = [
+  { label: 'Buonanotte',  icon: Moon,   color: 'indigo', cmd: 'vado a dormire' },
+  { label: 'Sono tornato', icon: Shield, color: 'emerald', cmd: 'sono tornato a casa' },
+  { label: 'Uscita',       icon: Zap,    color: 'amber',   cmd: 'sto per uscire' },
+  { label: 'Ospiti',       icon: Users,  color: 'violet',  cmd: 'stasera vengono ospiti' },
+  { label: 'Relax',        icon: Music,  color: 'sky',     cmd: 'voglio rilassarmi' },
+] as const;
+
+const COLOR_MAP = {
+  indigo:  { border: 'border-indigo-500/25',  bg: 'bg-indigo-500/[0.08]',  bgActive: 'active:bg-indigo-500/20',  text: 'text-indigo-300',  icon: 'text-indigo-400' },
+  emerald: { border: 'border-emerald-500/25', bg: 'bg-emerald-500/[0.08]', bgActive: 'active:bg-emerald-500/20', text: 'text-emerald-300', icon: 'text-emerald-400' },
+  amber:   { border: 'border-amber-500/25',   bg: 'bg-amber-500/[0.08]',   bgActive: 'active:bg-amber-500/20',   text: 'text-amber-300',   icon: 'text-amber-400' },
+  violet:  { border: 'border-violet-500/25',  bg: 'bg-violet-500/[0.08]',  bgActive: 'active:bg-violet-500/20',  text: 'text-violet-300',  icon: 'text-violet-400' },
+  sky:     { border: 'border-sky-500/25',     bg: 'bg-sky-500/[0.08]',     bgActive: 'active:bg-sky-500/20',     text: 'text-sky-300',     icon: 'text-sky-400' },
+};
 
 /* ─── pagina principale ───────────────────────────────── */
 
@@ -180,6 +215,11 @@ export default function DashboardPage() {
   const [retryCount, setRetryCount] = useState(0);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const weatherTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [viewDay, setViewDay] = useState<'oggi' | 'ieri'>('oggi');
+  const [yStats, setYStats] = useState<{ tempMin: number | null; tempMax: number | null; luxMax: number | null } | null>(null);
+  const [yLoading, setYLoading] = useState(false);
+  const [sceneRunning, setSceneRunning] = useState<string | null>(null);
+  const [sceneMsg, setSceneMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -267,6 +307,56 @@ export default function DashboardPage() {
     return () => { if (weatherTimer.current) clearInterval(weatherTimer.current); };
   }, [projectId]);
 
+  // Carica statistiche di ieri quando si seleziona il toggle
+  useEffect(() => {
+    if (viewDay !== 'ieri' || !projectId) return;
+    const now = Date.now();
+    const y24 = now - 24 * 60 * 60 * 1000;
+    const y48 = now - 48 * 60 * 60 * 1000;
+    setYLoading(true);
+    setYStats(null);
+    getDeviceHistory(projectId, '3', 500)
+      .then((data) => {
+        const evs = (data.events ?? []).filter((e) => {
+          const t = new Date(e.ts).getTime();
+          return t >= y48 && t <= y24;
+        });
+        let tempMin: number | null = null, tempMax: number | null = null, luxMax: number | null = null;
+        for (const ev of evs) {
+          const p = ev.payload as Record<string, unknown>;
+          const temp = (p['temperature'] ?? p['temp']) as number | undefined;
+          const lux = (p['luminance'] ?? p['lux'] ?? p['illuminance']) as number | undefined;
+          if (typeof temp === 'number' && !isNaN(temp)) {
+            if (tempMin === null || temp < tempMin) tempMin = temp;
+            if (tempMax === null || temp > tempMax) tempMax = temp;
+          }
+          if (typeof lux === 'number' && !isNaN(lux)) {
+            if (luxMax === null || lux > luxMax) luxMax = lux;
+          }
+        }
+        setYStats({ tempMin, tempMax, luxMax });
+      })
+      .catch(() => setYStats(null))
+      .finally(() => setYLoading(false));
+  }, [viewDay, projectId]);
+
+  async function handleQuickScene(label: string, cmd: string) {
+    if (!projectId || sceneRunning) return;
+    setSceneRunning(label);
+    setSceneMsg(null);
+    try {
+      const r = await brainInterpret(cmd, { project_id: projectId, devices: devices ?? [] });
+      // Mostra la risposta di MARIO (explanation o question)
+      const msg = r._v2?.explanation ?? r._v2?.question ?? `${label} → ricevuto`;
+      setSceneMsg(typeof msg === 'string' ? msg : `${label} → ok`);
+    } catch {
+      setSceneMsg('Errore comunicazione con MARIO');
+    } finally {
+      setSceneRunning(null);
+      setTimeout(() => setSceneMsg(null), 5000);
+    }
+  }
+
   async function handleToggleScenario(scenarioId: string, enabled: boolean) {
     if (!projectId) return;
     setTogglingScenario(scenarioId);
@@ -301,13 +391,23 @@ export default function DashboardPage() {
       <TopBar title="Casa" />
       <main className="flex-1 space-y-5 px-4 py-5 text-white xl:px-8">
 
-        {/* Header */}
+        {/* Header — KPI strip pattern */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-white/40">MARIO</div>
+            <div className="text-xs uppercase tracking-[0.2em] text-white/40">HomeMARIO</div>
             <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-white">Casa</h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Device online count */}
+            {devices && (
+              <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                <Smartphone className="h-3 w-3 text-white/40" />
+                <span className="text-xs text-white/60">
+                  {devices.filter(d => d.online).length}/{devices.length}
+                </span>
+              </div>
+            )}
+            {/* Hub status */}
             <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
               <span className={`h-2 w-2 rounded-full ${serviceDot(hubOnline)}`} />
               <span className="text-xs text-white/70">{hubOnline ? 'Online' : 'Offline'}</span>
@@ -367,9 +467,64 @@ export default function DashboardPage() {
           <>
             {/* SEZIONE 1 — Hero Stato Casa */}
             <div className="rounded-[28px] border border-white/12 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-6 backdrop-blur-sm">
-              <div className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
-                Stato Casa
+              <div className="mb-5 flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+                  Stato Casa
+                </div>
+                {/* Toggle Oggi / Ieri */}
+                <div className="flex items-center rounded-full border border-white/10 bg-white/5 p-0.5">
+                  {(['oggi', 'ieri'] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setViewDay(d)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        viewDay === d
+                          ? 'bg-white/15 text-white'
+                          : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      {d === 'oggi' ? 'Oggi' : 'Ieri'}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Dati ieri */}
+              {viewDay === 'ieri' && (
+                yLoading ? (
+                  <div className="text-xs text-white/40 py-4 text-center">Caricamento dati ieri…</div>
+                ) : yStats ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-sky-300">
+                        <Thermometer className="h-5 w-5" />
+                        <span className="text-2xl font-semibold text-white">
+                          {yStats.tempMin !== null && yStats.tempMax !== null
+                            ? `${yStats.tempMin.toFixed(1)}–${yStats.tempMax.toFixed(1)}°`
+                            : '—'}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-white/40">Temp ieri (min–max)</div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 text-amber-300">
+                        <Sun className="h-5 w-5" />
+                        <span className="text-2xl font-semibold text-white">
+                          {yStats.luxMax !== null ? `${Math.round(yStats.luxMax)}` : '—'}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-white/40">Lux max ieri</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-white/30 py-4 text-center">
+                    Nessun dato storico disponibile per ieri.
+                  </div>
+                )
+              )}
+
+              {/* Dati oggi */}
+              {viewDay === 'oggi' && (
               <div className="grid grid-cols-2 gap-4">
                 {/* Temperatura */}
                 <div>
@@ -417,7 +572,39 @@ export default function DashboardPage() {
                   <div className="mt-1 text-xs text-white/40">Batterie</div>
                 </div>
               </div>
+              )}
             </div>
+
+            {/* ── Quick Scene Strip — pattern Apple Home Favorites 2026 ── */}
+            {projectId && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/30">Scene rapide</div>
+                </div>
+                {sceneMsg && (
+                  <div className="rounded-[16px] border border-blue-500/20 bg-blue-500/[0.06] px-3 py-2 text-xs text-blue-200/80">
+                    💬 {sceneMsg}
+                  </div>
+                )}
+                <div className="grid grid-cols-5 gap-2">
+                  {SCENE_SHORTCUTS.map(({ label, icon: Icon, color, cmd }) => {
+                    const c = COLOR_MAP[color];
+                    const running = sceneRunning === label;
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => void handleQuickScene(label, cmd)}
+                        disabled={!!sceneRunning}
+                        className={`flex flex-col items-center gap-1.5 rounded-[20px] border ${c.border} ${c.bg} ${c.bgActive} p-3 min-h-[72px] justify-center transition-all disabled:opacity-50 ${running ? 'scale-95' : ''}`}
+                      >
+                        <Icon className={`h-5 w-5 ${c.icon} ${running ? 'animate-pulse' : ''}`} strokeWidth={1.8} />
+                        <span className={`text-[10px] font-medium ${c.text} text-center leading-tight`}>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Widget Meteo */}
             {weather && (

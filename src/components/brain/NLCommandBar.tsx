@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, CalendarClock, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, Bell, BellOff, CalendarClock, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
@@ -46,6 +46,20 @@ const MISSING_LABEL: Record<string, string> = {
   action: 'azione da eseguire',
   'params.temperature': 'temperatura',
 };
+
+// Quick chips organizzati per categoria (pattern Apple Home / Google Home 2026)
+const QUICK_CHIPS = [
+  // Scene vita — tap immediato, conversazione con MARIO
+  { label: '🌙 Buonanotte',     cmd: 'vado a dormire',            group: 'vita' },
+  { label: '🏠 Sono tornato',   cmd: 'sono tornato a casa',       group: 'vita' },
+  { label: '🚪 Sto uscendo',    cmd: 'sto per uscire',            group: 'vita' },
+  { label: '👥 Ospiti',          cmd: 'stasera vengono ospiti',    group: 'vita' },
+  { label: '🎬 Cinema',          cmd: 'voglio guardare un film',   group: 'vita' },
+  // Comandi diretti
+  { label: '⚡ Spegni tutto',   cmd: 'spegni tutto',               group: 'cmd' },
+  { label: '💡 Soggiorno',      cmd: 'accendi la luce del soggiorno', group: 'cmd' },
+  { label: '🍳 Cucina',          cmd: 'accendi la luce cucina',    group: 'cmd' },
+];
 
 function buildUserMeaning(r: BrainInterpretResult): string {
   const action = r.action ? (ACTION_LABEL[r.action] ?? r.action) : '';
@@ -124,6 +138,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
   const voiceTimeoutRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pushStatus, setPushStatus] = useState<'checking' | 'idle' | 'denied' | 'subscribed' | 'unsupported'>('checking');
 
   async function startVoiceRecording() {
     if (voiceRecording) return;
@@ -238,6 +253,47 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     mediaRecorderRef.current = null;
   }
 
+  // Controlla stato notifiche push al mount
+  useEffect(() => {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        setPushStatus('unsupported');
+        return;
+      }
+      if (Notification.permission === 'denied') { setPushStatus('denied'); return; }
+      navigator.serviceWorker.ready
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((sub) => setPushStatus(sub ? 'subscribed' : 'idle'))
+        .catch(() => setPushStatus('idle'));
+    } catch { setPushStatus('unsupported'); }
+  }, []);
+
+  async function handlePushSubscribe() {
+    try {
+      const vapidRes = await fetch('/api/hub/push/vapid-public');
+      if (!vapidRes.ok) return;
+      const { publicKey } = (await vapidRes.json()) as { publicKey: string };
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { setPushStatus('denied'); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const padding = '='.repeat((4 - (publicKey.length % 4)) % 4);
+      const b64 = (publicKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(b64);
+      const key = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i);
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key.buffer });
+      const subJson = sub.toJSON();
+      const res = await fetch(`/api/hub/push/${projectId}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...subJson, role: 'user', label: 'PWA' }),
+      });
+      if (res.ok) setPushStatus('subscribed');
+    } catch {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') setPushStatus('denied');
+    }
+  }
+
   // Recovery esecuzione composta dopo refresh di pagina
   useEffect(() => {
     const execKey = `mario_exec_${projectId}`;
@@ -269,6 +325,26 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  async function handleChip(cmd: string) {
+    setText(cmd);
+    // invia immediatamente
+    setPhase('loading');
+    setResult(null);
+    setErrorMsg('');
+    setHubMsg('');
+    try {
+      const r = await brainInterpret(cmd, { project_id: projectId, devices, session_id: sessionId });
+      setResult(r);
+      const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
+      if (!canDispatch) { setPhase('preview'); return; }
+      if (r.requires_confirmation || r.risk === 'high') { setPhase('preview'); }
+      else { await dispatch(r); }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Errore interpretazione');
+      setPhase('error');
+    }
+  }
 
   async function handleSend() {
     const trimmed = text.trim();
@@ -604,6 +680,56 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Chip rapidi — solo in idle | pattern Apple Home Favorites */}
+      {phase === 'idle' && (
+        <div className="space-y-2">
+          {/* Scene vita */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 scrollbar-hide">
+            {QUICK_CHIPS.filter(c => c.group === 'vita').map(({ label, cmd }) => (
+              <button
+                key={label}
+                onClick={() => void handleChip(cmd)}
+                className="shrink-0 rounded-full border border-indigo-500/25 bg-indigo-500/[0.08] px-3.5 py-2 text-xs text-indigo-200/70 hover:text-indigo-100 hover:bg-indigo-500/15 active:bg-indigo-500/25 transition-colors min-h-[36px] whitespace-nowrap"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Comandi diretti */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 scrollbar-hide">
+            {QUICK_CHIPS.filter(c => c.group === 'cmd').map(({ label, cmd }) => (
+              <button
+                key={label}
+                onClick={() => void handleChip(cmd)}
+                className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors min-h-[36px] whitespace-nowrap"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Banner notifiche push — idle o denied */}
+      {pushStatus === 'idle' && (
+        <div className="flex items-center gap-3 rounded-[20px] border border-blue-500/20 bg-blue-500/[0.06] px-4 py-2.5">
+          <Bell className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+          <span className="flex-1 text-xs text-white/60">Abilita notifiche push per MARIO</span>
+          <button
+            onClick={() => void handlePushSubscribe()}
+            className="rounded-xl border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-xs text-blue-300 active:bg-blue-500/30"
+          >
+            Abilita
+          </button>
+        </div>
+      )}
+      {pushStatus === 'denied' && (
+        <div className="flex items-center gap-2 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-2">
+          <BellOff className="h-3.5 w-3.5 shrink-0 text-white/30" />
+          <span className="text-xs text-white/30">Notifiche bloccate — abilita nelle impostazioni browser</span>
+        </div>
+      )}
 
       {/* Banner voce — non silenzioso se STT non disponibile */}
       {voiceError && (

@@ -220,6 +220,10 @@ function isZwavePath(path: string[]): boolean {
   return path[0] === 'zwave';
 }
 
+function isDevicesPath(path: string[]): boolean {
+  return path[0] === 'devices';
+}
+
 // ── Route handlers ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
@@ -245,7 +249,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pat
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isNotificationsPath(path)) {
+  if (isAutomationsPath(path) || isNotificationsPath(path) || isDevicesPath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }

@@ -25,6 +25,7 @@ const IS_PROD          = process.env.NODE_ENV === 'production';
 const PUBLIC_PREFIXES = [
   '/login',
   '/api/auth/',
+  '/api/hub/auth/',
   '/api/gateway/status',
   '/api/brain/status',
   '/_next/',

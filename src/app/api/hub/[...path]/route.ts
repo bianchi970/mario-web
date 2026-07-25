@@ -200,6 +200,10 @@ function isNotificationsPath(path: string[]): boolean {
   return path[0] === 'notifications';
 }
 
+function isAuthPath(path: string[]): boolean {
+  return path[0] === 'auth';
+}
+
 function isPushPath(path: string[]): boolean {
   return path[0] === 'push';
 }
@@ -220,7 +224,7 @@ export async function HEAD(req: NextRequest, { params }: { params: Promise<{ pat
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isPushPath(path)) {
+  if (isAutomationsPath(path) || isPushPath(path) || isAuthPath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }

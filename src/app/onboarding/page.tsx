@@ -11,6 +11,7 @@ import type { Room } from '@/lib/hub-types';
 // ── Tipi ─────────────────────────────────────────────────────────────────────
 
 type Step = 'idle' | 'waiting' | 'found' | 'room' | 'test' | 'done' | 'error';
+type Mode = 'zwave' | 'manual';
 
 interface SessionData {
   session_id: string;
@@ -64,11 +65,12 @@ async function cancelSession(token: string): Promise<void> {
   await fetchAPI(`/api/hub/onboarding/session/${encodeURIComponent(token)}`, { method: 'DELETE' });
 }
 
-// ── Componente principale ─────────────────────────────────────────────────────
+// ── Componente principale ────────────────────────────────────────────────────���
 
 export default function OnboardingPage() {
   const projectId = useProjectId() ?? 'default';
 
+  const [mode, setMode]         = useState<Mode>('manual');
   const [step, setStep]         = useState<Step>('idle');
   const [session, setSession]   = useState<SessionData | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -78,11 +80,19 @@ export default function OnboardingPage() {
   const [errMsg, setErrMsg]     = useState('');
   const [timeLeft, setTimeLeft] = useState(120);
 
-  // DSK SmartStart manuale
+  // Z-Wave DSK SmartStart
   const [dskOpen, setDskOpen]   = useState(false);
   const [dskInput, setDskInput] = useState('');
   const [dskStatus, setDskStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [dskMsg, setDskMsg]     = useState('');
+
+  // Form manuale
+  const [manName,     setManName]     = useState('');
+  const [manBrand,    setManBrand]    = useState('');
+  const [manModel,    setManModel]    = useState('');
+  const [manIp,       setManIp]       = useState('');
+  const [manProtocol, setManProtocol] = useState('http');
+  const [manSaving,   setManSaving]   = useState(false);
 
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -96,7 +106,7 @@ export default function OnboardingPage() {
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  // ── Step 1: Apri sessione ─────────────────────────────────────────────────
+  // ── Z-Wave: Apri sessione ─────────────────────────────────────────────────
 
   async function startSession() {
     setErrMsg('');
@@ -136,7 +146,7 @@ export default function OnboardingPage() {
     }
   }
 
-  // ── DSK SmartStart manuale ────────────────────────────────────────────────
+  // ── Z-Wave: DSK SmartStart manuale ────────────────────────────────────────
 
   async function handleDSKSubmit() {
     const dsk = dskInput.trim();
@@ -160,6 +170,37 @@ export default function OnboardingPage() {
     } catch (err) {
       setDskStatus('error');
       setDskMsg(err instanceof Error ? err.message : 'Errore SmartStart');
+    }
+  }
+
+  // ── Manuale: salva device per IP ──────────────────────────────────────────
+
+  async function saveManual() {
+    if (!manIp.trim()) { setErrMsg('IP obbligatorio'); return; }
+    setErrMsg('');
+    setManSaving(true);
+    try {
+      const body: Record<string, string> = {
+        protocol: manProtocol,
+        address:  manIp.trim(),
+      };
+      if (manName.trim())  body.name  = manName.trim();
+      if (manBrand.trim()) body.brand = manBrand.trim();
+      if (manModel.trim()) body.model = manModel.trim();
+
+      const res = await fetchAPI<{ device: { id: string } }>(
+        `/api/hub/onboarding/${encodeURIComponent(projectId)}/manual`,
+        { method: 'POST', body: JSON.stringify(body) },
+      );
+      setDeviceId(res.device.id);
+      const roomList = await listRooms(projectId).catch(() => []);
+      setRooms(roomList);
+      setRoomId(roomList[0]?.id ?? '');
+      setStep('room');
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Errore salvataggio');
+    } finally {
+      setManSaving(false);
     }
   }
 
@@ -191,9 +232,9 @@ export default function OnboardingPage() {
     const label = cmd === 'turn_on' ? 'ON' : 'OFF';
     try {
       await sendCommand(projectId, deviceId, cmd);
-      setTestLog(l => [...l, `✓ ${label} inviato`]);
+      setTestLog(l => [...l, `\u2713 ${label} inviato`]);
     } catch (err) {
-      setTestLog(l => [...l, `✗ ${label}: ${err instanceof Error ? err.message : 'errore'}`]);
+      setTestLog(l => [...l, `\u2717 ${label}: ${err instanceof Error ? err.message : 'errore'}`]);
     }
   }
 
@@ -216,10 +257,17 @@ export default function OnboardingPage() {
     setDskInput('');
     setDskStatus('idle');
     setDskMsg('');
+    setManName('');
+    setManBrand('');
+    setManModel('');
+    setManIp('');
+    setManProtocol('http');
     setStep('idle');
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  const isIdle = step === 'idle';
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -227,40 +275,118 @@ export default function OnboardingPage() {
 
       <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-6">
 
-        {/* Barra step */}
-        <div className="flex items-center gap-2 text-xs text-hub-muted font-mono">
-          {(['Sessione','Trovato','Stanza','Test','Fine'] as const).map((label, i) => {
-            const stepIndex = ['idle','waiting','found','room','test','done'].indexOf(step);
-            const active = i <= stepIndex;
-            return (
-              <span key={label} className={active ? 'text-hub-accent' : ''}>
-                {i > 0 && <span className="mx-1">›</span>}
-                {label}
-              </span>
-            );
-          })}
-        </div>
+        {/* Tab modalità — visibile solo allo step idle */}
+        {isIdle && (
+          <div className="flex rounded-lg overflow-hidden border border-hub-border text-sm">
+            <button
+              onClick={() => setMode('manual')}
+              className={`flex-1 py-2 font-medium transition-colors ${mode === 'manual' ? 'bg-hub-accent text-black' : 'bg-hub-surface text-hub-muted'}`}
+            >
+              Per IP / Wi-Fi
+            </button>
+            <button
+              onClick={() => setMode('zwave')}
+              className={`flex-1 py-2 font-medium transition-colors ${mode === 'zwave' ? 'bg-hub-accent text-black' : 'bg-hub-surface text-hub-muted'}`}
+            >
+              Z-Wave / Radio
+            </button>
+          </div>
+        )}
 
-        {/* ── IDLE ── */}
-        {step === 'idle' && (
+        {/* Barra step */}
+        {!isIdle && (
+          <div className="flex items-center gap-2 text-xs text-hub-muted font-mono">
+            {(['Registrato','Stanza','Test','Fine'] as const).map((label, i) => {
+              const stepIndex = ['found','room','test','done'].indexOf(step);
+              const active = i <= stepIndex;
+              return (
+                <span key={label} className={active ? 'text-hub-accent' : ''}>
+                  {i > 0 && <span className="mx-1">&#8250;</span>}
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── IDLE / MANUALE ── */}
+        {isIdle && mode === 'manual' && (
+          <div className="space-y-3">
+            <p className="text-hub-muted text-sm">
+              Dispositivi Wi-Fi, HTTP, Shelly, Tasmota, MQTT — inserisci l&apos;IP locale.
+            </p>
+
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={manName}
+                onChange={e => setManName(e.target.value)}
+                placeholder="Nome (es. Sensore gas cucina)"
+                className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={manBrand}
+                  onChange={e => setManBrand(e.target.value)}
+                  placeholder="Marca (es. Shelly)"
+                  className="flex-1 bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text"
+                />
+                <input
+                  type="text"
+                  value={manModel}
+                  onChange={e => setManModel(e.target.value)}
+                  placeholder="Modello (es. Gas)"
+                  className="flex-1 bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text"
+                />
+              </div>
+              <input
+                type="text"
+                value={manIp}
+                onChange={e => setManIp(e.target.value)}
+                placeholder="IP locale (es. 192.168.1.50)"
+                className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text font-mono"
+              />
+              <select
+                value={manProtocol}
+                onChange={e => setManProtocol(e.target.value)}
+                className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text"
+              >
+                <option value="http">HTTP (Shelly Gen1, Tasmota, generico)</option>
+                <option value="shelly">Shelly (Gen2/Gen3)</option>
+                <option value="mqtt">MQTT</option>
+                <option value="websocket">WebSocket</option>
+              </select>
+            </div>
+
+            <button
+              onClick={saveManual}
+              disabled={!manIp.trim() || manSaving}
+              className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm disabled:opacity-40"
+            >
+              {manSaving ? 'Salvataggio...' : 'Registra dispositivo'}
+            </button>
+          </div>
+        )}
+
+        {/* ── IDLE / Z-WAVE ── */}
+        {isIdle && mode === 'zwave' && (
           <div className="space-y-4">
             <p className="text-hub-muted text-sm">
-              Avvia una sessione di pairing, poi includi il dispositivo.
+              Avvia una sessione di pairing, poi includi il dispositivo Z-Wave.
             </p>
             <button
               onClick={startSession}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"
             >
-              Avvia pairing
+              Avvia pairing Z-Wave
             </button>
           </div>
         )}
 
-        {/* ── WAITING ── */}
+        {/* ── WAITING (Z-Wave) ── */}
         {step === 'waiting' && session && (
           <div className="space-y-4">
-
-            {/* Opzione A: DSK SmartStart */}
             {dskOpen ? (
               <div className="space-y-2">
                 <p className="text-xs text-hub-muted">
@@ -297,11 +423,9 @@ export default function OnboardingPage() {
                 Inserisci codice dispositivo (DSK)
               </button>
             )}
-
-            {/* Esito DSK */}
             {dskStatus === 'ok' && (
               <div className="rounded-lg bg-green-900/30 border border-green-700 p-3 text-xs text-green-300">
-                ✓ {dskMsg}
+                &#10003; {dskMsg}
               </div>
             )}
             {dskStatus === 'error' && (
@@ -309,13 +433,9 @@ export default function OnboardingPage() {
                 {dskMsg}
               </div>
             )}
-
-            {/* Opzione B: 3 click fisici */}
             <p className="text-hub-muted text-xs text-center">
               oppure premi <strong>3 volte</strong> il tasto fisico sul dispositivo
             </p>
-
-            {/* Timer */}
             <div className="flex items-center justify-between text-xs text-hub-muted font-mono">
               <span>In attesa dispositivo...</span>
               <span className={timeLeft < 20 ? 'text-red-400' : ''}>{timeLeft}s</span>
@@ -326,7 +446,6 @@ export default function OnboardingPage() {
                 style={{ width: `${(timeLeft / 120) * 100}%` }}
               />
             </div>
-
             <button onClick={reset} className="text-xs text-hub-muted underline">
               Annulla
             </button>
@@ -344,7 +463,7 @@ export default function OnboardingPage() {
               onClick={proceedToRoom}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"
             >
-              Continua →
+              Continua &#8250;
             </button>
           </div>
         )}
@@ -367,7 +486,7 @@ export default function OnboardingPage() {
               onClick={confirmRoom}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"
             >
-              Avanti →
+              Avanti &#8250;
             </button>
           </div>
         )}
@@ -375,7 +494,7 @@ export default function OnboardingPage() {
         {/* ── TEST ── */}
         {step === 'test' && deviceId && (
           <div className="space-y-4">
-            <p className="text-hub-muted text-sm">Testa il dispositivo prima di salvare.</p>
+            <p className="text-hub-muted text-sm">Testa il dispositivo (opzionale).</p>
             <div className="flex gap-3">
               <button
                 onClick={() => testCmd('turn_on')}
@@ -397,10 +516,9 @@ export default function OnboardingPage() {
             )}
             <button
               onClick={finish}
-              disabled={testLog.length === 0}
-              className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm disabled:opacity-40"
+              className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"
             >
-              Salva
+              Salva &#10003;
             </button>
           </div>
         )}
@@ -409,8 +527,8 @@ export default function OnboardingPage() {
         {step === 'done' && (
           <div className="space-y-4">
             <div className="rounded-lg bg-green-900/30 border border-green-700 p-4 text-sm text-center">
-              <div className="text-green-400 font-semibold text-lg mb-1">✓ Dispositivo salvato</div>
-              <div className="text-hub-muted text-xs">ID: {deviceId} — persiste dopo reboot</div>
+              <div className="text-green-400 font-semibold text-lg mb-1">&#10003; Dispositivo salvato</div>
+              <div className="text-hub-muted text-xs">ID: {deviceId}</div>
             </div>
             <button
               onClick={reset}

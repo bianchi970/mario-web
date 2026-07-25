@@ -8,9 +8,9 @@ import CommandButton from '@/components/devices/CommandButton';
 import { useProjectId } from '@/hooks/useProjectId';
 
 const ROOM_ICONS: Record<string, string> = {
-  living: 'ðŸ›‹', kitchen: 'ðŸ³', bedroom: 'ðŸ›', bathroom: 'ðŸš¿',
-  office: 'ðŸ’¼', garage: 'ðŸš—', garden: 'ðŸŒ¿', corridor: 'ðŸšª',
-  laundry: 'ðŸ«§', cellar: 'ðŸª£', attic: 'ðŸ ',
+  living: '\u{1F6CB}', kitchen: '\u{1F373}', bedroom: '\u{1F6CF}', bathroom: '\u{1F6BF}',
+  office: '\u{1F4BC}', garage: '\u{1F697}', garden: '\u{1F33F}', corridor: '\u{1F6AA}',
+  laundry: '\u{1FAE7}', cellar: '\u{1FAA3}', attic: '\u{1F3E0}',
 };
 
 export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: Room; devicesTotal?: number; devicesOnline?: number }) {
@@ -19,7 +19,7 @@ export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: 
   const [loading, setLoading] = useState(false);
   const projectId = useProjectId();
 
-  const icon = room.icon ? (ROOM_ICONS[room.icon] ?? room.icon) : 'â¬œ';
+  const icon = room.icon ? (ROOM_ICONS[room.icon] ?? room.icon) : '\u{1F3E0}';
 
   async function toggle() {
     if (open) {
@@ -67,7 +67,7 @@ export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: 
               {devicesOnline ?? 0}/{devicesTotal}
             </span>
           )}
-          <span className={`text-hub-muted text-sm transition-transform ${open ? 'rotate-180' : ''}`}>â–¾</span>
+          <span className={`text-hub-muted text-sm transition-transform ${open ? 'rotate-180' : ''}`}>&#9662;</span>
         </div>
       </div>
 

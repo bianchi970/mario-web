@@ -222,11 +222,11 @@ export default function OnboardingPage() {
 
       // Crea nuova stanza se l'utente ha digitato un nome
       if (newRoomName.trim()) {
-        const res = await fetchAPI<{ id: string }>(
+        const res = await fetchAPI<{ room: { id: string } }>(
           `/api/hub/rooms/${encodeURIComponent(projectId)}`,
           { method: 'POST', body: JSON.stringify({ name: newRoomName.trim() }) },
         );
-        targetRoomId = res.id;
+        targetRoomId = res.room.id;
       }
 
       if (targetRoomId) await assignRoom(projectId, targetRoomId, deviceId);

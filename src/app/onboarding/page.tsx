@@ -465,7 +465,7 @@ export default function OnboardingPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm text-hub-text truncate">
-                            {r.name ?? `${r.brand ?? ''} ${r.model ?? ''}`.trim() || r.ip}
+                            {r.name ?? (`${r.brand ?? ''} ${r.model ?? ''}`.trim() || r.ip)}
                           </span>
                           {r.protocol && <ProtocolBadge p={r.protocol} />}
                         </div>

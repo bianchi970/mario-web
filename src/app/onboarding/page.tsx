@@ -76,6 +76,7 @@ export default function OnboardingPage() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [rooms, setRooms]       = useState<Room[]>([]);
   const [roomId, setRoomId]     = useState('');
+  const [newRoomName, setNewRoomName] = useState('');
   const [testLog, setTestLog]   = useState<string[]>([]);
   const [errMsg, setErrMsg]     = useState('');
   const [timeLeft, setTimeLeft] = useState(120);
@@ -217,7 +218,18 @@ export default function OnboardingPage() {
     if (!deviceId) return;
     setErrMsg('');
     try {
-      if (roomId) await assignRoom(projectId, roomId, deviceId);
+      let targetRoomId = roomId;
+
+      // Crea nuova stanza se l'utente ha digitato un nome
+      if (newRoomName.trim()) {
+        const res = await fetchAPI<{ id: string }>(
+          `/api/hub/rooms/${encodeURIComponent(projectId)}`,
+          { method: 'POST', body: JSON.stringify({ name: newRoomName.trim() }) },
+        );
+        targetRoomId = res.id;
+      }
+
+      if (targetRoomId) await assignRoom(projectId, targetRoomId, deviceId);
       setTestLog([]);
       setStep('test');
     } catch (err) {
@@ -262,6 +274,7 @@ export default function OnboardingPage() {
     setManModel('');
     setManIp('');
     setManProtocol('http');
+    setNewRoomName('');
     setStep('idle');
   }
 
@@ -474,14 +487,27 @@ export default function OnboardingPage() {
             <p className="text-hub-muted text-sm">Assegna una stanza (opzionale).</p>
             <select
               value={roomId}
-              onChange={e => setRoomId(e.target.value)}
-              className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text"
+              onChange={e => { setRoomId(e.target.value); setNewRoomName(''); }}
+              disabled={!!newRoomName.trim()}
+              className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text disabled:opacity-40"
             >
               <option value="">— Nessuna stanza —</option>
               {rooms.map(r => (
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
+            <div className="flex items-center gap-2 text-xs text-hub-muted">
+              <div className="flex-1 h-px bg-hub-border" />
+              <span>oppure crea nuova</span>
+              <div className="flex-1 h-px bg-hub-border" />
+            </div>
+            <input
+              type="text"
+              value={newRoomName}
+              onChange={e => { setNewRoomName(e.target.value); if (e.target.value) setRoomId(''); }}
+              placeholder="Nome nuova stanza (es. Caldaia)"
+              className="w-full bg-hub-surface border border-hub-border rounded-lg px-3 py-2 text-sm text-hub-text"
+            />
             <button
               onClick={confirmRoom}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-lg text-sm"

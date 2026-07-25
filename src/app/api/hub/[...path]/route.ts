@@ -216,6 +216,10 @@ function isRoomsPath(path: string[]): boolean {
   return path[0] === 'rooms';
 }
 
+function isZwavePath(path: string[]): boolean {
+  return path[0] === 'zwave';
+}
+
 // ── Route handlers ───────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
@@ -232,7 +236,7 @@ export async function HEAD(req: NextRequest, { params }: { params: Promise<{ pat
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isPushPath(path) || isAuthPath(path) || isOnboardingPath(path) || isRoomsPath(path)) {
+  if (isAutomationsPath(path) || isPushPath(path) || isAuthPath(path) || isOnboardingPath(path) || isRoomsPath(path) || isZwavePath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }

@@ -7,7 +7,7 @@ export default function RoomGrid({ rooms, deviceCounts = {} }: { rooms: Room[]; 
   if (rooms.length === 0) {
     return (
       <div className="card text-center py-16 text-hub-muted">
-        <p className="text-4xl mb-3">â¬œ</p>
+        <p className="text-4xl mb-3">&#127968;</p>
         <p className="text-sm">Nessuna zona configurata.</p>
         <p className="text-xs mt-1">Crea zone dall&apos;Hub API o assegna dispositivi alle zone.</p>
       </div>

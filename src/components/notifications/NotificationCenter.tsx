@@ -59,15 +59,57 @@ export default function NotificationCenter({
     [projectId, audience],
   );
 
+  // SSE con fallback a polling (refreshIntervalMs)
   useEffect(() => {
     const controller = new AbortController();
     void load(controller.signal);
-    const timer = setInterval(() => void load(controller.signal), refreshIntervalMs);
-    return () => {
-      controller.abort();
-      clearInterval(timer);
-    };
-  }, [load, refreshIntervalMs]);
+
+    let es: EventSource | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let sseOk = false;
+
+    try {
+      es = new EventSource(`/api/hub/notifications/${projectId}/stream`);
+
+      es.onmessage = (e) => {
+        sseOk = true;
+        try {
+          const msg = JSON.parse(e.data) as { type: string; notifications?: HubNotification[]; data?: HubNotification };
+          if (msg.type === 'init' && Array.isArray(msg.notifications)) {
+            const filtered = msg.notifications.filter(n => !audience || n.audience === audience || n.audience === 'both');
+            setItems(filtered);
+          } else if (msg.type === 'notification' && msg.data) {
+            const n = msg.data;
+            if (!audience || n.audience === audience || n.audience === 'both') {
+              setItems(prev => [n, ...prev.filter(x => x.id !== n.id)]);
+            }
+          }
+        } catch { /* malformed */ }
+      };
+
+      const sseTimeout = setTimeout(() => {
+        if (!sseOk) pollTimer = setInterval(() => void load(controller.signal), refreshIntervalMs);
+      }, 8_000);
+
+      es.onerror = () => {
+        clearTimeout(sseTimeout);
+        if (!sseOk && !pollTimer) pollTimer = setInterval(() => void load(controller.signal), refreshIntervalMs);
+      };
+
+      return () => {
+        clearTimeout(sseTimeout);
+        controller.abort();
+        es?.close();
+        if (pollTimer) clearInterval(pollTimer);
+      };
+    } catch {
+      pollTimer = setInterval(() => void load(controller.signal), refreshIntervalMs);
+      return () => {
+        controller.abort();
+        if (pollTimer) clearInterval(pollTimer);
+      };
+    }
+  }, [load, projectId, audience, refreshIntervalMs]);
 
   async function handleDismiss(id: string) {
     setDismissing((prev) => new Set(prev).add(id));

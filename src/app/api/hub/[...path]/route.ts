@@ -186,7 +186,14 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
 // ── Dispatcher ───────────────────────────────────────────────────────────────
 
 async function proxyRequest(req: NextRequest, path: string[]): Promise<Response> {
-  if (REMOTE_BRIDGE_URL) return proxyBridge(req, path);
+  if (REMOTE_BRIDGE_URL) {
+    // SSE non supportato in modalità bridge (WebSocket relay non streamma)
+    // → risponde 503 immediatamente → il client fa fallback a polling
+    if (req.headers.get('accept') === 'text/event-stream') {
+      return new Response('SSE not available in bridge mode', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+    }
+    return proxyBridge(req, path);
+  }
   return proxyLocal(req, path);
 }
 

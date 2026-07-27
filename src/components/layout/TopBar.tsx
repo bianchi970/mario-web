@@ -40,7 +40,7 @@ export default function TopBar({ title }: { title: string }) {
   const [dismissing,    setDismissing]    = useState<Set<string>>(new Set());
   const bellRef = useRef<HTMLDivElement>(null);
 
-  // ── Notifications polling ───────────────────────────────────────────────────
+  // ── Notifications: SSE con fallback a polling ──────────────────────────────
   const loadNotifications = useCallback(async () => {
     if (!projectId || offlineMode) return;
     try {
@@ -50,10 +50,59 @@ export default function TopBar({ title }: { title: string }) {
   }, [projectId, offlineMode]);
 
   useEffect(() => {
+    if (!projectId || offlineMode) return;
+
+    // Carica subito
     void loadNotifications();
-    const timer = setInterval(() => void loadNotifications(), 30_000);
-    return () => clearInterval(timer);
-  }, [loadNotifications]);
+
+    // SSE: riceve notifiche in tempo reale senza polling
+    let es: EventSource | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let sseOk = false;
+
+    try {
+      es = new EventSource(`/api/hub/notifications/${projectId}/stream`);
+
+      es.onmessage = (e) => {
+        sseOk = true;
+        try {
+          const msg = JSON.parse(e.data) as { type: string; notifications?: HubNotification[]; data?: HubNotification };
+          if (msg.type === 'init' && Array.isArray(msg.notifications)) {
+            setNotifications(msg.notifications.filter(n => n.audience === 'client' || n.audience === 'both'));
+          } else if (msg.type === 'notification' && msg.data) {
+            const n = msg.data;
+            if (n.audience === 'client' || n.audience === 'both') {
+              setNotifications(prev => [n, ...prev.filter(x => x.id !== n.id)]);
+            }
+          }
+        } catch { /* malformed */ }
+      };
+
+      // Fallback a polling se SSE non si connette entro 8s
+      const sseTimeout = setTimeout(() => {
+        if (!sseOk) {
+          pollTimer = setInterval(() => void loadNotifications(), 30_000);
+        }
+      }, 8_000);
+
+      es.onerror = () => {
+        clearTimeout(sseTimeout);
+        if (!sseOk && !pollTimer) {
+          pollTimer = setInterval(() => void loadNotifications(), 30_000);
+        }
+      };
+
+      return () => {
+        clearTimeout(sseTimeout);
+        es?.close();
+        if (pollTimer) clearInterval(pollTimer);
+      };
+    } catch {
+      // EventSource non disponibile (SSR/test) → solo polling
+      pollTimer = setInterval(() => void loadNotifications(), 30_000);
+      return () => { if (pollTimer) clearInterval(pollTimer); };
+    }
+  }, [projectId, offlineMode, loadNotifications]);
 
   // ── Close dropdown on outside click ────────────────────────────────────────
   useEffect(() => {

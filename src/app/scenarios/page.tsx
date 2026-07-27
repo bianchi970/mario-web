@@ -35,9 +35,16 @@ import {
   runAutomation,
 } from '@/lib/api/automations';
 import { listDevices } from '@/lib/api/devices';
+import {
+  listBrainScenes,
+  updateBrainScene,
+  deleteBrainScene,
+  type BrainScene,
+} from '@/lib/api/brain-scenes';
+import BrainSceneList from '@/components/scenarios/BrainSceneList';
 import type { Automation, Device } from '@/lib/hub-types';
 
-type Tab = 'scenari' | 'automazioni';
+type Tab = 'scenari' | 'automazioni' | 'domestici';
 
 function automationToWizardState(a: Automation): Partial<WizardState> {
   const firstAction = Array.isArray(a.actions) && a.actions.length > 0 ? a.actions[0] : null;
@@ -104,6 +111,43 @@ export default function ScenariosPage() {
   const [clarification, setClarification] = useState<{ question: string; options: string[] } | null>(null);
 
   const hasConfirmation = useMemo(() => missing.length > 0, [missing]);
+
+  // — Domestici (brain scenes) state —
+  const [brainScenes, setBrainScenes] = useState<BrainScene[]>([]);
+  const [brainScenesLoading, setBrainScenesLoading] = useState(false);
+  const [brainScenesError, setBrainScenesError] = useState<string | null>(null);
+
+  async function refreshBrainScenes() {
+    if (!projectId) return;
+    setBrainScenesLoading(true);
+    try {
+      const scenes = await listBrainScenes(projectId);
+      setBrainScenes(scenes);
+      setBrainScenesError(null);
+    } catch (err) {
+      setBrainScenesError(err instanceof Error ? err.message : 'Errore caricamento scenari');
+    } finally {
+      setBrainScenesLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!projectId) return;
+    void refreshBrainScenes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  async function handleBrainSceneToggle(sceneId: string, active: boolean) {
+    if (!projectId) return;
+    await updateBrainScene(projectId, sceneId, { active });
+    setBrainScenes((prev) => prev.map((s) => s.id === sceneId ? { ...s, active } : s));
+  }
+
+  async function handleBrainSceneDelete(sceneId: string) {
+    if (!projectId) return;
+    await deleteBrainScene(projectId, sceneId);
+    setBrainScenes((prev) => prev.filter((s) => s.id !== sceneId));
+  }
 
   // — Automazioni state —
   const [automations, setAutomations] = useState<Automation[]>([]);
@@ -407,7 +451,7 @@ export default function ScenariosPage() {
 
       {/* Tab bar */}
       <div className="flex border-b border-hub-border px-5 bg-hub-surface">
-        {(['scenari', 'automazioni'] as const).map((t) => (
+        {(['scenari', 'automazioni', 'domestici'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -417,7 +461,7 @@ export default function ScenariosPage() {
                 : 'border-transparent text-hub-muted hover:text-hub-text'
             }`}
           >
-            {t === 'scenari' ? 'Scenari' : 'Automazioni'}
+            {t === 'scenari' ? 'Scenari' : t === 'automazioni' ? 'Automazioni' : 'Domestici'}
           </button>
         ))}
       </div>
@@ -531,6 +575,22 @@ export default function ScenariosPage() {
               onEdit={handleAutoEdit}
             />
           ))}
+        </main>
+      )}
+
+      {/* Tab: Domestici */}
+      {tab === 'domestici' && (
+        <main className="flex-1 p-5 space-y-4">
+          {brainScenesError && (
+            <div className="card text-sm text-red-400">{brainScenesError}</div>
+          )}
+          <BrainSceneList
+            items={brainScenes}
+            loading={brainScenesLoading}
+            onRefresh={() => void refreshBrainScenes()}
+            onToggle={handleBrainSceneToggle}
+            onDelete={handleBrainSceneDelete}
+          />
         </main>
       )}
 

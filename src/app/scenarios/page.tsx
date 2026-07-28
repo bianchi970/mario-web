@@ -37,11 +37,13 @@ import {
 import { listDevices } from '@/lib/api/devices';
 import {
   listBrainScenes,
+  createBrainScene,
   updateBrainScene,
   deleteBrainScene,
   type BrainScene,
 } from '@/lib/api/brain-scenes';
 import BrainSceneList from '@/components/scenarios/BrainSceneList';
+import BrainSceneCreate from '@/components/scenarios/BrainSceneCreate';
 import type { Automation, Device } from '@/lib/hub-types';
 
 type Tab = 'scenari' | 'automazioni' | 'domestici';
@@ -116,6 +118,8 @@ export default function ScenariosPage() {
   const [brainScenes, setBrainScenes] = useState<BrainScene[]>([]);
   const [brainScenesLoading, setBrainScenesLoading] = useState(false);
   const [brainScenesError, setBrainScenesError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createSaving, setCreateSaving] = useState(false);
 
   async function refreshBrainScenes() {
     if (!projectId) return;
@@ -147,6 +151,18 @@ export default function ScenariosPage() {
     if (!projectId) return;
     await deleteBrainScene(projectId, sceneId);
     setBrainScenes((prev) => prev.filter((s) => s.id !== sceneId));
+  }
+
+  async function handleBrainSceneCreate(payload: Parameters<typeof createBrainScene>[1]) {
+    if (!projectId) return;
+    setCreateSaving(true);
+    try {
+      const created = await createBrainScene(projectId, payload);
+      setBrainScenes((prev) => [...prev, created]);
+      setCreateOpen(false);
+    } finally {
+      setCreateSaving(false);
+    }
   }
 
   // — Automazioni state —
@@ -581,6 +597,14 @@ export default function ScenariosPage() {
       {/* Tab: Domestici */}
       {tab === 'domestici' && (
         <main className="flex-1 p-5 space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="px-4 py-2 rounded-lg bg-hub-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              + Nuovo scenario
+            </button>
+          </div>
           {brainScenesError && (
             <div className="card text-sm text-red-400">{brainScenesError}</div>
           )}
@@ -604,6 +628,15 @@ export default function ScenariosPage() {
             setWizardOpen(false);
             setEditingAutomation(null);
           }}
+        />
+      )}
+
+      {createOpen && (
+        <BrainSceneCreate
+          devices={devices}
+          onSave={(payload) => handleBrainSceneCreate(payload)}
+          onCancel={() => setCreateOpen(false)}
+          saving={createSaving}
         />
       )}
     </>

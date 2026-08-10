@@ -28,6 +28,7 @@ import type { ScenarioRecord, ScenarioAuditItem } from '@/lib/api/scenarios';
 import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import PushEnableBanner from '@/components/notifications/PushEnableBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
 import { getDeviceHistory } from '@/lib/api/history';
@@ -564,6 +565,7 @@ export default function DashboardPage() {
                 audience={installerMode ? 'installer' : 'client'}
               />
             )}
+            {projectId && <PushEnableBanner projectId={projectId} />}
 
             {/* ── Quick Scene Strip ── */}
             {projectId && (

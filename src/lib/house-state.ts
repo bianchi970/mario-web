@@ -37,12 +37,18 @@ function deviceRoomId(d: Device): string | null {
   return d.room_id ?? (d as unknown as { room?: string | null }).room ?? null;
 }
 
+// Nodo radice Z-Wave: "4-ep1" → "4", "4-ep2" → "4", "4" → "4"
+function rootNodeId(id: string): string {
+  return id.replace(/-ep\d+$/, '');
+}
+
 export function computeHouseState(devices: Device[]): CasaState {
   let temperature: number | null = null;
   let lux: number | null = null;
   let motionActive = false;
   let batteryWarnings = 0;
   const alerts: Alert[] = [];
+  const seenBatteryNodes = new Set<string>(); // dedup per nodo fisico
 
   for (const d of devices) {
     const s = d.state ?? {};
@@ -51,12 +57,16 @@ export function computeHouseState(devices: Device[]): CasaState {
     if (bool(s, 'motion') === true) motionActive = true;
 
     const battery = num(s, 'battery');
-    if (battery !== null && battery < 30) {
+    const rootId = rootNodeId(d.id);
+    if (battery !== null && battery < 30 && !seenBatteryNodes.has(rootId)) {
+      seenBatteryNodes.add(rootId);
       batteryWarnings++;
+      // Mostra il nome del device radice se gli endpoint lo ripetono
+      const displayName = d.name.replace(/\s*\(controllo\)|\s*\(sensore\)/g, '').trim();
       alerts.push({
         type: battery < 10 ? 'battery_critical' : 'battery_low',
         deviceId: d.id,
-        label: `${d.name}: batteria ${battery}%`,
+        label: `${displayName}: batteria ${battery}%`,
       });
     }
     if (bool(s, 'tamper') === true) {

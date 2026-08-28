@@ -37,6 +37,7 @@ const PUBLIC_PREFIXES = [
   '/screenshots/',
   '/apple-touch-icon',
   '/.well-known/',
+  '/logo-mario.png',
 ];
 
 export async function middleware(request: NextRequest) {

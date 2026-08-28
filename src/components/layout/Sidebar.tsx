@@ -56,20 +56,16 @@ export default function Sidebar() {
     <>
       {/* ── Sidebar desktop ─────────────────────────────────────────── */}
       <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface border-r border-border">
-        {/* Logo HomeMARIO — circuit-M */}
-        <div className="px-5 py-5 border-b border-border flex items-center gap-2.5">
+        {/* Logo HomeMARIO */}
+        <div className="px-4 py-4 border-b border-border flex items-center justify-center bg-white">
           <Image
             src="/logo-mario.png"
             alt="HomeMARIO"
-            width={40}
-            height={40}
-            className="flex-shrink-0"
+            width={160}
+            height={160}
+            className="w-full max-w-[140px] h-auto"
             priority
           />
-          <div className="flex flex-col">
-            <span className="font-bold text-sm tracking-tight text-text leading-tight">HomeMARIO</span>
-            <span className="text-[10px] text-text-2/60 leading-tight">Casa intelligente</span>
-          </div>
         </div>
 
         {/* Nav links */}

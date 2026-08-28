@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, X } from 'lucide-react';
+import Image from 'next/image';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listNotifications, dismissNotification, dismissAllNotifications, type HubNotification } from '@/lib/api/notifications';
@@ -141,7 +142,12 @@ export default function TopBar({ title }: { title: string }) {
 
   return (
     <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface md:bg-transparent">
-      <h1 className="font-semibold text-text">{title}</h1>
+      {/* Logo — solo mobile (su desktop è nella sidebar) */}
+      <div className="flex items-center gap-2 md:hidden">
+        <Image src="/logo-mario.png" alt="HomeMARIO" width={32} height={32} className="flex-shrink-0" priority />
+        <h1 className="font-semibold text-text">{title}</h1>
+      </div>
+      <h1 className="hidden md:block font-semibold text-text">{title}</h1>
 
       <div className="flex items-center gap-3">
 

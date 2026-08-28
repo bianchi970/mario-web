@@ -58,16 +58,14 @@ export default function Sidebar() {
       <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface border-r border-border">
         {/* Logo HomeMARIO — circuit-M */}
         <div className="px-5 py-5 border-b border-border flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-black/30">
-            <Image
-              src="/logo-mario.png"
-              alt="HomeMARIO"
-              width={32}
-              height={32}
-              className="w-full h-full object-cover"
-              priority
-            />
-          </div>
+          <Image
+            src="/logo-mario.png"
+            alt="HomeMARIO"
+            width={40}
+            height={40}
+            className="flex-shrink-0"
+            priority
+          />
           <div className="flex flex-col">
             <span className="font-bold text-sm tracking-tight text-text leading-tight">HomeMARIO</span>
             <span className="text-[10px] text-text-2/60 leading-tight">Casa intelligente</span>

@@ -66,9 +66,9 @@ export default function PushEnableBanner({ projectId }: { projectId: string }) {
 
   if (status === 'denied') {
     return (
-      <div className="flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-2">
-        <BellOff className="h-3.5 w-3.5 shrink-0 text-white/30" />
-        <span className="text-xs text-white/30">Notifiche bloccate — abilita nelle impostazioni browser</span>
+      <div className="flex items-center gap-3 rounded-[20px] border border-orange-500/30 bg-orange-500/10 px-4 py-2">
+        <BellOff className="h-3.5 w-3.5 shrink-0 text-orange-400" />
+        <span className="text-xs text-orange-300">Notifiche bloccate — vai nelle impostazioni del browser per abilitarle</span>
       </div>
     );
   }

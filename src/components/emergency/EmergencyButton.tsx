@@ -66,7 +66,7 @@ export default function EmergencyButton() {
         onPointerLeave={cancelHold}
         onContextMenu={(e) => e.preventDefault()}
         aria-label="Emergenza — tieni premuto per aprire"
-        className={`fixed bottom-20 left-4 z-50 md:bottom-6 flex items-center gap-2 rounded-full px-4 py-3 text-white shadow-lg shadow-red-900/40 transition-all select-none ${
+        className={`fixed bottom-20 left-4 z-50 md:hidden flex items-center gap-2 rounded-full px-4 py-3 text-white shadow-lg shadow-red-900/40 transition-all select-none ${
           holding ? 'bg-red-700 scale-95' : 'bg-red-600'
         }`}
         style={{ touchAction: 'none' }}

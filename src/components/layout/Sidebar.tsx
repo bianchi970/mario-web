@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import {
   Home, LayoutGrid, Wand2, Settings, Shield, Zap,
   Clock, Cpu, Plus, Router, Download, type LucideIcon,
@@ -48,6 +49,7 @@ export default function Sidebar() {
   const { installerMode } = useInstallerMode();
   const { theme, setTheme } = useTheme();
   const { canInstall, install } = usePWAInstall();
+  const [logoOpen, setLogoOpen] = useState(false);
 
   const NAV        = NAV_ALL.filter((item) => !item.installerOnly || installerMode);
   const MOBILE_NAV = NAV.filter((item) => !item.mobileHidden);
@@ -56,17 +58,31 @@ export default function Sidebar() {
     <>
       {/* ── Sidebar desktop ─────────────────────────────────────────── */}
       <aside className="hidden md:flex flex-col w-56 min-h-screen bg-surface border-r border-border">
-        {/* Logo HomeMARIO */}
+        {/* Logo HomeMARIO — click per ingrandire */}
         <div className="px-4 py-4 border-b border-border flex items-center justify-center bg-white">
-          <Image
-            src="/logo-mario.png"
-            alt="HomeMARIO"
-            width={160}
-            height={160}
-            className="w-full max-w-[140px] h-auto"
-            priority
-          />
+          <button onClick={() => setLogoOpen(true)} className="focus:outline-none">
+            <Image
+              src="/logo-mario.png"
+              alt="HomeMARIO"
+              width={160}
+              height={160}
+              className="w-full max-w-[140px] h-auto cursor-pointer hover:scale-105 transition-transform"
+              priority
+            />
+          </button>
         </div>
+
+        {/* Lightbox logo */}
+        {logoOpen && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70"
+            onClick={() => setLogoOpen(false)}
+          >
+            <div className="bg-white rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <Image src="/logo-mario.png" alt="HomeMARIO" width={400} height={400} className="w-80 h-auto" />
+            </div>
+          </div>
+        )}
 
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">

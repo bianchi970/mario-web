@@ -146,7 +146,7 @@ export default function TopBar({ title }: { title: string }) {
       {/* Logo + titolo + SOS — solo mobile */}
       <div className="flex items-center gap-2.5 md:hidden">
         <div className="bg-white rounded-lg px-1.5 py-0.5 flex-shrink-0">
-          <Image src="/logo-mario.png" alt="HomeMARIO" width={80} height={80} className="h-7 w-auto" priority />
+          <Image src="/logo-mario.png?v=2" alt="HomeMARIO" width={80} height={80} className="h-7 w-auto" priority />
         </div>
         <h1 className="font-semibold text-text">{title}</h1>
         <EmergencyButton />

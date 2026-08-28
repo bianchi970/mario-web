@@ -62,7 +62,7 @@ export default function Sidebar() {
         <div className="px-4 py-4 border-b border-border flex items-center justify-center bg-white">
           <button onClick={() => setLogoOpen(true)} className="focus:outline-none">
             <Image
-              src="/logo-mario.png"
+              src="/logo-mario.png?v=2"
               alt="HomeMARIO"
               width={160}
               height={160}
@@ -79,7 +79,7 @@ export default function Sidebar() {
             onClick={() => setLogoOpen(false)}
           >
             <div className="bg-white rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <Image src="/logo-mario.png" alt="HomeMARIO" width={400} height={400} className="w-80 h-auto" />
+              <Image src="/logo-mario.png?v=2" alt="HomeMARIO" width={400} height={400} className="w-80 h-auto" />
             </div>
           </div>
         )}

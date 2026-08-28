@@ -545,7 +545,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-1 text-xs text-text-2">Movimento</div>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <div className={`flex items-center gap-2 ${casa.batteryWarnings > 0 ? 'text-danger' : 'text-success'}`}>
                       <Battery className="h-5 w-5" />
                       <span className={`text-lg font-semibold ${casa.batteryWarnings > 0 ? 'text-danger' : 'text-text-2'}`}>
@@ -553,6 +553,17 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <div className="mt-1 text-xs text-text-2">Batterie</div>
+                    {casa.batteryWarnings > 0 && (
+                      <ul className="mt-2 space-y-0.5">
+                        {casa.alerts
+                          .filter(a => a.type === 'battery_low' || a.type === 'battery_critical')
+                          .map(a => (
+                            <li key={a.deviceId} className={`text-xs ${a.type === 'battery_critical' ? 'text-danger font-medium' : 'text-danger/80'}`}>
+                              • {a.label}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               )}

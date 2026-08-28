@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Phone, X } from 'lucide-react';
 
 const LS_KEY = 'mario_emergency_contact';
@@ -22,9 +22,28 @@ function loadContact(): EmergencyContact | null {
   }
 }
 
+const HOLD_MS = 800;
+
 export default function EmergencyButton() {
   const [open, setOpen] = useState(false);
   const [contact, setContact] = useState<EmergencyContact | null>(null);
+  const [holding, setHolding] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStart = useRef<number>(0);
+
+  function startHold() {
+    holdStart.current = Date.now();
+    setHolding(true);
+    holdTimer.current = setTimeout(() => {
+      setOpen(true);
+      setHolding(false);
+    }, HOLD_MS);
+  }
+
+  function cancelHold() {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    setHolding(false);
+  }
 
   // Legge il contatto da localStorage solo lato client
   useEffect(() => {
@@ -39,14 +58,24 @@ export default function EmergencyButton() {
 
   return (
     <>
-      {/* Pulsante fisso in basso a destra */}
+      {/* Pulsante fisso in basso a destra — hold 800ms per aprire */}
       <button
-        onClick={() => setOpen(true)}
-        aria-label="Emergenza"
-        className="fixed bottom-20 right-4 z-50 md:bottom-6 flex items-center gap-2 rounded-full bg-red-600 px-4 py-3 text-white shadow-lg shadow-red-900/40 active:bg-red-700 transition-colors"
+        onPointerDown={startHold}
+        onPointerUp={cancelHold}
+        onPointerLeave={cancelHold}
+        onContextMenu={(e) => e.preventDefault()}
+        aria-label="Emergenza — tieni premuto per aprire"
+        className={`fixed bottom-20 right-4 z-50 md:bottom-6 flex items-center gap-2 rounded-full px-4 py-3 text-white shadow-lg shadow-red-900/40 transition-all select-none ${
+          holding ? 'bg-red-700 scale-95' : 'bg-red-600'
+        }`}
+        style={{ touchAction: 'none' }}
       >
         <Phone className="h-5 w-5" strokeWidth={2} />
         <span className="text-sm font-semibold">SOS</span>
+        {/* Anello di progresso durante hold */}
+        {holding && (
+          <span className="absolute inset-0 rounded-full border-2 border-white/60 animate-ping" />
+        )}
       </button>
 
       {/* Modal */}

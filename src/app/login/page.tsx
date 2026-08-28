@@ -4,6 +4,7 @@ import { useState, FormEvent, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 
 function LoginForm() {
@@ -13,10 +14,11 @@ function LoginForm() {
   const expired      = searchParams.get('expired') === '1';
   const { showToast } = useToast();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState<string | null>(null);
-  const [loading,  setLoading]  = useState(false);
+  const [username,  setUsername]  = useState('');
+  const [password,  setPassword]  = useState('');
+  const [showPwd,   setShowPwd]   = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+  const [loading,   setLoading]   = useState(false);
 
   // Toast sessione scaduta (una volta sola al mount)
   useEffect(() => {
@@ -89,15 +91,28 @@ function LoginForm() {
             placeholder="admin"
           />
 
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-            placeholder="••••••••"
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-text-2">Password</label>
+            <div className="relative">
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-2.5 text-sm text-text placeholder:text-text-2 pr-10 transition-colors outline-none focus:ring-2 focus:ring-focus/50 focus:border-focus"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-2 hover:text-text transition-colors"
+                aria-label={showPwd ? 'Nascondi password' : 'Mostra password'}
+              >
+                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
 
           {error && (
             <p className="text-xs text-danger">{error}</p>

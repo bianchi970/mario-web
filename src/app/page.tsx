@@ -29,6 +29,7 @@ import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import PushEnableBanner from '@/components/notifications/PushEnableBanner';
+import WeatherBanner from '@/components/dashboard/WeatherBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
 import { getDeviceHistory } from '@/lib/api/history';
@@ -554,11 +555,11 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-1 text-xs text-text-2">Batterie</div>
                     {casa.batteryWarnings > 0 && (
-                      <ul className="mt-2 space-y-0.5">
+                      <ul className="mt-2 space-y-1">
                         {casa.alerts
                           .filter(a => a.type === 'battery_low' || a.type === 'battery_critical')
                           .map(a => (
-                            <li key={a.deviceId} className={`text-xs ${a.type === 'battery_critical' ? 'text-danger font-medium' : 'text-danger/80'}`}>
+                            <li key={a.deviceId} className={`text-xs leading-snug ${a.type === 'battery_critical' ? 'text-danger font-medium' : 'text-danger/80'}`}>
                               • {a.label}
                             </li>
                           ))}
@@ -568,6 +569,9 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* ── Banner meteo ── */}
+            {weather && <WeatherBanner weather={weather} />}
 
             {/* ── Notifiche — sempre visibili in cima ── */}
             {projectId && (

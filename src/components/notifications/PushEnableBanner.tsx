@@ -62,14 +62,7 @@ export default function PushEnableBanner({ projectId }: { projectId: string }) {
     }
   }
 
-  // Su desktop il banner non serve — le notifiche si gestiscono dal browser
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent));
-  }, []);
-
   if (status === 'checking' || status === 'subscribed' || status === 'unsupported') return null;
-  if (!isMobile) return null;
 
   if (status === 'denied') {
     return (

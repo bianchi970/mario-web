@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Sidebar from '@/components/layout/Sidebar';
-import EmergencyButton from '@/components/emergency/EmergencyButton';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
 import { ProjectProvider } from '@/context/ProjectContext';
 import { InstallerModeProvider } from '@/context/InstallerModeContext';
@@ -66,7 +65,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       <div className="flex-1 flex flex-col min-h-screen overflow-auto pb-16 md:pb-0">
                         {children}
                       </div>
-                      <EmergencyButton />
                     </OfflineModeProvider>
                   </InstallerModeProvider>
                 </ProjectProvider>

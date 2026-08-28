@@ -59,20 +59,20 @@ export default function EmergencyButton() {
 
   return (
     <>
-      {/* ── Pulsante fisso in basso a SINISTRA — hold 800ms ── */}
+      {/* ── Pulsante SOS inline (montato nella TopBar) — hold 800ms ── */}
       <button
         onPointerDown={startHold}
         onPointerUp={cancelHold}
         onPointerLeave={cancelHold}
         onContextMenu={(e) => e.preventDefault()}
         aria-label="Emergenza — tieni premuto per aprire"
-        className={`fixed bottom-24 left-4 z-50 md:hidden flex items-center gap-2 rounded-full px-4 py-3 text-white shadow-lg shadow-red-900/40 transition-all select-none ${
+        className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white shadow-md shadow-red-900/40 transition-all select-none ${
           holding ? 'bg-red-700 scale-95' : 'bg-red-600'
         }`}
         style={{ touchAction: 'none' }}
       >
-        <Phone className="h-5 w-5" strokeWidth={2} />
-        <span className="text-sm font-semibold">SOS</span>
+        <Phone className="h-4 w-4" strokeWidth={2} />
+        <span className="text-xs font-semibold">SOS</span>
         {holding && (
           <span className="absolute inset-0 rounded-full border-2 border-white/60 animate-ping" />
         )}

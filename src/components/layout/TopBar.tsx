@@ -7,6 +7,7 @@ import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listNotifications, dismissNotification, dismissAllNotifications, type HubNotification } from '@/lib/api/notifications';
 import HouseStatusBar from '@/components/dashboard/HouseStatusBar';
+import EmergencyButton from '@/components/emergency/EmergencyButton';
 
 // ── Severity helpers ──────────────────────────────────────────────────────────
 
@@ -142,12 +143,13 @@ export default function TopBar({ title }: { title: string }) {
 
   return (
     <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface md:bg-transparent">
-      {/* Logo — solo mobile (su desktop è nella sidebar) */}
+      {/* Logo + titolo + SOS — solo mobile */}
       <div className="flex items-center gap-2.5 md:hidden">
         <div className="bg-white rounded-lg px-1.5 py-0.5 flex-shrink-0">
           <Image src="/logo-mario.png" alt="HomeMARIO" width={80} height={80} className="h-7 w-auto" priority />
         </div>
         <h1 className="font-semibold text-text">{title}</h1>
+        <EmergencyButton />
       </div>
       <h1 className="hidden md:block font-semibold text-text">{title}</h1>
 

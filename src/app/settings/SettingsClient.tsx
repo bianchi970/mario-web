@@ -39,6 +39,9 @@ export default function SettingsClient({
   hubDisplayUrl,
 }: Props) {
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
+  const [emergencyName, setEmergencyName] = useState('');
+  const [emergencyNumber, setEmergencyNumber] = useState('');
+  const [emergencySaved, setEmergencySaved] = useState(false);
   const [locationLat, setLocationLat] = useState('');
   const [locationLon, setLocationLon] = useState('');
   const [locationCity, setLocationCity] = useState('');
@@ -51,6 +54,30 @@ export default function SettingsClient({
   const { projectId, setProjectId, authorizedProjects, projectsStatus, fetchAuthorizedProjects } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
+
+  // Carica contatto emergenza da localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('mario_emergency_contact');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { name?: string; number?: string };
+        if (parsed.name) setEmergencyName(parsed.name);
+        if (parsed.number) setEmergencyNumber(parsed.number);
+      }
+    } catch { /* ignora */ }
+  }, []);
+
+  function saveEmergencyContact() {
+    try {
+      if (emergencyName.trim() && emergencyNumber.trim()) {
+        localStorage.setItem('mario_emergency_contact', JSON.stringify({ name: emergencyName.trim(), number: emergencyNumber.trim() }));
+      } else {
+        localStorage.removeItem('mario_emergency_contact');
+      }
+      setEmergencySaved(true);
+      setTimeout(() => setEmergencySaved(false), 3000);
+    } catch { /* ignora */ }
+  }
 
   // B96: carica lista progetti autorizzati al mount della pagina Settings
   useEffect(() => {
@@ -137,6 +164,45 @@ export default function SettingsClient({
             Esci
           </button>
         </div>
+      </div>
+
+      {/* Contatto emergenza — sempre visibile */}
+      <div className="card space-y-3">
+        <h2 className="text-sm font-medium text-hub-text">Contatto emergenza</h2>
+        <p className="text-xs text-hub-muted">
+          Usato dal pulsante SOS. Se vuoto, sarà mostrato solo il 112.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs text-hub-muted mb-1">Nome familiare</label>
+            <input
+              type="text"
+              placeholder="Mamma"
+              value={emergencyName}
+              onChange={(e) => setEmergencyName(e.target.value)}
+              className="w-full bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text focus:outline-none focus:border-hub-accent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-hub-muted mb-1">Numero</label>
+            <input
+              type="tel"
+              placeholder="+39 333 1234567"
+              value={emergencyNumber}
+              onChange={(e) => setEmergencyNumber(e.target.value)}
+              className="w-full bg-hub-bg border border-hub-border rounded-lg px-3 py-1.5 text-sm text-hub-text font-mono focus:outline-none focus:border-hub-accent"
+            />
+          </div>
+        </div>
+        {emergencySaved && (
+          <p className="text-xs text-emerald-400">Contatto salvato.</p>
+        )}
+        <button
+          onClick={saveEmergencyContact}
+          className="w-full rounded-lg border border-hub-accent/50 py-2 text-sm text-hub-accent hover:bg-hub-accent/10 transition-colors"
+        >
+          Salva contatto
+        </button>
       </div>
 
       {/* Stato app — sempre visibile */}

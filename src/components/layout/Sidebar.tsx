@@ -60,7 +60,7 @@ export default function Sidebar() {
         <div className="px-5 py-5 border-b border-border flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-black/30">
             <Image
-              src="/logo-workers.jpg"
+              src="/logo-mario.png"
               alt="HomeMARIO"
               width={32}
               height={32}

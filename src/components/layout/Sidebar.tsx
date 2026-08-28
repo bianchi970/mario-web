@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import EmergencyButton from '@/components/emergency/EmergencyButton';
 import {
   Home, LayoutGrid, Wand2, Settings, Shield, Zap,
   Clock, Cpu, Plus, Router, Download, type LucideIcon,
@@ -107,6 +108,7 @@ export default function Sidebar() {
 
         {/* Footer: installa PWA + modalità installatore + selettore tema */}
         <div className="px-4 py-4 border-t border-border space-y-3">
+          <EmergencyButton variant="sidebar" />
           {canInstall && (
             <button
               onClick={() => void install()}

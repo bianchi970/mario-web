@@ -18,7 +18,7 @@ function loadContact(): EmergencyContact | null {
   } catch { return null; }
 }
 
-export default function EmergencyButton() {
+export default function EmergencyButton({ variant = 'inline' }: { variant?: 'inline' | 'sidebar' }) {
   const [open,    setOpen]    = useState(false);
   const [confirm, setConfirm] = useState<{ label: string; number: string } | null>(null);
   const [contact, setContact] = useState<EmergencyContact | null>(null);
@@ -59,22 +59,24 @@ export default function EmergencyButton() {
 
   return (
     <>
-      {/* ── Pulsante SOS inline (montato nella TopBar) — hold 800ms ── */}
+      {/* ── Pulsante SOS — hold 800ms ── */}
       <button
         onPointerDown={startHold}
         onPointerUp={cancelHold}
         onPointerLeave={cancelHold}
         onContextMenu={(e) => e.preventDefault()}
         aria-label="Emergenza — tieni premuto per aprire"
-        className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white shadow-md shadow-red-900/40 transition-all select-none ${
-          holding ? 'bg-red-700 scale-95' : 'bg-red-600'
-        }`}
+        className={`relative flex items-center gap-1.5 text-white shadow-md shadow-red-900/40 transition-all select-none ${
+          variant === 'sidebar'
+            ? 'w-full justify-center rounded-lg px-3 py-2 text-sm font-semibold'
+            : 'rounded-full px-3 py-1.5 text-xs font-semibold'
+        } ${holding ? 'bg-red-700 scale-95' : 'bg-red-600'}`}
         style={{ touchAction: 'none' }}
       >
-        <Phone className="h-4 w-4" strokeWidth={2} />
-        <span className="text-xs font-semibold">SOS</span>
+        <Phone className={variant === 'sidebar' ? 'h-4 w-4' : 'h-3.5 w-3.5'} strokeWidth={2} />
+        <span>SOS Emergenza</span>
         {holding && (
-          <span className="absolute inset-0 rounded-full border-2 border-white/60 animate-ping" />
+          <span className="absolute inset-0 rounded-lg border-2 border-white/60 animate-ping" />
         )}
       </button>
 

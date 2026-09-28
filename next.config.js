@@ -10,11 +10,11 @@ const nextConfig = {
           { key: 'Service-Worker-Allowed', value: '/' },
         ],
       },
-      // Microfono esplicito per PWA standalone (default Chrome: allow, ma meglio essere espliciti)
+      // Permissions-Policy già inviato da nginx — non duplicare qui
+      // (header duplicato causa blocco microfono su alcuni browser)
       {
         source: '/(.*)',
         headers: [
-          { key: 'Permissions-Policy', value: 'microphone=(self), camera=(), geolocation=()' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
         ],
       },

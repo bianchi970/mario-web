@@ -150,7 +150,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       const e = err as DOMException;
       let msg: string;
       if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-        msg = `Microfono bloccato (${e.name}). Controlla le autorizzazioni del sito o le impostazioni browser.`;
+        msg = `Microfono bloccato. Tocca il lucchetto 🔒 nella barra indirizzi → Autorizzazioni sito → Microfono → Consenti, poi ricarica la pagina.`;
       } else if (e.name === 'SecurityError') {
         msg = `Microfono vietato dalla policy di sicurezza (${e.name}). Contatta il supporto.`;
       } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {

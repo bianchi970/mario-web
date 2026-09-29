@@ -157,7 +157,10 @@ describe('Settings offline mode wiring', () => {
       expect(screen.getByRole('button', { name: 'Apri' })).toBeInTheDocument();
     });
 
-    fireEvent.click(getActionButtons()[0]);
+    // Il pulsante si sceglie per NOME, non per posizione: `getActionButtons()[0]`
+    // restituiva il primo pulsante della pagina impostazioni, non quello del
+    // dispositivo, e il comando non partiva mai.
+    fireEvent.click(screen.getByRole('button', { name: 'Apri' }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -185,11 +188,24 @@ describe('Settings offline mode wiring', () => {
 
     fireEvent.click(screen.getByLabelText('Stato offline di sistema'));
 
+    // Contare TUTTI i pulsanti della pagina misurava anche quelli delle
+    // impostazioni ("Salva contatto"): cambiava a ogni ritocco della UI senza
+    // dire nulla sul comportamento. Ciò che conta è che il comando del
+    // dispositivo torni disponibile e riparta.
+    //
+    // Dopo un comando riuscito l'etichetta resta su "OK" (conferma visiva), non
+    // torna a "Apri": i pulsanti del dispositivo si riconoscono dall'insieme
+    // delle etichette che possono assumere.
+    const ETICHETTE_DISPOSITIVO = ['Apri', 'Chiudi', 'Stop', 'OK', 'Sistema offline'];
+    const pulsantiDispositivo = () =>
+      screen.getAllByRole('button').filter((b) => ETICHETTE_DISPOSITIVO.includes(b.textContent || ''));
+
     await waitFor(() => {
-      expect(getActionButtons()).toHaveLength(3);
+      expect(pulsantiDispositivo().length).toBeGreaterThan(0);
+      expect(pulsantiDispositivo()[0]).not.toBeDisabled();
     });
 
-    fireEvent.click(getActionButtons()[0]);
+    fireEvent.click(pulsantiDispositivo()[0]);
 
     await waitFor(() => {
       const callsAfterOnline = (global.fetch as jest.Mock).mock.calls.filter((call) =>

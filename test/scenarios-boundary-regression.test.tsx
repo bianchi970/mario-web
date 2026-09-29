@@ -2,15 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ScenariosPage from '@/app/scenarios/page';
 import { ProjectProvider } from '@/context/ProjectContext';
 import * as scenariosApi from '@/lib/api/scenarios';
+import { routerFetch, json } from './helpers/fetch-router';
 
 jest.mock('@/components/layout/TopBar', () => ({
   __esModule: true,
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
-// Mock vuoti per automazioni e devices (via fetchAPI che controlla res.ok)
-const autoMock = { ok: true, status: 200, json: async () => ({ automations: [] }) };
-const devsMock = { ok: true, status: 200, json: async () => ({ devices: [] }) };
 
 describe('scenarios boundary regression', () => {
   beforeEach(() => {
@@ -40,21 +38,16 @@ describe('scenarios boundary regression', () => {
   });
 
   test('shows only missing fields and keeps confirm disabled until filled', async () => {
-    const fetchMock = jest
-      .fn()
-      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
-      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsMock)
-      // user action
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: false,
-          status: 'needs_confirmation',
-          missing: ['trigger_time'],
-        }),
-      });
+    // Risposte per URL, non per posizione: il montaggio della pagina può
+    // aggiungere o togliere chiamate senza far slittare tutto il test.
+    const fetchMock = routerFetch([
+      [/\/api\/scenarios\/audit/,     json([])],
+      [/\/api\/scenarios\/from-text/, json({ success: false, status: 'needs_confirmation', missing: ['trigger_time'] })],
+      [/\/api\/scenarios/,            json({ success: true, data: [] })],
+      [/\/scenes/,                    json({ success: true, data: [] })],
+      [/\/automations/,               json({ automations: [] })],
+      [/\/devices/,                   json({ devices: [] })],
+    ]);
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -75,35 +68,23 @@ describe('scenarios boundary regression', () => {
   });
 
   test('refreshes audit on demand and updates the table', async () => {
-    const fetchMock = jest
-      .fn()
-      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
-      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
-      .mockResolvedValueOnce({
-        json: async () => [
-          {
-            scenario_id: 'night_close',
-            scenario_name: 'Night close',
-            status: 'blocked',
-            reason: 'condition_false',
-            executed_at: '2026-04-11T22:00:00Z',
-          },
-        ],
-      })
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsMock)
-      // user: "Aggiorna audit"
-      .mockResolvedValueOnce({
-        json: async () => [
-          {
-            scenario_id: 'night_open',
-            scenario_name: 'Night open',
-            status: 'executed',
-            reason: null,
-            executed_at: '2026-04-11T23:00:00Z',
-          },
-        ],
-      });
+    // L'audit cambia fra il montaggio e l'aggiornamento richiesto dall'utente:
+    // la rotta è una funzione, così lo stato evolve senza dipendere dall'ordine
+    // delle altre chiamate.
+    let auditGiaLetto = false;
+    const fetchMock = routerFetch([
+      [/\/api\/scenarios\/audit/, () => {
+        if (auditGiaLetto) {
+          return json([{ scenario_id: 'night_open', scenario_name: 'Night open', status: 'executed', reason: null, executed_at: '2026-04-11T23:00:00Z' }]);
+        }
+        auditGiaLetto = true;
+        return json([{ scenario_id: 'night_close', scenario_name: 'Night close', status: 'blocked', reason: 'condition_false', executed_at: '2026-04-11T22:00:00Z' }]);
+      }],
+      [/\/api\/scenarios/, json({ success: true, data: [] })],
+      [/\/scenes/,         json({ success: true, data: [] })],
+      [/\/automations/,    json({ automations: [] })],
+      [/\/devices/,        json({ devices: [] })],
+    ]);
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -121,7 +102,10 @@ describe('scenarios boundary regression', () => {
       expect(screen.queryByText('Night close')).not.toBeInTheDocument();
     });
 
-    // 4 mount + 1 user refresh = 5
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+    // Ciò che conta è che l'audit sia stato richiesto due volte — al montaggio
+    // e su richiesta dell'utente — non il totale delle chiamate della pagina,
+    // che cambia ogni volta che un componente ne aggiunge una.
+    expect((fetchMock as unknown as { conteggioVerso: (p: RegExp) => number })
+      .conteggioVerso(/\/api\/scenarios\/audit/)).toBe(2);
   });
 });

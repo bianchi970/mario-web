@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ScenariosPage from '@/app/scenarios/page';
 import { ProjectProvider } from '@/context/ProjectContext';
+import { conMontaggioScenari } from './helpers/fetch-router';
 
 jest.mock('@/components/layout/TopBar', () => ({
   __esModule: true,
@@ -9,23 +10,14 @@ jest.mock('@/components/layout/TopBar', () => ({
 
 const fetchMock = jest.fn();
 
-// Mount sequence:
-// 0: listScenarios, 1: listScenarioAudit, 2: listAutomations, 3: listDevices
 
-const scenariosMock = { json: async () => ({ success: true, data: [] }) };
-const auditMock    = { json: async () => [] };
-const autoMock     = { ok: true, status: 200, json: async () => ({ automations: [] }) };
-const devsEmpty    = { ok: true, status: 200, json: async () => ({ devices: [] }) };
-const devsWithOne  = {
-  ok: true, status: 200,
-  json: async () => ({
-    devices: [{
-      id: 'luce_1', name: 'Luce soggiorno', type: 'light',
-      protocol: 'zwave', capabilities: ['turn_on', 'turn_off'],
-      project_id: 'test-project', state: {}, online: true, created_at: '',
-    }],
-  }),
-};
+
+/** Dispositivi che la pagina vede al montaggio. */
+const DISPOSITIVI = [{
+  id: 'luce_1', name: 'Luce soggiorno', type: 'light',
+  protocol: 'zwave', capabilities: ['turn_on', 'turn_off'],
+  project_id: 'test-project', state: {}, online: true, created_at: '',
+}];
 
 const DRAFT_DATA = {
   name: 'Spegni luce alle 22',
@@ -38,16 +30,12 @@ const DRAFT_DATA = {
 describe('NL V2 draft flow', () => {
   beforeEach(() => {
     fetchMock.mockReset();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = conMontaggioScenari(fetchMock, { devices: DISPOSITIVI }) as unknown as typeof fetch;
     localStorage.setItem('mario_project_id', 'test-project');
   });
 
   test('V2D-01: mostra ScenarioDraftPanel quando Brain restituisce draft', async () => {
     fetchMock
-      .mockResolvedValueOnce(scenariosMock)
-      .mockResolvedValueOnce(auditMock)
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsWithOne)
       .mockResolvedValueOnce({
         json: async () => ({ success: true, status: 'draft', data: DRAFT_DATA }),
       });
@@ -71,10 +59,6 @@ describe('NL V2 draft flow', () => {
   test('V2D-02: confirm draft chiama Hub POST e mostra successo', async () => {
     const savedAuto = { ...DRAFT_DATA, id: 'auto-1', project_id: 'test-project', trigger_type: 'schedule', created_at: '' };
     fetchMock
-      .mockResolvedValueOnce(scenariosMock)
-      .mockResolvedValueOnce(auditMock)
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsWithOne)
       // from-text → draft
       .mockResolvedValueOnce({
         json: async () => ({ success: true, status: 'draft', data: DRAFT_DATA }),
@@ -83,7 +67,7 @@ describe('NL V2 draft flow', () => {
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ success: true, data: { automation: savedAuto } }) })
       // loadAutomations dopo confirm (listAutomations + listDevices)
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ automations: [savedAuto] }) })
-      .mockResolvedValueOnce(devsWithOne);
+      ;
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -103,20 +87,19 @@ describe('NL V2 draft flow', () => {
     // Il pannello draft deve scomparire
     expect(screen.queryByText('MARIO ha capito così')).not.toBeInTheDocument();
 
-    // Verifica che il fetch verso Hub sia avvenuto (call index 5)
-    const hubCall = fetchMock.mock.calls[5];
-    expect(hubCall[0]).toContain('/api/hub/automations/');
-    const body = JSON.parse(hubCall[1].body as string);
+    // La chiamata all'Hub si cerca per destinazione, non per indice: un indice
+    // fisso si rompe ogni volta che la pagina aggiunge o toglie una richiesta.
+    const hubCall = fetchMock.mock.calls.find(
+      (c: unknown[]) => typeof c[0] === 'string' && c[0].includes('/api/hub/automations/'),
+    );
+    expect(hubCall).toBeDefined();
+    const body = JSON.parse((hubCall![1] as RequestInit).body as string);
     expect(body.actions).toBeDefined();
     expect(body.actions[0].device_id).toBe('luce_1');
   });
 
   test('V2D-03: annulla draft nasconde il pannello e svuota il testo', async () => {
     fetchMock
-      .mockResolvedValueOnce(scenariosMock)
-      .mockResolvedValueOnce(auditMock)
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsWithOne)
       .mockResolvedValueOnce({
         json: async () => ({ success: true, status: 'draft', data: DRAFT_DATA }),
       });
@@ -142,10 +125,6 @@ describe('NL V2 draft flow', () => {
 
   test('V2D-04: modifica chiude il pannello ma conserva il testo', async () => {
     fetchMock
-      .mockResolvedValueOnce(scenariosMock)
-      .mockResolvedValueOnce(auditMock)
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsWithOne)
       .mockResolvedValueOnce({
         json: async () => ({ success: true, status: 'draft', data: DRAFT_DATA }),
       });
@@ -171,10 +150,6 @@ describe('NL V2 draft flow', () => {
 
   test('V2D-05: needs_clarification mostra domanda e opzioni', async () => {
     fetchMock
-      .mockResolvedValueOnce(scenariosMock)
-      .mockResolvedValueOnce(auditMock)
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsWithOne)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,
@@ -201,10 +176,6 @@ describe('NL V2 draft flow', () => {
 
   test('V2D-06: parse_error mostra errore generico', async () => {
     fetchMock
-      .mockResolvedValueOnce(scenariosMock)
-      .mockResolvedValueOnce(auditMock)
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsWithOne)
       .mockResolvedValueOnce({
         json: async () => ({
           success: false,

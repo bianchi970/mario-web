@@ -1,47 +1,52 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ScenariosPage from '@/app/scenarios/page';
 import { ProjectProvider } from '@/context/ProjectContext';
+import { routerFetch, json } from './helpers/fetch-router';
 
 jest.mock('@/components/layout/TopBar', () => ({
   __esModule: true,
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
-// Mock vuoti per automazioni e devices (via fetchAPI che controlla res.ok)
-const autoMock = { ok: true, status: 200, json: async () => ({ automations: [] }) };
-const devsMock = { ok: true, status: 200, json: async () => ({ devices: [] }) };
+/**
+ * Mock instradati per URL invece che per posizione: quando la pagina ha
+ * iniziato a leggere anche `/scenes` al montaggio, la catena posizionale è
+ * slittata di uno e le prove sono fallite tutte insieme senza che nulla fosse
+ * rotto nel prodotto.
+ */
+
+const SCENARIO_ATTIVO = {
+  id: 'night_close',
+  name: 'Night close',
+  enabled: true,
+  trigger: { cron: '0 22 * * *' },
+  conditions: [],
+  outcome: { type: 'intent', intent: 'chiudi le tapparelle' },
+  updated_at: '2026-04-11T21:00:00Z',
+};
+
+/** Rotte comuni al montaggio, con l'elenco scenari che il test decide. */
+const montaggio = (scenari: unknown[] = []) => ([
+  [/\/api\/scenarios\/audit/, json([])],
+  [/\/api\/scenarios(?!\/)/,  json({ success: true, data: scenari })],
+  [/\/scenes/,                json({ success: true, data: [] })],
+  [/\/automations/,           json({ automations: [] })],
+  [/\/devices/,               json({ devices: [] })],
+] as Parameters<typeof routerFetch>[0]);
+
+function installa(rotte: Parameters<typeof routerFetch>[0]) {
+  const mock = routerFetch(rotte);
+  global.fetch = mock as unknown as typeof fetch;
+  return mock;
+}
 
 describe('scenarios management ui', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
     localStorage.setItem('mario_project_id', 'test-project');
   });
 
   test('renders scenario list from backend', async () => {
-    const fetchMock = jest
-      .fn()
-      // mount: listScenarios, listScenarioAudit, listAutomations, listDevices
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: true,
-          data: [
-            {
-              id: 'night_close',
-              name: 'Night close',
-              enabled: true,
-              trigger: { cron: '0 22 * * *' },
-              conditions: [],
-              outcome: { type: 'intent', intent: 'chiudi le tapparelle' },
-              updated_at: '2026-04-11T21:00:00Z',
-            },
-          ],
-        }),
-      })
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsMock);
-
-    global.fetch = fetchMock as unknown as typeof fetch;
+    installa(montaggio([SCENARIO_ATTIVO]));
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -52,26 +57,13 @@ describe('scenarios management ui', () => {
   });
 
   test('shows explicit error when there is no active project', async () => {
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: false,
-          data: [],
-          error: 'NO_ACTIVE_PROJECT',
-        }),
-      })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: false,
-          status: 'error',
-          error: 'NO_ACTIVE_PROJECT',
-        }),
-      })
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsMock);
-
-    global.fetch = fetchMock as unknown as typeof fetch;
+    installa([
+      [/\/api\/scenarios\/audit/, json({ success: false, status: 'error', error: 'NO_ACTIVE_PROJECT' })],
+      [/\/api\/scenarios(?!\/)/,  json({ success: false, data: [], error: 'NO_ACTIVE_PROJECT' })],
+      [/\/scenes/,                json({ success: true, data: [] })],
+      [/\/automations/,           json({ automations: [] })],
+      [/\/devices/,               json({ devices: [] })],
+    ]);
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -81,46 +73,18 @@ describe('scenarios management ui', () => {
   });
 
   test('toggles scenario and refreshes list', async () => {
-    const fetchMock = jest
-      .fn()
-      // mount
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: true,
-          data: [
-            {
-              id: 'night_close',
-              name: 'Night close',
-              enabled: true,
-              trigger: { cron: '0 22 * * *' },
-              conditions: [],
-              outcome: { type: 'intent', intent: 'chiudi le tapparelle' },
-            },
-          ],
-        }),
-      })
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsMock)
-      // user: toggle + refresh scenarios
-      .mockResolvedValueOnce({ json: async () => ({ success: true }) })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: true,
-          data: [
-            {
-              id: 'night_close',
-              name: 'Night close',
-              enabled: false,
-              trigger: { cron: '0 22 * * *' },
-              conditions: [],
-              outcome: { type: 'intent', intent: 'chiudi le tapparelle' },
-            },
-          ],
-        }),
-      });
-
-    global.fetch = fetchMock as unknown as typeof fetch;
+    // Dopo il PATCH lo scenario risulta disattivato: lo stato vive qui, non
+    // nell'ordine delle chiamate.
+    let abilitato = true;
+    installa([
+      [/\/api\/scenarios\/audit/, json([])],
+      // PATCH e DELETE vanno su /api/scenarios/<id>: rotta distinta dalla lista.
+      [/\/api\/scenarios\/[^/?]+/, () => { abilitato = false; return json({ success: true }); }],
+      [/\/api\/scenarios/,         () => json({ success: true, data: [{ ...SCENARIO_ATTIVO, enabled: abilitato }] })],
+      [/\/scenes/,      json({ success: true, data: [] })],
+      [/\/automations/, json({ automations: [] })],
+      [/\/devices/,     json({ devices: [] })],
+    ]);
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 
@@ -136,33 +100,15 @@ describe('scenarios management ui', () => {
   });
 
   test('deletes scenario and refreshes list', async () => {
-    const fetchMock = jest
-      .fn()
-      // mount
-      .mockResolvedValueOnce({
-        json: async () => ({
-          success: true,
-          data: [
-            {
-              id: 'night_close',
-              name: 'Night close',
-              enabled: true,
-              trigger: { cron: '0 22 * * *' },
-              conditions: [],
-              outcome: { type: 'intent', intent: 'chiudi le tapparelle' },
-            },
-          ],
-        }),
-      })
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce(autoMock)
-      .mockResolvedValueOnce(devsMock)
-      // user: delete + refresh scenarios + refresh audit
-      .mockResolvedValueOnce({ json: async () => ({ success: true }) })
-      .mockResolvedValueOnce({ json: async () => ({ success: true, data: [] }) })
-      .mockResolvedValueOnce({ json: async () => [] });
-
-    global.fetch = fetchMock as unknown as typeof fetch;
+    let esiste = true;
+    installa([
+      [/\/api\/scenarios\/audit/, json([])],
+      [/\/api\/scenarios\/[^/?]+/, () => { esiste = false; return json({ success: true }); }],
+      [/\/api\/scenarios/,         () => json({ success: true, data: esiste ? [SCENARIO_ATTIVO] : [] })],
+      [/\/scenes/,      json({ success: true, data: [] })],
+      [/\/automations/, json({ automations: [] })],
+      [/\/devices/,     json({ devices: [] })],
+    ]);
 
     render(<ProjectProvider><ScenariosPage /></ProjectProvider>);
 

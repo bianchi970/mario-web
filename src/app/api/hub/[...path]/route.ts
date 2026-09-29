@@ -227,8 +227,19 @@ function isZwavePath(path: string[]): boolean {
   return path[0] === 'zwave';
 }
 
+/**
+ * PATCH su un dispositivo è consentito SOLO sulla risorsa device stessa
+ * (`devices/:id`), cioè per rinominarlo o assegnargli una stanza — le due
+ * risposte che l'utente dà a MARIO durante l'assimilazione.
+ *
+ * Prima bastava `path[0] === 'devices'`, quindi passava anche
+ * `devices/:id/command`: attuazione di un dispositivo attraverso un proxy
+ * dichiarato di sola lettura. Oggi l'Hub non espone PATCH su quel percorso e
+ * quindi non accadeva nulla, ma il confine era più largo del suo nome — e un
+ * confine più largo del necessario è un difetto anche quando non è sfruttabile.
+ */
 function isDevicesPath(path: string[]): boolean {
-  return path[0] === 'devices';
+  return path[0] === 'devices' && path.length === 2;
 }
 
 // ── Route handlers ───────────────────────────────────────────────────────────

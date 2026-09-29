@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, Bell, BellOff, CalendarClock, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, Bell, BellOff, CalendarClock, CheckCircle, FileAudio, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
 import { createAutomation } from '@/lib/api/automations';
@@ -252,6 +252,119 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     mediaRecorderRef.current?.stop();
     mediaRecorderRef.current = null;
   }
+
+  /* ─── AUDIO-TEST-START ─── carica file audio → STT → Brain → Hub (rimuovere dopo test) ─── */
+  const audioTestInputRef = useRef<HTMLInputElement | null>(null);
+  const [audioTestLog, setAudioTestLog] = useState<Array<{ step: string; status: 'ok' | 'fail' | 'pending'; detail: string }>>([]);
+  const [audioTestRunning, setAudioTestRunning] = useState(false);
+
+  async function handleAudioTestFile(file: File) {
+    setAudioTestRunning(true);
+    const log: typeof audioTestLog = [];
+    const push = (step: string, status: 'ok' | 'fail' | 'pending', detail: string) => {
+      log.push({ step, status, detail });
+      setAudioTestLog([...log]);
+    };
+
+    push('File', 'ok', `${file.name} (${(file.size / 1024).toFixed(1)} KB, ${file.type || 'unknown'})`);
+
+    // 1. Read file → base64
+    let audio_base64: string;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const CHUNK = 0x8000;
+      let binary = '';
+      for (let offset = 0; offset < bytes.byteLength; offset += CHUNK) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(offset, offset + CHUNK) as unknown as number[]);
+      }
+      audio_base64 = btoa(binary);
+      push('Base64', 'ok', `${audio_base64.length} chars`);
+    } catch (err) {
+      push('Base64', 'fail', `${(err as Error).message}`);
+      setAudioTestRunning(false);
+      return;
+    }
+
+    // 2. STT via /api/brain/voice/transcribe
+    let transcript = '';
+    try {
+      push('STT', 'pending', 'invio a Whisper...');
+      const res = await fetch('/api/brain/voice/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio_base64, mime: file.type || 'audio/webm', lang: 'it' }),
+      });
+      if (!res.ok) {
+        push('STT', 'fail', `HTTP ${res.status} — ${await res.text().catch(() => '')}`);
+        setAudioTestRunning(false);
+        return;
+      }
+      const data = (await res.json()) as { success: boolean; data?: { text: string }; error?: string };
+      transcript = data.data?.text?.trim() ?? '';
+      if (!transcript) {
+        push('STT', 'fail', `Nessun testo riconosciuto (${data.error || 'empty'})`);
+        setAudioTestRunning(false);
+        return;
+      }
+      // Replace pending STT entry
+      log[log.length - 1] = { step: 'STT', status: 'ok', detail: `"${transcript}"` };
+      setAudioTestLog([...log]);
+    } catch (err) {
+      push('STT', 'fail', `${(err as Error).message}`);
+      setAudioTestRunning(false);
+      return;
+    }
+
+    // 3. Brain interpret (same path as handleSend)
+    let r: BrainInterpretResult;
+    try {
+      push('Brain', 'pending', 'interpreto...');
+      r = await brainInterpret(transcript, { project_id: projectId, devices, session_id: sessionId });
+      log[log.length - 1] = {
+        step: 'Brain',
+        status: 'ok',
+        detail: `intent=${r.intent}, action=${r.action || '-'}, conf=${Math.round(r.confidence * 100)}%, outcome=${r._v2?.outcome || '-'}`,
+      };
+      setAudioTestLog([...log]);
+      setResult(r);
+    } catch (err) {
+      push('Brain', 'fail', `${(err as Error).message}`);
+      setAudioTestRunning(false);
+      return;
+    }
+
+    // 4. Device resolution
+    const deviceId = typeof r.target?.device_id === 'string' ? r.target.device_id : '';
+    const deviceIds = r.commands?.map(c => c.device_id).filter(Boolean) ?? [];
+    const allDevices = deviceId ? [deviceId] : deviceIds;
+    push('Device', allDevices.length > 0 ? 'ok' : 'fail',
+      allDevices.length > 0 ? allDevices.join(', ') : 'nessun device risolto');
+
+    // 5. Dispatch to Hub (same as real flow)
+    const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
+    if (!canDispatch) {
+      push('Hub', 'fail', `non dispatchable (outcome=${r._v2?.outcome || '-'})`);
+      push('RISULTATO', 'fail', 'pipeline completa ma nessun comando eseguibile');
+      setAudioTestRunning(false);
+      return;
+    }
+
+    try {
+      push('Hub', 'pending', 'esecuzione...');
+      await dispatch(r);
+      log[log.length - 1] = { step: 'Hub', status: 'ok', detail: 'comando inviato' };
+      setAudioTestLog([...log]);
+      push('RISULTATO', 'ok', 'PASS — percorso completo: File → STT → Brain → Hub → device');
+    } catch (err) {
+      log[log.length - 1] = { step: 'Hub', status: 'fail', detail: `${(err as Error).message}` };
+      setAudioTestLog([...log]);
+      push('RISULTATO', 'fail', `dispatch error: ${(err as Error).message}`);
+    }
+
+    setAudioTestRunning(false);
+  }
+  /* ─── AUDIO-TEST-END ─── */
 
   // Controlla stato notifiche push al mount
   // Timeout 3s: se serviceWorker.ready non risponde, mostra banner comunque
@@ -745,6 +858,52 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           <button onClick={() => setVoiceError('')} className="ml-auto text-amber-400/60 hover:text-amber-300">✕</button>
         </div>
       )}
+
+      {/* ─── AUDIO-TEST-UI-START ─── rimuovere dopo test ─── */}
+      <div className="space-y-2 rounded-[18px] border border-dashed border-cyan-500/40 bg-cyan-500/[0.04] p-3">
+        <div className="flex items-center gap-2">
+          <FileAudio className="h-4 w-4 text-cyan-400" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-cyan-400">Test Audio E2E</span>
+        </div>
+        <input
+          ref={audioTestInputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handleAudioTestFile(f);
+            e.target.value = '';
+          }}
+        />
+        <button
+          onClick={() => audioTestInputRef.current?.click()}
+          disabled={audioTestRunning || phase === 'loading' || phase === 'executing'}
+          className="w-full rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300 active:bg-cyan-500/20 disabled:opacity-40"
+        >
+          {audioTestRunning ? 'Test in corso...' : 'Carica audio test'}
+        </button>
+        {audioTestLog.length > 0 && (
+          <div className="space-y-1 text-xs font-mono">
+            {audioTestLog.map((entry, i) => (
+              <div key={i} className="flex gap-2">
+                <span>{entry.status === 'ok' ? '\u2705' : entry.status === 'fail' ? '\u274C' : '\u23F3'}</span>
+                <span className="font-semibold text-text min-w-[60px]">{entry.step}</span>
+                <span className="text-text-2 break-all">{entry.detail}</span>
+              </div>
+            ))}
+            {!audioTestRunning && audioTestLog.length > 0 && (
+              <button
+                onClick={() => setAudioTestLog([])}
+                className="mt-1 text-cyan-400/60 hover:text-cyan-300 text-[10px]"
+              >
+                pulisci log
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {/* ─── AUDIO-TEST-UI-END ─── */}
 
       {/* Preview */}
       {(phase === 'preview' || phase === 'automation_confirming') && result && (

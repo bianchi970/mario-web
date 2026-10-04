@@ -61,8 +61,17 @@ export function computeHouseState(devices: Device[]): CasaState {
     if (battery !== null && battery < 30 && !seenBatteryNodes.has(rootId)) {
       seenBatteryNodes.add(rootId);
       batteryWarnings++;
-      // Mostra il nome del device radice se gli endpoint lo ripetono
-      const displayName = d.name.replace(/\s*\(controllo\)|\s*\(sensore\)/g, '').trim();
+      // Il nome e quello del NODO RADICE, non del primo endpoint incontrato.
+      //
+      // La batteria e una sola e sta nel dispositivo fisico; gli endpoint la
+      // ripetono. Il dedup per nodo era gia corretto, ma l'avviso prendeva il
+      // nome di `d`, cioe del primo che capitava nell'elenco — e il 2026-10-04
+      // sulla casa vera diceva «Dispositivo Z-Wave 4ep1: batteria 0%», un nome
+      // che MARIO si era dato da solo, al posto di «Riscaldamento Studio».
+      //
+      // Un endpoint non e una cosa per chi abita: se la radice c'e, parla lei.
+      const root = devices.find((x) => x.id === rootId);
+      const displayName = ((root ?? d).name).replace(/\s*\(controllo\)|\s*\(sensore\)/g, '').trim();
       alerts.push({
         type: battery < 10 ? 'battery_critical' : 'battery_low',
         deviceId: d.id,

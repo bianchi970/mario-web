@@ -247,6 +247,22 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         if (transcript) {
           setText(transcript);
           setVoiceError('');
+          // ── Parlare e gia chiedere ──────────────────────────────────────
+          //
+          // Fino al 2026-10-04 la trascrizione riempiva solo la casella e
+          // bisognava premere invio. Misurato quel giorno sul VPS: **sei
+          // trascrizioni riuscite e zero richieste a MARIO** — chi parla si
+          // aspetta una risposta, non un modulo da completare.
+          //
+          // Il blocco esisteva per una ragione che oggi non c'e piu:
+          // l'`initial_prompt` di Whisper era un elenco di comandi
+          // eseguibili, quindi un rumore poteva diventare «accendi la luce».
+          // Tolto quello, resta un rischio minore — e lo copre il Brain, che
+          // **di voce non esegue mai**: propone, e si conferma.
+          //
+          // Si passa `transcript` esplicito: `setText` e asincrono e `text`
+          // qui sarebbe ancora la frase di prima.
+          void handleSend(transcript, true);
         } else {
           setVoiceError('Nessun testo riconosciuto. Riprova.');
         }
@@ -369,8 +385,16 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
   }
 
-  async function handleSend() {
-    const trimmed = text.trim();
+  /**
+   * @param detto  testo da mandare (la voce lo passa esplicitamente: lo stato
+   *               `text` non e ancora aggiornato quando la trascrizione arriva)
+   * @param daVoce dichiara che la frase viene dal microfono. Il Brain la usa
+   *               per **non eseguire mai di voce**: trasforma l'esecuzione in
+   *               una domanda (`gate_voce_non_esegue`). La decisione sta li,
+   *               non qui, o MARIO direbbe «Accendo Luce Cucina» senza farlo.
+   */
+  async function handleSend(detto?: string, daVoce = false) {
+    const trimmed = (detto ?? text).trim();
     if (!trimmed) return;
     setPhase('loading');
     setResult(null);
@@ -378,7 +402,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     setHubMsg('');
 
     try {
-      const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId });
+      const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId, ...(daVoce ? { origine: 'voce' } : {}) });
       setResult(r);
       parla(fraseDa(r));
       const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);

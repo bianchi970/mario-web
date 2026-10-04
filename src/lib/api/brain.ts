@@ -90,7 +90,9 @@ export async function getBrainStatus(): Promise<BrainStatus> {
 
 export async function brainInterpret(
   text: string,
-  context: { project_id?: string; devices?: unknown[]; session_id?: string },
+  /** `origine: 'voce'` dice al Brain che la frase viene dal microfono: li
+   *  un'esecuzione diventa una domanda (`gate_voce_non_esegue`). */
+  context: { project_id?: string; devices?: unknown[]; session_id?: string; origine?: 'voce' },
 ): Promise<BrainInterpretResult> {
   return fetchAPI<BrainInterpretResult>('/api/brain/interpret', {
     method: 'POST',

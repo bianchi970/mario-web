@@ -7,6 +7,18 @@ import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type
 import { createAutomation } from '@/lib/api/automations';
 import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, type ExecutionRun } from '@/lib/api/ui-command';
 import ExecutionProgressCard from './ExecutionProgressCard';
+import { parla, taci } from '@/lib/voce';
+
+/**
+ * La frase che MARIO dice ad alta voce: **quella che ha gia deciso**, non una
+ * costruita qui. `explanation` nasce in `parola.js` nel Brain, che e l'unico
+ * posto dove nascono le parole di MARIO; `question` e il caso in cui sta
+ * chiedendo qualcosa e aspetta una risposta — ed e proprio quando conta
+ * sentirlo, invece di doverlo leggere.
+ */
+function fraseDa(r: BrainInterpretResult): string {
+  return (r._v2?.question || r._v2?.explanation || '').trim();
+}
 
 function triggerLabel(trigger: Record<string, unknown>): string {
   if (trigger.type === 'schedule') return `alle ${(trigger.at as string) || (trigger.cron as string)}`;
@@ -142,6 +154,9 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
   async function startVoiceRecording() {
     if (voiceRecording) return;
+    // Se MARIO sta ancora parlando, tace: due voci insieme non si capiscono, e
+    // la sua finirebbe nel microfono.
+    taci();
     setVoiceError('');
     let stream: MediaStream;
     try {
@@ -343,6 +358,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     try {
       const r = await brainInterpret(cmd, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
+      parla(fraseDa(r));
       const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
       if (!canDispatch) { setPhase('preview'); return; }
       if (r.requires_confirmation || r.risk === 'high') { setPhase('preview'); }
@@ -364,6 +380,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     try {
       const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
+      parla(fraseDa(r));
       const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
       if (!canDispatch) {
         setPhase('preview');

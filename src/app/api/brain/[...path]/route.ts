@@ -25,6 +25,22 @@ function unavailable() {
 // Route AI: pipeline Ollama/Gemma può richiedere ~90 s.
 const AI_BRAIN_PATHS = ['interpret', 'diagnose'];
 
+/**
+ * Chi arriva da qui è una PERSONA, e lo dichiara.
+ *
+ * Dall'11/10/2026 il Brain non lo deduce più: `mario_memory.fonte` ha
+ * `DEFAULT 'non_dichiarata'` (migrazione 038), e il ripiego di `fonteCorrente()`
+ * non è più `'user'`. La ragione è misurata: finché il default era `user`, le
+ * righe scritte da un test che colpiva il Pi vivo si travestivano da parlato
+ * reale, e `fonte='user'` — la colonna su cui si decide se MARIO abbia mai
+ * parlato con qualcuno — contava nove frasi che nessuno aveva detto.
+ *
+ * Perciò la dichiarazione sta **qui**: questo proxy è l'unico punto da cui la
+ * PWA raggiunge il Brain, per entrambe le vie (LAN e relay). Senza questa riga
+ * `fonte='user'` resterebbe a zero per sempre — il difetto spostato, non tolto.
+ */
+const FONTE_PERSONA = { 'x-mario-fonte': 'user' } as const;
+
 async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   const body      = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.from(await req.arrayBuffer());
   const userToken = req.cookies.get('mario_hub_token')?.value || BRAIN_TOKEN;
@@ -35,6 +51,7 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
     headers: {
       'content-type':  req.headers.get('content-type') || 'application/json',
       'authorization': `Bearer ${userToken}`,
+      ...FONTE_PERSONA,
     },
     body,
     // @ts-expect-error duplex required for streaming body
@@ -62,6 +79,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
     headers: {
       'content-type':  req.headers.get('content-type') || 'application/json',
       'authorization': userToken ? `Bearer ${userToken}` : HUB_TOKEN ? `Bearer ${HUB_TOKEN}` : '',
+      ...FONTE_PERSONA,
     },
     body: bodyText,
   };

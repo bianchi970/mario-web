@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authAttiva } from '@/lib/auth-mode';
 
 /**
  * POST /api/auth/logout
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   const refreshToken = req.cookies.get('mario_hub_refresh')?.value;
 
   // Chiama Hub logout (best-effort, non blocca se fallisce)
-  if (accessToken && process.env.REMOTE_AUTH_MODE === 'true') {
+  if (accessToken && authAttiva()) {
     try {
       const logoutBody = JSON.stringify({ refresh_token: refreshToken ?? null });
 

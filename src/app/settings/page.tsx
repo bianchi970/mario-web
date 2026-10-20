@@ -26,7 +26,7 @@ export default async function SettingsPage() {
           adaptersAvailable={adaptersAvailable}
           systemAvailable={systemAvailable}
           hubDisplayUrl={
-            process.env.REMOTE_AUTH_MODE === 'true'
+            process.env.REMOTE_BRIDGE_URL
               ? 'Gateway remoto'
               : (process.env.NEXT_PUBLIC_HUB_DISPLAY_URL || 'http://localhost:4001')
           }

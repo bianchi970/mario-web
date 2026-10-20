@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authAttiva } from '@/lib/auth-mode';
 
 /**
  * GET /api/auth/me
  *
  * Legge l'utente reale dal Hub tramite il JWT in cookie.
- * In local mode (REMOTE_AUTH_MODE non impostato): restituisce ruolo admin sintetico
+ * Con il login spento (REMOTE_AUTH_MODE=false, solo sviluppo): restituisce ruolo admin sintetico
  * così che la UI di gestione utenti sia accessibile anche in locale.
  *
  * Il Hub rimane l'autorità — questo endpoint è solo un relay.
@@ -13,8 +14,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const HUB_URL = process.env.HUB_URL || 'http://localhost:4001';
 
 export async function GET(req: NextRequest) {
-  // Local mode: REMOTE_AUTH_MODE non impostato → tutti admin localmente
-  if (process.env.REMOTE_AUTH_MODE !== 'true') {
+  // Login spento (solo sviluppo) → admin sintetico
+  if (!authAttiva()) {
     return NextResponse.json({ id: 'local', username: 'local', role: 'admin', project_id: null });
   }
 

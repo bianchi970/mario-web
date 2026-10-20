@@ -43,7 +43,10 @@ const FONTE_PERSONA = { 'x-mario-fonte': 'user' } as const;
 
 async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   const body      = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.from(await req.arrayBuffer());
-  const userToken = req.cookies.get('mario_hub_token')?.value || BRAIN_TOKEN;
+  // La persona l'ha già verificata il middleware; il suo cookie è firmato
+  // dall'Hub e il Brain non lo sa leggere (401). Verso il Brain parla il
+  // servizio, come fanno il proxy Brain dell'Hub e le altre rotte di questa PWA.
+  const userToken = BRAIN_TOKEN;
   const isAi      = AI_BRAIN_PATHS.some(p => path.includes(p));
 
   const upstreamRes = await fetch(`${BRAIN_URL}/api/brain/${path.join('/')}${req.nextUrl.search}`, {

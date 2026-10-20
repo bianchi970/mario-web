@@ -1,8 +1,8 @@
 /**
- * middleware.ts — Auth guard per MARIO Web in modalità online.
+ * middleware.ts — Auth guard per MARIO Web, in casa (Pi) e fuori (VPS).
  *
- * Attivo SOLO se REMOTE_AUTH_MODE=true.
- * In locale (Pi): variabile non impostata → passa tutto, zero overhead.
+ * Attivo per default: si spegne solo con REMOTE_AUTH_MODE=false (lib/auth-mode.ts).
+ * Fino al 20/10/2026 era il contrario, e sul Pi passava tutto.
  *
  * Cookie: mario_hub_token   = JWT access token (15min) firmato dal Hub
  *         mario_hub_refresh = refresh token opaco (30d), usato per rotazione
@@ -16,9 +16,9 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { authAttiva } from '@/lib/auth-mode';
 
-const REMOTE_AUTH_MODE = process.env.REMOTE_AUTH_MODE === 'true';
-const JWT_SECRET       = process.env.JWT_SECRET ?? '';
+const JWT_SECRET      = process.env.JWT_SECRET ?? '';
 const IS_PROD          = process.env.NODE_ENV === 'production';
 
 // Route pubbliche anche in online mode
@@ -41,7 +41,11 @@ const PUBLIC_PREFIXES = [
 ];
 
 export async function middleware(request: NextRequest) {
-  if (!REMOTE_AUTH_MODE) return NextResponse.next();
+  if (!authAttiva()) return NextResponse.next();
+  if (!JWT_SECRET) {
+    // Senza il segreto non si verifica nessuno: si chiude, e lo si dice.
+    console.error('[auth] JWT_SECRET assente: nessun login verificabile, accesso negato a tutti');
+  }
 
   const { pathname } = request.nextUrl;
 

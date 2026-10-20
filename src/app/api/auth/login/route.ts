@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authAttiva } from '@/lib/auth-mode';
 
 /**
  * POST /api/auth/login
@@ -8,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
  *   - mario_hub_token   : access token (15min JWT)
  *   - mario_hub_refresh : refresh token (30d opaque)
  *
- * Attivo solo se REMOTE_AUTH_MODE=true.
+ * Attivo salvo REMOTE_AUTH_MODE=false (vedi lib/auth-mode.ts).
  */
 
 const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
@@ -30,7 +31,7 @@ type HubLoginData = {
 };
 
 export async function POST(req: NextRequest) {
-  if (process.env.REMOTE_AUTH_MODE !== 'true') {
+  if (!authAttiva()) {
     return NextResponse.json({ error: 'auth_disabled' }, { status: 404 });
   }
 

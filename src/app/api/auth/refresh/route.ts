@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authAttiva } from '@/lib/auth-mode';
 
 /**
  * POST /api/auth/refresh
@@ -14,7 +15,7 @@ const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 export async function POST(req: NextRequest) {
-  if (process.env.REMOTE_AUTH_MODE !== 'true') {
+  if (!authAttiva()) {
     return NextResponse.json({ error: 'auth_disabled' }, { status: 404 });
   }
 

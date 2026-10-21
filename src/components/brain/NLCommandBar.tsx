@@ -91,14 +91,10 @@ function chooseMimeType(): string {
 
 function _isCompoundDispatchable(r: BrainInterpretResult): boolean {
   return r.commands.some(c =>
-    c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0 || c.selector),
+    c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0),
   );
 }
 
-/** B86: outcome=plan con array semplice [{device_id, action}] dal compound alias fast path */
-function _isPlanDispatchable(r: BrainInterpretResult): boolean {
-  return r._v2?.outcome === 'plan' && Array.isArray(r._v2?.plan) && (r._v2.plan as unknown[]).length > 0;
-}
 
 export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
@@ -344,7 +340,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       const r = await brainInterpret(cmd, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
       parla(fraseDa(r));
-      const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
+      const canDispatch = r.dispatchable || _isCompoundDispatchable(r);
       if (!canDispatch) { setPhase('preview'); return; }
       if (r.requires_confirmation || r.risk === 'high') { setPhase('preview'); }
       else { await dispatch(r); }
@@ -374,7 +370,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId, ...(daVoce ? { origine: 'voce' } : {}) });
       setResult(r);
       parla(fraseDa(r));
-      const canDispatch = r.dispatchable || _isCompoundDispatchable(r) || _isPlanDispatchable(r);
+      const canDispatch = r.dispatchable || _isCompoundDispatchable(r);
       if (!canDispatch) {
         setPhase('preview');
         return;
@@ -393,28 +389,15 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   async function dispatch(r: BrainInterpretResult) {
     // Compound: 1+ step con target valido
     const validCommands = r.commands.filter(c =>
-      c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0 || c.selector),
+      c.action != null && (c.device_id || (c.device_ids?.length ?? 0) > 0),
     );
     if (validCommands.length > 0) {
       await dispatchCompound(r, validCommands);
       return;
     }
 
-    // B86 compound alias fast path: outcome=plan con array [{device_id, action}]
-    if (r._v2?.outcome === 'plan' && Array.isArray(r._v2?.plan)) {
-      const planItems = r._v2.plan as Array<{ device_id: string; action: string }>;
-      if (planItems.length > 0) {
-        await dispatchCompound(r, planItems.map((p, i) => ({
-          device_id:       p.device_id,
-          action:          p.action,
-          params:          {} as Record<string, unknown>,
-          step_index:      i,
-          dependency_type: 'parallel' as const,
-          depends_on:      null,
-        })));
-        return;
-      }
-    }
+    // Un piano arriva in `commands`, e solo lì (21/10/2026): il ramo che lo
+    // cercava in `_v2.plan` come array era morto — il Brain lo manda {steps}.
 
     // Legacy single-device
     const deviceId = typeof r.target?.device_id === 'string' ? r.target.device_id.trim() : '';
@@ -457,10 +440,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           step_index:      s.step_index,
           dependency_type: s.dependency_type,
           depends_on:      s.depends_on,
-          selector:        s.selector,
-          target_type:     s.target_type,
-          room_id:         s.room_id,
-          excluded_ids:    s.excluded_ids,
           description:     s.description,
         })),
         undefined,
@@ -736,7 +715,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             </div>
           )}
 
-          {(result.dispatchable || _isCompoundDispatchable(result) || _isPlanDispatchable(result)) ? (
+          {(result.dispatchable || _isCompoundDispatchable(result)) ? (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => void dispatch(result)}

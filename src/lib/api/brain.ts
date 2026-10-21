@@ -26,10 +26,6 @@ export interface BrainInterpretResult {
     step_index: number;
     dependency_type: 'parallel' | 'sequential';
     depends_on: number | null;
-    selector?: string | null;
-    target_type?: string | null;
-    room_id?: string | null;
-    excluded_ids?: string[];
     description?: string | null;
   }>;
   suggest_diagnose: boolean;

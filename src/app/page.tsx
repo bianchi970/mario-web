@@ -519,7 +519,8 @@ export default function DashboardPage() {
 
             {/* Dispositivi accesi ora */}
             {(() => {
-              const ACTIVE_TYPES = new Set(['light', 'rgb_light', 'switch', 'plug', 'ev_charger']);
+              // switch_relay: i relè (Luce Cucina, Dispositivo Corridoio) — fino al 21/10/2026 mancavano, e un relè acceso non compariva qui.
+              const ACTIVE_TYPES = new Set(['light', 'rgb_light', 'switch', 'switch_relay', 'plug', 'ev_charger']);
               const active = (devices ?? []).filter(
                 (d) => ACTIVE_TYPES.has(d.type) && (d.state as Record<string, unknown>)?.on === true,
               );

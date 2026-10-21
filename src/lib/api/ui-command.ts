@@ -6,6 +6,8 @@ export type UiCommandResponse = {
   /** executed · simulated (un comando fallito arriva come errore HTTP 502) */
   status?: string;
   esito?: 'eseguito' | 'simulato' | 'fallito';
+  /** Quanto si sa dell'esecuzione, dal protocollo: `device` = il device ha detto di averlo fatto. */
+  conferma?: 'device' | 'in_corso' | 'nessuna' | null;
   success?: boolean;
   error?: {
     code?: string;
@@ -60,9 +62,51 @@ export async function executeUiCommand(
  * errore HTTP (502) e non passa di qui.
  */
 export function esitoDetto(r: UiCommandResponse | null | undefined): { fatto: boolean; frase: string } {
-  if (r?.status === 'executed') return { fatto: true, frase: 'Fatto.' };
+  if (r?.status === 'executed') return fraseConferma(r.conferma, 1);
   if (r?.status === 'simulated') return { fatto: false, frase: 'Simulato: il comando non ha raggiunto un dispositivo vero.' };
   return { fatto: false, frase: 'Non so se è stato eseguito: MARIO non ha ricevuto un esito.' };
+}
+
+/**
+ * «Arrivato» non è «fatto» (21/10/2026). L'Hub dice `eseguito` quando il
+ * comando ha raggiunto il device, e la `conferma` quando il device ha detto
+ * di averlo fatto: «Fatto.» solo nel secondo caso. Gli altri si dicono come
+ * sono — una frase più rassicurante su un comando non confermato è il
+ * «fatto» falso che fa uscire di casa.
+ */
+function fraseConferma(conferma: UiCommandResponse['conferma'], quanti: number): { fatto: boolean; frase: string } {
+  if (conferma === 'device') return { fatto: true, frase: 'Fatto.' };
+  if (conferma === 'in_corso') return { fatto: false, frase: 'Il dispositivo lo sta facendo: non ha ancora finito.' };
+  return { fatto: false, frase: quanti === 1
+    ? 'Inviato, ma il dispositivo non ha confermato di averlo fatto.'
+    : `Inviato, ma ${quanti} dispositivi non hanno confermato di averlo fatto.` };
+}
+
+type RisultatoDevice = { ok?: boolean; conferma?: UiCommandResponse['conferma'] };
+
+/**
+ * La frase di fine piano, in un posto solo: era scritta cinque volte nella
+ * barra dei comandi, con cinque parole diverse per la stessa cosa. Legge i
+ * passi e, dentro, la conferma di ogni device; un passo fallito dice perché
+ * (il motivo è già una frase di MARIO, `porta3_siPuoFare`).
+ */
+export function esitoPiano(run: ExecutionRun): { fatto: boolean; frase: string } {
+  const risultati = run.steps.flatMap((s) => (Array.isArray(s.result) ? (s.result as RisultatoDevice[]) : []));
+  const motivi = [...new Set(run.steps.filter((s) => s.status === 'failed' || s.status === 'blocked')
+    .map((s) => s.error).filter((e): e is string => typeof e === 'string' && e.length > 0))];
+  if (run.status === 'succeeded') {
+    // Senza i risultati dei device non si sa: «non so» non diventa mai «fatto».
+    const arrivati = risultati.filter((r) => r.ok);
+    if (arrivati.length === 0) return { fatto: false, frase: 'Non so se è stato eseguito: MARIO non ha ricevuto un esito.' };
+    const nonConfermati = arrivati.filter((r) => r.conferma !== 'device').length;
+    if (nonConfermati === 0) return { fatto: true, frase: 'Fatto.' };
+    const inCorso = risultati.length > 0 && risultati.every((r) => r.conferma === 'in_corso');
+    return fraseConferma(inCorso ? 'in_corso' : 'nessuna', nonConfermati);
+  }
+  if (run.status === 'partially_succeeded') {
+    return { fatto: false, frase: `${run.steps_done} di ${run.steps_total} riusciti, ${run.steps_failed} no.${motivi.length ? ' ' + motivi.join(' ') : ''}` };
+  }
+  return { fatto: false, frase: motivi.length ? motivi.join(' ') : 'Esecuzione fallita.' };
 }
 
 // ── B89: Compound execution ────────────────────────────────────────────────

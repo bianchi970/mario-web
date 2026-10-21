@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Bell, BellOff, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
-import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, esitoDetto, type ExecutionRun } from '@/lib/api/ui-command';
+import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, esitoDetto, esitoPiano, type ExecutionRun } from '@/lib/api/ui-command';
 import ExecutionProgressCard from './ExecutionProgressCard';
 import { parla, taci } from '@/lib/voce';
 
@@ -316,9 +316,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         const final = await pollExecution(projectId, savedId, setExecutionRun, controller.signal);
         setExecutionRun(final);
         sessionStorage.removeItem(execKey);
-        if (final.status === 'succeeded') { setHubMsg('Tutti i comandi completati.'); setPhase('success'); }
-        else if (final.status === 'partially_succeeded') { setHubMsg(`${final.steps_done} di ${final.steps_total} riusciti.`); setPhase('success'); }
-        else { setHubMsg('Esecuzione fallita.'); setPhase('error'); }
+        mostraPiano(final);
       } catch {
         sessionStorage.removeItem(execKey);
       } finally {
@@ -453,20 +451,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         const finalRun = await pollExecution(projectId, run.execution_id, setExecutionRun, controller.signal);
         setExecutionRun(finalRun);
         try { sessionStorage.removeItem(execKey); } catch { /* */ }
-        if (finalRun.status === 'succeeded') {
-          setHubMsg(`${finalRun.steps_done} di ${finalRun.steps_total} comand${finalRun.steps_total === 1 ? 'o' : 'i'} esegu${finalRun.steps_total === 1 ? 'ito' : 'iti'}.`);
-          setPhase('success');
-        } else if (finalRun.status === 'partially_succeeded') {
-          setHubMsg(`${finalRun.steps_done} di ${finalRun.steps_total} riusciti, ${finalRun.steps_failed} falliti.`);
-          setPhase('success');
-        } else {
-          setHubMsg('Esecuzione fallita.');
-          setPhase('error');
-        }
+        mostraPiano(finalRun);
       } else {
         try { sessionStorage.removeItem(execKey); } catch { /* */ }
-        if (run.status === 'succeeded') { setHubMsg('Fatto.'); setPhase('success'); }
-        else { setHubMsg('Esecuzione fallita.'); setPhase('error'); }
+        mostraPiano(run);
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -478,6 +466,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
     // suppress unused var lint — r.input_text used indirectly
     void r;
+  }
+
+  /** La fine di un piano, detta in un posto solo (`esitoPiano`). */
+  function mostraPiano(run: ExecutionRun) {
+    const esito = esitoPiano(run);
+    setHubMsg(esito.frase);
+    setPhase(esito.fatto ? 'success' : 'error');
   }
 
   async function retryFailed() {
@@ -518,20 +513,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         const finalRun = await pollExecution(projectId, run.execution_id, setExecutionRun, controller.signal);
         setExecutionRun(finalRun);
         try { sessionStorage.removeItem(execKey); } catch { /* */ }
-        if (finalRun.status === 'succeeded') {
-          setHubMsg(`${finalRun.steps_done} di ${finalRun.steps_total} riusciti.`);
-          setPhase('success');
-        } else if (finalRun.status === 'partially_succeeded') {
-          setHubMsg(`${finalRun.steps_done} di ${finalRun.steps_total} riusciti, ${finalRun.steps_failed} falliti.`);
-          setPhase('success');
-        } else {
-          setHubMsg('Esecuzione fallita.');
-          setPhase('error');
-        }
+        mostraPiano(finalRun);
       } else {
         try { sessionStorage.removeItem(execKey); } catch { /* */ }
-        if (run.status === 'succeeded') { setHubMsg('Fatto.'); setPhase('success'); }
-        else { setHubMsg('Esecuzione fallita.'); setPhase('error'); }
+        mostraPiano(run);
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;

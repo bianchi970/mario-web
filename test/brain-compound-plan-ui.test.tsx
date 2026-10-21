@@ -57,8 +57,10 @@ const execResponse = {
     steps_total:  2,
     steps_failed: 0,
     steps: [
-      { step_index: 0, device_id: 'rele-canale-1', device_ids: [], action: 'turn_on', status: 'succeeded', dependency_type: 'parallel', depends_on: null, description: null },
-      { step_index: 1, device_id: '2-ep1',         device_ids: [], action: 'turn_on', status: 'succeeded', dependency_type: 'parallel', depends_on: null, description: null },
+      { step_index: 0, device_id: 'rele-canale-1', device_ids: [], action: 'turn_on', status: 'succeeded', dependency_type: 'parallel', depends_on: null, description: null,
+        result: [{ device_id: 'rele-canale-1', ok: true, esito: 'eseguito', conferma: 'device' }] },
+      { step_index: 1, device_id: '2-ep1',         device_ids: [], action: 'turn_on', status: 'succeeded', dependency_type: 'parallel', depends_on: null, description: null,
+        result: [{ device_id: '2-ep1', ok: true, esito: 'eseguito', conferma: 'device' }] },
     ],
   }),
 };

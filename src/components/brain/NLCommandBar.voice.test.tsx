@@ -30,12 +30,7 @@ import NLCommandBar from '@/components/brain/NLCommandBar';
 jest.mock('@/lib/api/brain', () => ({
   brainInterpret: jest.fn(),
   brainDiagnose: jest.fn(),
-  brainConfirmAutomation: jest.fn(),
   brainLearn: jest.fn(),
-}));
-
-jest.mock('@/lib/api/automations', () => ({
-  createAutomation: jest.fn(),
 }));
 
 jest.mock('@/lib/api/ui-command', () => ({

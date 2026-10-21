@@ -4,10 +4,9 @@ import Image from 'next/image';
 import { useState } from 'react';
 import EmergencyButton from '@/components/emergency/EmergencyButton';
 import {
-  Home, LayoutGrid, Wand2, Settings, Shield, Zap,
+  Home, LayoutGrid, Settings, Shield, Zap,
   Clock, Cpu, Plus, Router, Download, type LucideIcon,
 } from 'lucide-react';
-import { SCENARIO_COPY } from '@/components/scenarios/scenario-copy';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
@@ -27,7 +26,6 @@ interface NavItem {
 const NAV_ALL: NavItem[] = [
   { href: '/',           label: 'Casa',                      Icon: Home,       installerOnly: false, mobileHidden: false },
   { href: '/rooms',      label: 'Stanze',                    Icon: LayoutGrid, installerOnly: false, mobileHidden: false },
-  { href: '/scenarios',  label: SCENARIO_COPY.pageTitle,     Icon: Wand2,      installerOnly: false, mobileHidden: false },
   { href: '/settings',   label: 'Impostazioni',              Icon: Settings,   installerOnly: false, mobileHidden: false },
   { href: '/security',   label: 'Sicurezza',                 Icon: Shield,     installerOnly: false, mobileHidden: true },
   { href: '/energy',     label: 'Energia',                   Icon: Zap,        installerOnly: false, mobileHidden: true },

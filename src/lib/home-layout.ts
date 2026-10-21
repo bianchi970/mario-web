@@ -10,12 +10,12 @@
  */
 
 export interface HomeLayout {
-  sections: string[];   // ordine delle sezioni nella home (es. ['devices', 'scenarios', 'rooms'])
+  sections: string[];   // ordine delle sezioni nella home (es. ['devices', 'rooms'])
   collapsed: string[];  // sezioni collassate
 }
 
 const DEFAULT_LAYOUT: HomeLayout = {
-  sections:  ['devices', 'scenarios', 'rooms', 'security', 'energy'],
+  sections:  ['devices', 'rooms', 'security', 'energy'],
   collapsed: [],
 };
 

@@ -347,7 +347,7 @@ export default function SettingsClient({
             <p className="text-xs text-hub-muted">
               {projectsStatus === 'empty'
                 ? 'Operazioni bloccate: contatta il proprietario della casa per ricevere accesso.'
-                : 'Salvato nel browser. E\u2019 la sorgente unica per dispositivi, stanze e scenari.'}
+                : 'Salvato nel browser. E\u2019 la sorgente unica per dispositivi e stanze.'}
             </p>
           </div>
 

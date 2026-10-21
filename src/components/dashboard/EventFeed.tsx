@@ -11,8 +11,6 @@ const EVENT_LABELS: Record<string, string> = {
   'device.offline': 'Dispositivo fuori linea',
   'device.state_changed': 'Stato aggiornato',
   'device.error': 'Errore dispositivo',
-  'automation.executed': 'Automazione eseguita',
-  'automation.failed': 'Automazione fallita',
   'motion.detected': 'Movimento rilevato',
   'motion.cleared': 'Movimento cessato',
 };

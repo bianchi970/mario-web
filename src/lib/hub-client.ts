@@ -5,7 +5,7 @@
  */
 
 import type {
-  Device, Room, HubEvent, Automation, Adapter,
+  Device, Room, HubEvent, Adapter,
   SystemInfo, HubHealth, RegistrySnapshot, CommandResult,
 } from './hub-types';
 
@@ -171,12 +171,6 @@ export async function deleteRoom(projectId: string, roomId: string): Promise<voi
 export async function getEvents(projectId = DEFAULT_PROJECT_ID, limit = 25): Promise<{ events: HubEvent[] }> {
   const res = await hubFetch<HubEnvelope<{ events: HubEvent[] }>>(`/events/${encodeURIComponent(projectId)}?limit=${limit}`);
   return res.data;
-}
-
-// ── Automations ──────────────────────────────────────────────────
-
-export async function getAutomations(projectId = DEFAULT_PROJECT_ID): Promise<{ automations: Automation[] }> {
-  return hubFetch(`/automations/${encodeURIComponent(projectId)}`);
 }
 
 // ── State ────────────────────────────────────────────────────────

@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, Bell, BellOff, CalendarClock, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, Bell, BellOff, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
-import { brainInterpret, brainDiagnose, brainConfirmAutomation, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult, type AutomationDraft } from '@/lib/api/brain';
-import { createAutomation } from '@/lib/api/automations';
+import { brainInterpret, brainDiagnose, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
 import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, type ExecutionRun } from '@/lib/api/ui-command';
 import ExecutionProgressCard from './ExecutionProgressCard';
 import { parla, taci } from '@/lib/voce';
@@ -18,29 +17,6 @@ import { parla, taci } from '@/lib/voce';
  */
 function fraseDa(r: BrainInterpretResult): string {
   return (r._v2?.question || r._v2?.explanation || '').trim();
-}
-
-function triggerLabel(trigger: Record<string, unknown>): string {
-  if (trigger.type === 'schedule') return `alle ${(trigger.at as string) || (trigger.cron as string)}`;
-  if (trigger.type === 'device_state') {
-    const prop = (trigger.property as string) || '';
-    const val  = trigger.value;
-    return `${prop} ${val === true ? '= sì' : val === false ? '= no' : `= ${val}`}`;
-  }
-  if (trigger.type === 'sun_event') return `al ${trigger.event as string}`;
-  return (trigger.type as string) || '—';
-}
-
-function actionsLabel(actions: Record<string, unknown>[]): string {
-  return actions
-    .filter(a => a.type !== 'delay')
-    .map(a => {
-      const cmd  = (a.command || a.action || a.type) as string;
-      const room = a.room as string;
-      const dev  = a.device_type as string;
-      return [cmd, dev, room].filter(Boolean).join(' ');
-    })
-    .join(', ') || '—';
 }
 
 const ACTION_LABEL: Record<string, string> = {
@@ -81,15 +57,9 @@ function buildUserMeaning(r: BrainInterpretResult): string {
     ?? '';
   const at = r.parameters?.at as string | undefined;
   const parts = [action, target, at ? `alle ${at}` : ''].filter(Boolean);
-  if (r.intent === 'scene_run') return `avvia scena: ${target}`;
   if (r.intent === 'status_query') return `stato di: ${target}`;
   if (r.intent === 'diagnosis') return `diagnosi: ${target || 'sistema'}`;
   return parts.join(' ') || r.input_text;
-}
-
-function atToCron(at: string): string {
-  const [h = '0', m = '0'] = at.split(':');
-  return `${parseInt(m)} ${parseInt(h)} * * *`;
 }
 
 interface Props {
@@ -97,7 +67,7 @@ interface Props {
   devices?: unknown[];
 }
 
-type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'executing' | 'success' | 'error' | 'diagnose_done' | 'automation_creating' | 'automation_confirming';
+type Phase = 'idle' | 'loading' | 'preview' | 'confirming' | 'executing' | 'success' | 'error' | 'diagnose_done';
 
 const _EXEC_TERMINAL = new Set(['succeeded', 'failed', 'partially_succeeded', 'cancelled']);
 
@@ -139,7 +109,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const [errorMsg, setErrorMsg] = useState('');
   const [hubMsg, setHubMsg] = useState('');
   const [diagnoseResult, setDiagnoseResult] = useState<BrainDiagnoseResult | null>(null);
-  const [proactiveDismissed, setProactiveDismissed] = useState(false);
   const [correcting, setCorrecting] = useState(false);
   const [correctionText, setCorrectionText] = useState('');
   const [correctionDone, setCorrectionDone] = useState(false);
@@ -595,48 +564,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
   }
 
-  async function handleCreateAutomation() {
-    if (!result) return;
-    const at = result.parameters?.at as string | undefined;
-    if (!at) return;
-    setPhase('automation_creating');
-    try {
-      const target = result.target as Record<string, unknown> | null;
-      const deviceId = target?.device_id as string | undefined;
-      const selector = (target?.selector ?? target?.room ?? '') as string;
-      await createAutomation(projectId, {
-        name: buildUserMeaning(result),
-        enabled: true,
-        trigger_type: 'schedule',
-        trigger: { cron: atToCron(at), at },
-        conditions: [],
-        actions: [
-          deviceId
-            ? { type: 'device_command', device_id: deviceId, command: result.action, params: {} }
-            : { type: 'intent', intent: `${result.action ?? ''} ${selector}`.trim() },
-        ],
-      });
-      setHubMsg('Automazione creata.');
-      setPhase('success');
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Errore creazione automazione');
-      setPhase('error');
-    }
-  }
-
-  async function handleConfirmDraft() {
-    if (!result?._v2?.draft) return;
-    setPhase('automation_confirming');
-    try {
-      const res = await brainConfirmAutomation(result._v2.draft as AutomationDraft, projectId);
-      setHubMsg(`Automazione creata: ${res.automation?.name || ''}`);
-      setPhase('success');
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Errore creazione automazione');
-      setPhase('error');
-    }
-  }
-
   async function handleDiagnose() {
     if (!text.trim()) return;
     setPhase('loading');
@@ -660,7 +587,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     setErrorMsg('');
     setHubMsg('');
     setDiagnoseResult(null);
-    setProactiveDismissed(false);
     setCorrecting(false);
     setCorrectionText('');
     setCorrectionDone(false);
@@ -790,7 +716,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
 
       {/* Preview */}
-      {(phase === 'preview' || phase === 'automation_confirming') && result && (
+      {phase === 'preview' && result && (
         <div className="space-y-2 rounded-[18px] border border-border bg-surface-2 p-3 text-sm">
           {/* UserMeaning */}
           <div className="flex items-center justify-between">
@@ -803,87 +729,8 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             Confidenza: {Math.round(result.confidence * 100)}%
           </div>
 
-          {/* automation_intent — draft da Brain V2 */}
-          {result.intent === 'automation_intent' && result._v2?.draft && (
-            <div className="space-y-1.5 rounded-[14px] border border-sky-500/20 bg-sky-500/[0.06] p-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-sky-300">
-                <CalendarClock className="h-3.5 w-3.5" />
-                Nuova automazione
-              </div>
-              <div className="text-xs text-text font-medium">{result._v2.draft.name}</div>
-              {!!(result._v2.draft.trigger?.type) && (
-                <div className="text-xs text-text-2">
-                  Quando: <span className="text-text">{triggerLabel(result._v2.draft.trigger)}</span>
-                </div>
-              )}
-              {result._v2.draft.actions?.length > 0 && (
-                <div className="text-xs text-text-2">
-                  Azione: <span className="text-text">{actionsLabel(result._v2.draft.actions)}</span>
-                </div>
-              )}
-              {result._v2.explanation && (
-                <div className="text-xs text-text-2/70 italic">{result._v2.explanation}</div>
-              )}
-              <div className="flex gap-2 pt-0.5">
-                <button
-                  onClick={() => void handleConfirmDraft()}
-                  disabled={phase === 'automation_confirming'}
-                  className="flex-1 rounded-xl border border-sky-500/30 bg-sky-500/20 py-1.5 text-xs text-sky-300 active:bg-sky-500/30 disabled:opacity-40"
-                >
-                  {phase === 'automation_confirming' ? '…' : 'Conferma'}
-                </button>
-                <button
-                  onClick={reset}
-                  className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-2"
-                >
-                  Annulla
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* automation_draft */}
-          {result.reason === 'automation_draft' && (
-            <div className="space-y-1.5 rounded-[14px] border border-sky-500/20 bg-sky-500/[0.06] p-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-sky-300">
-                <CalendarClock className="h-3.5 w-3.5" />
-                Automazione rilevata
-              </div>
-              {(result.parameters?.at as string | undefined) && (
-                <div className="text-xs text-text-2">
-                  Orario: <span className="text-text">{result.parameters.at as string}</span>
-                </div>
-              )}
-              {result.action && (
-                <div className="text-xs text-text-2">
-                  Azione: <span className="text-text">{ACTION_LABEL[result.action] ?? result.action}</span>
-                </div>
-              )}
-              {result.parameters?.at ? (
-                <div className="flex gap-2 pt-0.5">
-                  <button
-                    onClick={() => void handleCreateAutomation()}
-                    className="flex-1 rounded-xl border border-sky-500/30 bg-sky-500/20 py-1.5 text-xs text-sky-300 active:bg-sky-500/30"
-                  >
-                    Crea automazione
-                  </button>
-                  <button
-                    onClick={reset}
-                    className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-2 active:bg-surface"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div className="text-xs text-amber-300">
-                  Specifica un orario per creare l&apos;automazione.
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Missing fields */}
-          {(result.missing?.length ?? 0) > 0 && result.reason !== 'automation_draft' && (
+          {(result.missing?.length ?? 0) > 0 && (
             <div className="text-xs text-amber-300/80">
               Manca: {result.missing!.map((m) => MISSING_LABEL[m] ?? m).join(', ')}
             </div>
@@ -904,7 +751,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 Annulla
               </button>
             </div>
-          ) : result.reason !== 'automation_draft' && (
+          ) : (
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-amber-300">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
@@ -943,14 +790,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             </div>
       )}
 
-      {/* Automation creating */}
-      {phase === 'automation_creating' && (
-        <div className="flex items-center gap-2 text-xs text-text-2">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          <span>Creazione automazione...</span>
-        </div>
-      )}
-
       {/* Confirming */}
       {phase === 'confirming' && (
         <div className="flex items-center gap-2 text-xs text-text-2">
@@ -980,45 +819,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           )}
         </div>
       )}
-
-      {/* Proactive routine (3b) */}
-      {phase === 'success' && !proactiveDismissed && (() => {
-        const proactiveItem = result?._v2?.proactive?.find(p => p.type === 'routine_detected' && p.draft);
-        if (!proactiveItem) return null;
-        return (
-          <div className="space-y-2 rounded-[18px] border border-indigo-500/20 bg-indigo-500/[0.06] p-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-indigo-300">
-                Routine rilevata {proactiveItem.occurrences ?? ''} volte — Vuoi creare un&apos;automazione?
-              </span>
-              <button onClick={() => setProactiveDismissed(true)} className="text-text-2/70 hover:text-text">✕</button>
-            </div>
-            {proactiveItem.message && (
-              <div className="text-text-2">{proactiveItem.message}</div>
-            )}
-            <div className="flex gap-2 pt-0.5">
-              <button
-                onClick={async () => {
-                  try {
-                    await brainConfirmAutomation(proactiveItem.draft as unknown as AutomationDraft, projectId);
-                    setHubMsg('Automazione creata.');
-                    setProactiveDismissed(true);
-                  } catch { /* best effort */ }
-                }}
-                className="flex-1 rounded-xl border border-indigo-500/30 bg-indigo-500/20 py-1.5 text-xs text-indigo-300 active:bg-indigo-500/30"
-              >
-                Crea
-              </button>
-              <button
-                onClick={() => setProactiveDismissed(true)}
-                className="rounded-xl border border-border bg-surface-2 px-3 py-1.5 text-xs text-text-2"
-              >
-                Non ora
-              </button>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* "Hai sbagliato?" inline (3c) */}
       {phase === 'success' && result?.dispatchable && (

@@ -2,14 +2,6 @@
 
 import { fetchAPI } from './client';
 
-export interface AutomationDraft {
-  name: string;
-  trigger: Record<string, unknown>;
-  actions: Record<string, unknown>[];
-  conditions: Record<string, unknown>[];
-  status: 'draft';
-}
-
 export interface BrainStatus {
   mode: string;
   provider: string;
@@ -46,7 +38,6 @@ export interface BrainInterpretResult {
   input_text: string;
   _v2?: {
     outcome?: string;
-    draft?: AutomationDraft | null;
     explanation?: string;
     task_kind?: string;
     question?: string | null;
@@ -100,28 +91,6 @@ export async function brainInterpret(
   });
 }
 
-export async function brainConfirmAutomation(
-  draft: AutomationDraft,
-  projectId: string,
-): Promise<{ ok: boolean; automation: { id: string; name: string } }> {
-  return fetchAPI('/api/brain/automation/confirm', {
-    method: 'POST',
-    body: JSON.stringify({ draft, project_id: projectId }),
-  });
-}
-
-export interface SequencePattern {
-  fingerprint: string;
-  devices: string[];
-  actions: string[];
-  time_of_day: string;
-  day_type: string;
-  occurrences: number;
-  confidence: number;
-  proposed_trigger: Record<string, unknown>;
-  proposed_actions: Array<{ device_id?: string; action: string; device_type?: string }>;
-}
-
 export async function brainLearn(payload: {
   wrong_phrase: string;
   correct_phrase: string;
@@ -137,13 +106,6 @@ export async function brainLearn(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-}
-
-export async function getBrainSequences(projectId: string): Promise<SequencePattern[]> {
-  const res = await fetchAPI<{ sequences: SequencePattern[] }>(
-    `/api/brain/v2/sequences?project_id=${encodeURIComponent(projectId)}`,
-  );
-  return res.sequences ?? [];
 }
 
 export async function brainDiagnose(

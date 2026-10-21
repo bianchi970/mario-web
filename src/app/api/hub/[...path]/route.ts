@@ -199,10 +199,6 @@ async function proxyRequest(req: NextRequest, path: string[]): Promise<Response>
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function isAutomationsPath(path: string[]): boolean {
-  return path[0] === 'automations';
-}
-
 function isNotificationsPath(path: string[]): boolean {
   return path[0] === 'notifications';
 }
@@ -258,7 +254,7 @@ export async function HEAD(req: NextRequest, { params }: { params: Promise<{ pat
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isPushPath(path) || isAuthPath(path) || isOnboardingPath(path) || isRoomsPath(path) || isZwavePath(path)) {
+  if (isPushPath(path) || isAuthPath(path) || isOnboardingPath(path) || isRoomsPath(path) || isZwavePath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
@@ -267,7 +263,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pat
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isNotificationsPath(path) || isDevicesPath(path)) {
+  if (isNotificationsPath(path) || isDevicesPath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }
@@ -280,7 +276,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ path
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  if (isAutomationsPath(path) || isNotificationsPath(path) || isPushPath(path)) {
+  if (isNotificationsPath(path) || isPushPath(path)) {
     try { return await proxyRequest(req, path); }
     catch { return REMOTE_BRIDGE_URL ? bridgeUnavailableResponse() : upstreamUnavailableResponse(); }
   }

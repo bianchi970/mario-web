@@ -5,16 +5,12 @@ import Link from 'next/link';
 import {
   Battery,
   Eye,
-  Moon,
-  Music,
   PlusCircle,
   Shield,
   ShieldAlert,
   Smartphone,
   Sun,
   Thermometer,
-  Users,
-  Zap,
 } from 'lucide-react';
 import TopBar from '@/components/layout/TopBar';
 import { useProjectId } from '@/hooks/useProjectId';
@@ -23,8 +19,6 @@ import { useInstallerMode } from '@/context/InstallerModeContext';
 import { ApiClientError } from '@/lib/api/client';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
-import { listScenarios, listScenarioAudit, setScenarioEnabled } from '@/lib/api/scenarios';
-import type { ScenarioRecord, ScenarioAuditItem } from '@/lib/api/scenarios';
 import type { Device, Room } from '@/lib/hub-types';
 import { computeHouseState, computeRoomStates } from '@/lib/house-state';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
@@ -33,31 +27,8 @@ import WeatherBanner from '@/components/dashboard/WeatherBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
 import { getDeviceHistory } from '@/lib/api/history';
-import { brainInterpret } from '@/lib/api/brain';
 
 /* ─── helpers ─────────────────────────────────────────── */
-
-function formatTrigger(trigger: unknown): string {
-  if (!trigger || typeof trigger !== 'object') return 'Manuale';
-  const t = trigger as Record<string, unknown>;
-  if (t.type === 'schedule') {
-    if (t.at && typeof t.at === 'string') return `Ogni giorno alle ${t.at}`;
-    if (t.cron && typeof t.cron === 'string') {
-      const parts = t.cron.split(' ');
-      if (parts.length === 5 && parts[2] === '*' && parts[3] === '*' && parts[4] === '*') {
-        const h = String(parts[1]).padStart(2, '0');
-        const m = String(parts[0]).padStart(2, '0');
-        return `Ogni giorno alle ${h}:${m}`;
-      }
-      return 'Pianificato';
-    }
-    return 'Pianificato';
-  }
-  if (t.type === 'bus_event') return 'Automatico';
-  if (t.type === 'device_state') return 'Automatico';
-  if (t.type === 'sun_event') return t.event === 'sunrise' ? "All'alba" : 'Al tramonto';
-  return 'Manuale';
-}
 
 function serviceDot(ok: boolean) {
   return ok
@@ -66,33 +37,6 @@ function serviceDot(ok: boolean) {
 }
 
 /* ─── componenti ──────────────────────────────────────── */
-
-function ScenarioSwitch({
-  checked,
-  onClick,
-  disabled = false,
-}: {
-  checked: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
-        checked ? 'border-primary/60 bg-primary/80' : 'border-border bg-surface-2'
-      } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
-    >
-      <span
-        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${
-          checked ? 'left-[22px]' : 'left-0.5'
-        }`}
-      />
-    </button>
-  );
-}
 
 function SectionCard({
   title,
@@ -179,23 +123,6 @@ function RoomCard({
   );
 }
 
-// Scene rapide — pattern Apple Home Favorites / Google Home 2026
-const SCENE_SHORTCUTS = [
-  { label: 'Buonanotte',   icon: Moon,   color: 'indigo',  cmd: 'vado a dormire' },
-  { label: 'Sono tornato', icon: Shield, color: 'emerald', cmd: 'sono tornato a casa' },
-  { label: 'Uscita',       icon: Zap,    color: 'amber',   cmd: 'sto per uscire' },
-  { label: 'Ospiti',       icon: Users,  color: 'violet',  cmd: 'stasera vengono ospiti' },
-  { label: 'Relax',        icon: Music,  color: 'sky',     cmd: 'voglio rilassarmi' },
-] as const;
-
-const COLOR_MAP = {
-  indigo:  { border: 'border-indigo-500/25',  bg: 'bg-indigo-500/[0.08]',  bgActive: 'active:bg-indigo-500/20',  text: 'text-text', icon: 'text-indigo-500' },
-  emerald: { border: 'border-emerald-500/25', bg: 'bg-emerald-500/[0.08]', bgActive: 'active:bg-emerald-500/20', text: 'text-text', icon: 'text-emerald-500' },
-  amber:   { border: 'border-amber-500/25',   bg: 'bg-amber-500/[0.08]',   bgActive: 'active:bg-amber-500/20',   text: 'text-text', icon: 'text-amber-500' },
-  violet:  { border: 'border-violet-500/25',  bg: 'bg-violet-500/[0.08]',  bgActive: 'active:bg-violet-500/20',  text: 'text-text', icon: 'text-violet-500' },
-  sky:     { border: 'border-sky-500/25',     bg: 'bg-sky-500/[0.08]',     bgActive: 'active:bg-sky-500/20',     text: 'text-text', icon: 'text-sky-500' },
-};
-
 /* ─── pagina principale ───────────────────────────────── */
 
 export default function DashboardPage() {
@@ -206,20 +133,14 @@ export default function DashboardPage() {
   const [searchInput, setSearchInput] = useState('');
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [rooms, setRooms] = useState<Room[] | null>(null);
-  const [scenarios, setScenarios] = useState<ScenarioRecord[] | null>(null);
-  const [auditItems, setAuditItems] = useState<ScenarioAuditItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [brainOnline, setBrainOnline] = useState(false);
-  const [togglingScenario, setTogglingScenario] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const weatherTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [viewDay, setViewDay] = useState<'oggi' | 'ieri'>('oggi');
   const [yStats, setYStats] = useState<{ tempMin: number | null; tempMax: number | null; luxMax: number | null } | null>(null);
   const [yLoading, setYLoading] = useState(false);
-  const [sceneRunning, setSceneRunning] = useState<string | null>(null);
-  const [sceneMsg, setSceneMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -229,11 +150,8 @@ export default function DashboardPage() {
     if (!projectId) {
       setDevices(null);
       setRooms(null);
-      setScenarios(null);
-      setAuditItems([]);
       setError(null);
       setLoading(false);
-      setBrainOnline(false);
       return;
     }
 
@@ -250,26 +168,10 @@ export default function DashboardPage() {
         if (controller.signal.aborted) return;
         setDevices(deviceItems);
         setRooms(roomItems);
-
-        try {
-          const [scenarioItems, auditData] = await Promise.all([
-            listScenarios(projectId!),
-            listScenarioAudit(projectId!),
-          ]);
-          if (!controller.signal.aborted) {
-            setScenarios(scenarioItems ?? []);
-            setAuditItems(auditData ?? []);
-            setBrainOnline(true);
-          }
-        } catch {
-          // Brain non disponibile — Hub rimane visibile
-        }
       } catch (err) {
         if (controller.signal.aborted) return;
         setDevices(null);
         setRooms(null);
-        setScenarios(null);
-        setBrainOnline(false);
         if (err instanceof ApiClientError && (err.status === 500 || err.status === 502)) {
           setError('Casa non raggiungibile');
         } else {
@@ -337,41 +239,9 @@ export default function DashboardPage() {
       .finally(() => setYLoading(false));
   }, [viewDay, projectId]);
 
-  async function handleQuickScene(label: string, cmd: string) {
-    if (!projectId || sceneRunning) return;
-    setSceneRunning(label);
-    setSceneMsg(null);
-    try {
-      const r = await brainInterpret(cmd, { project_id: projectId, devices: devices ?? [] });
-      const msg = r._v2?.explanation ?? r._v2?.question ?? `${label} → ricevuto`;
-      setSceneMsg(typeof msg === 'string' ? msg : `${label} → ok`);
-    } catch {
-      setSceneMsg('Errore comunicazione con MARIO');
-    } finally {
-      setSceneRunning(null);
-      setTimeout(() => setSceneMsg(null), 5000);
-    }
-  }
-
-  async function handleToggleScenario(scenarioId: string, enabled: boolean) {
-    if (!projectId) return;
-    setTogglingScenario(scenarioId);
-    try {
-      await setScenarioEnabled(scenarioId, enabled, projectId);
-      setScenarios((prev) =>
-        prev ? prev.map((s) => (s.id === scenarioId ? { ...s, enabled } : s)) : prev,
-      );
-    } catch {
-      // silent
-    } finally {
-      setTogglingScenario(null);
-    }
-  }
-
   const effectiveProjectId = mounted ? projectId : undefined;
   const hubOnline = !error && !loading && devices !== null;
   const hasData = !loading && !error && devices !== null;
-  const enabledScenarios = scenarios?.filter((s) => s.enabled).length ?? 0;
 
   const casa = useMemo(
     () => (devices ? computeHouseState(devices) : null),
@@ -381,8 +251,6 @@ export default function DashboardPage() {
     () => (devices && rooms ? computeRoomStates(devices, rooms) : []),
     [devices, rooms],
   );
-
-  void brainOnline; // usato in futuro per badge Brain
 
   return (
     <>
@@ -418,7 +286,7 @@ export default function DashboardPage() {
             <div className="flex-1">
               <div className="font-medium">Seleziona un progetto.</div>
               <div className="mt-1 text-sm text-amber-700/70">
-                Dispositivi e scenari non si caricano senza un progetto attivo.
+                I dispositivi non si caricano senza un progetto attivo.
               </div>
               <div className="mt-3 flex gap-2">
                 <input
@@ -582,35 +450,6 @@ export default function DashboardPage() {
             )}
             {projectId && <PushEnableBanner projectId={projectId} />}
 
-            {/* ── Quick Scene Strip ── */}
-            {projectId && (
-              <div className="space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-text-2">Scene rapide</div>
-                {sceneMsg && (
-                  <div className="rounded-[16px] border border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs text-primary">
-                    💬 {sceneMsg}
-                  </div>
-                )}
-                <div className="grid grid-cols-5 gap-2">
-                  {SCENE_SHORTCUTS.map(({ label, icon: Icon, color, cmd }) => {
-                    const c = COLOR_MAP[color];
-                    const running = sceneRunning === label;
-                    return (
-                      <button
-                        key={label}
-                        onClick={() => void handleQuickScene(label, cmd)}
-                        disabled={!!sceneRunning}
-                        className={`flex flex-col items-center gap-1.5 rounded-[20px] border ${c.border} ${c.bg} ${c.bgActive} p-3 min-h-[72px] justify-center transition-all disabled:opacity-50 ${running ? 'scale-95' : ''}`}
-                      >
-                        <Icon className={`h-5 w-5 ${c.icon} ${running ? 'animate-pulse' : ''}`} strokeWidth={1.8} />
-                        <span className={`text-[10px] font-medium ${c.text} text-center leading-tight`}>{label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Widget Meteo */}
             {weather && (
               <div className="rounded-[24px] border border-sky-500/20 bg-sky-500/[0.04] p-4">
@@ -707,40 +546,6 @@ export default function DashboardPage() {
               );
             })()}
 
-            {/* Esecuzioni recenti */}
-            {auditItems.length > 0 && (
-              <div className="rounded-[24px] border border-border bg-surface p-4">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-text-2">
-                  Esecuzioni recenti
-                </div>
-                <div className="space-y-2">
-                  {auditItems.slice(0, 5).map((item, i) => (
-                    <div key={item.scenario_id + i} className="flex items-center gap-2">
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                          item.status === 'executed' ? 'bg-success' : 'bg-warning'
-                        }`}
-                      />
-                      <span className="flex-1 text-sm text-text-2 truncate">
-                        {item.scenario_name ?? item.scenario_id}
-                      </span>
-                      {item.executed_at && (
-                        <span className="text-[10px] text-text-2/60 shrink-0">
-                          {(() => {
-                            try {
-                              return new Date(item.executed_at!).toLocaleTimeString('it-IT', {
-                                hour: '2-digit', minute: '2-digit',
-                              });
-                            } catch { return ''; }
-                          })()}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Stanze */}
             {roomStates.length > 0 && (
               <SectionCard
@@ -767,55 +572,11 @@ export default function DashboardPage() {
               </SectionCard>
             )}
 
-            {/* Scenari */}
-            {scenarios !== null && (
-              <SectionCard
-                title="Scenari"
-                action={
-                  <Link href="/scenarios" className="text-xs text-text-2 active:text-text">
-                    Tutti →
-                  </Link>
-                }
-              >
-                <div className="space-y-2">
-                  {scenarios.length > 0 ? (
-                    scenarios.slice(0, 5).map((scenario) => (
-                      <div
-                        key={scenario.id}
-                        className="flex items-center justify-between rounded-[18px] border border-border bg-surface-2 px-4 py-3"
-                      >
-                        <div>
-                          <div className="font-medium text-text">{scenario.name}</div>
-                          <div className="mt-0.5 text-xs text-text-2">
-                            {formatTrigger(scenario.trigger)}
-                          </div>
-                        </div>
-                        <ScenarioSwitch
-                          checked={scenario.enabled}
-                          onClick={() => void handleToggleScenario(scenario.id, !scenario.enabled)}
-                          disabled={togglingScenario === scenario.id}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-2 text-sm text-text-2">Nessuno scenario</p>
-                  )}
-                </div>
-              </SectionCard>
-            )}
           </>
         )}
 
         {/* Azioni rapide */}
         <div className="grid grid-cols-2 gap-3 pb-4">
-          <Link
-            href="/scenarios"
-            className="flex flex-col gap-2 rounded-[22px] border border-violet-500/25 bg-violet-500/10 px-4 py-5 active:bg-violet-500/20"
-          >
-            <Zap className="h-6 w-6 text-violet-500" />
-            <div className="font-medium text-text">Scenari</div>
-            <div className="text-xs text-text-2">{enabledScenarios} attivi</div>
-          </Link>
           <Link
             href="/security"
             className="flex flex-col gap-2 rounded-[22px] border border-border bg-surface px-4 py-5 active:bg-surface-2"

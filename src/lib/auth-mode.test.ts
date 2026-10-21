@@ -39,3 +39,43 @@ describe('login attivo per default', () => {
     expect(login.status).toBe(200);
   });
 });
+
+// 21/10/2026: l'identità della persona arriva fino al Brain. Il middleware la
+// mette in `x-mario-persona` sulla richiesta inoltrata — il token appena
+// verificato — e scarta quella che un client avesse scritto da sé.
+describe('la persona viaggia verso il Brain, e solo quella verificata', () => {
+  const crypto = require('node:crypto');
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const firma = (payload: object, segreto: string) => {
+    const testa = b64({ alg: 'HS256', typ: 'JWT' });
+    const corpo = b64(payload);
+    const sig = crypto.createHmac('sha256', segreto).update(`${testa}.${corpo}`).digest('base64url');
+    return `${testa}.${corpo}.${sig}`;
+  };
+  const prima = process.env.JWT_SECRET;
+  afterEach(() => {
+    if (prima === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = prima;
+    jest.resetModules();
+  });
+
+  it('con un login valido la richiesta inoltrata porta il SUO token, non quello del client', async () => {
+    process.env.JWT_SECRET = 'segreto-hub-di-prova';
+    delete process.env.REMOTE_AUTH_MODE;
+    const { middleware } = await import('../middleware');
+    const token = firma({ sub: 7, username: 'romeo', role: 'admin', exp: Math.floor(Date.now() / 1000) + 600 }, 'segreto-hub-di-prova');
+    const req = new NextRequest('https://casa.local/api/brain/think', {
+      headers: { cookie: `mario_hub_token=${token}`, 'x-mario-persona': 'falso' },
+    });
+    const res = await middleware(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-middleware-request-x-mario-persona')).toBe(token);
+  });
+
+  it('su una rotta pubblica una persona scritta dal client non passa', async () => {
+    process.env.JWT_SECRET = 'segreto-hub-di-prova';
+    delete process.env.REMOTE_AUTH_MODE;
+    const { middleware } = await import('../middleware');
+    const res = await middleware(new NextRequest('https://casa.local/api/brain/status', { headers: { 'x-mario-persona': 'falso' } }));
+    expect(res.headers.get('x-middleware-request-x-mario-persona')).toBeNull();
+  });
+});

@@ -40,8 +40,23 @@ const PUBLIC_PREFIXES = [
   '/logo-mario.png',
 ];
 
+/**
+ * La richiesta inoltrata con la persona: il JWT appena verificato (o
+ * rinnovato) in `x-mario-persona`, e mai quello che un client avesse messo.
+ * Le rotte che chiamano il Brain lo inoltrano; il Brain ne verifica la firma
+ * (mario-brain `src/auth/persona.js`). È qui perché qui il token è già stato
+ * verificato — e, se scaduto, rinnovato: il cookie della richiesta sarebbe
+ * ancora quello vecchio.
+ */
+function conPersona(request: NextRequest, token: string | null) {
+  const headers = new Headers(request.headers);
+  headers.delete('x-mario-persona');
+  if (token) headers.set('x-mario-persona', token);
+  return NextResponse.next({ request: { headers } });
+}
+
 export async function middleware(request: NextRequest) {
-  if (!authAttiva()) return NextResponse.next();
+  if (!authAttiva()) return conPersona(request, null);
   if (!JWT_SECRET) {
     // Senza il segreto non si verifica nessuno: si chiude, e lo si dice.
     console.error('[auth] JWT_SECRET assente: nessun login verificabile, accesso negato a tutti');
@@ -50,7 +65,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
+    return conPersona(request, null);
   }
 
   const token = request.cookies.get('mario_hub_token')?.value ?? '';
@@ -64,14 +79,14 @@ export async function middleware(request: NextRequest) {
         }
         return NextResponse.redirect(new URL('/change-password', request.url));
       }
-      return NextResponse.next();
+      return conPersona(request, token);
     }
 
     if (expired) {
       // JWT scaduto → prova a refreshare
       const refreshed = await tryRefresh(request);
       if (refreshed) {
-        const response = NextResponse.next();
+        const response = conPersona(request, refreshed.newToken);
         response.cookies.set('mario_hub_token', refreshed.newToken, {
           httpOnly: true,
           sameSite: 'lax',

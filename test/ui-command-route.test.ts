@@ -62,6 +62,8 @@ describe('web ui-command route', () => {
 
     const response = await POST(
       {
+        // La persona la mette il middleware (src/middleware.ts), 21/10/2026.
+        headers: new Headers({ 'x-mario-persona': 'jwt-della-persona' }),
         json: async () => ({
           device_id: 'device-1',
           action: 'turn_on',
@@ -83,6 +85,7 @@ describe('web ui-command route', () => {
         method: 'POST',
         headers: expect.objectContaining({
           authorization: 'Bearer brain-token',
+          'x-mario-persona': 'jwt-della-persona',
         }),
         body: JSON.stringify({
           device_id: 'device-1',
@@ -112,6 +115,7 @@ describe('web ui-command route', () => {
 
     const response = await POST(
       {
+        headers: new Headers(),
         json: async () => ({
           device_id: 'missing-device',
           action: 'turn_on',

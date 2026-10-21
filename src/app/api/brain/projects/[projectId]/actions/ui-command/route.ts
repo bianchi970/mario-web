@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL = process.env.BRAIN_URL || 'http://localhost:4000';
 const BRAIN_TOKEN = process.env.BRAIN_TOKEN || '';
@@ -134,13 +135,14 @@ function toSafeErrorBody(status: number, payload: unknown) {
   };
 }
 
-async function proxyLocal(projectId: string, payload: JsonObject): Promise<Response> {
+async function proxyLocal(projectId: string, payload: JsonObject, persona: Record<string, string>): Promise<Response> {
   const upstream = await fetch(`${BRAIN_URL}/projects/${encodeURIComponent(projectId)}/actions/ui-command`, {
     method: 'POST',
     headers: {
       accept: 'application/json',
       'content-type': 'application/json',
       authorization: `Bearer ${BRAIN_TOKEN}`,
+      ...persona,
     },
     body: JSON.stringify(payload),
     cache: 'no-store',
@@ -155,13 +157,14 @@ async function proxyLocal(projectId: string, payload: JsonObject): Promise<Respo
   return NextResponse.json(data ?? { success: true }, { status: upstream.status });
 }
 
-async function proxyBridge(projectId: string, payload: JsonObject): Promise<Response> {
+async function proxyBridge(projectId: string, payload: JsonObject, persona: Record<string, string>): Promise<Response> {
   const relayPayload: Record<string, unknown> = {
     method: 'POST',
     path: `/api/hub/brain/projects/${encodeURIComponent(projectId)}/actions/ui-command`,
     headers: {
       'content-type': 'application/json',
       authorization: HUB_TOKEN ? `Bearer ${HUB_TOKEN}` : '',
+      ...persona,
     },
     body: JSON.stringify(payload),
   };
@@ -201,9 +204,9 @@ export async function POST(req: NextRequest, { params: paramsPromise }: RouteCon
 
   try {
     if (REMOTE_BRIDGE_URL) {
-      return await proxyBridge(context.params.projectId, sanitized.payload);
+      return await proxyBridge(context.params.projectId, sanitized.payload, personaDa(req));
     }
-    return await proxyLocal(context.params.projectId, sanitized.payload);
+    return await proxyLocal(context.params.projectId, sanitized.payload, personaDa(req));
   } catch {
     return unavailableResponse();
   }

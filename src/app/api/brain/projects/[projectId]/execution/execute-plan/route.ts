@@ -5,6 +5,7 @@
  * Bridge: /api/hub/brain/projects/:id/execution/execute-plan (via relay)
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
 const BRAIN_TOKEN        = process.env.BRAIN_TOKEN        || '';
@@ -19,7 +20,7 @@ function unavailable() {
   return NextResponse.json({ error: 'Brain non raggiungibile' }, { status: 502 });
 }
 
-async function proxyLocal(projectId: string, body: unknown): Promise<Response> {
+async function proxyLocal(projectId: string, body: unknown, persona: Record<string, string>): Promise<Response> {
   const res = await fetch(
     `${BRAIN_URL}/projects/${encodeURIComponent(projectId)}/execution/execute-plan`,
     {
@@ -27,6 +28,7 @@ async function proxyLocal(projectId: string, body: unknown): Promise<Response> {
       headers: {
         'content-type': 'application/json',
         authorization:  `Bearer ${BRAIN_TOKEN}`,
+        ...persona,
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15_000),
@@ -39,13 +41,14 @@ async function proxyLocal(projectId: string, body: unknown): Promise<Response> {
   });
 }
 
-async function proxyBridge(projectId: string, body: unknown): Promise<Response> {
+async function proxyBridge(projectId: string, body: unknown, persona: Record<string, string>): Promise<Response> {
   const relayPayload: Record<string, unknown> = {
     method: 'POST',
     path:   `/api/hub/brain/projects/${encodeURIComponent(projectId)}/execution/execute-plan`,
     headers: {
       'content-type': 'application/json',
       authorization:  HUB_TOKEN ? `Bearer ${HUB_TOKEN}` : '',
+      ...persona,
     },
     body: JSON.stringify(body),
   };
@@ -71,8 +74,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
     const { projectId } = await params;
     const body = await req.json().catch(() => ({}));
-    if (REMOTE_BRIDGE_URL) return await proxyBridge(projectId, body);
-    return await proxyLocal(projectId, body);
+    if (REMOTE_BRIDGE_URL) return await proxyBridge(projectId, body, personaDa(req));
+    return await proxyLocal(projectId, body, personaDa(req));
   } catch {
     return unavailable();
   }

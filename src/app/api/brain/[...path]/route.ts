@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
 const BRAIN_TOKEN        = process.env.BRAIN_TOKEN        || '';
@@ -55,6 +56,7 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
       'content-type':  req.headers.get('content-type') || 'application/json',
       'authorization': `Bearer ${userToken}`,
       ...FONTE_PERSONA,
+      ...personaDa(req),
     },
     body,
     // @ts-expect-error duplex required for streaming body
@@ -83,6 +85,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
       'content-type':  req.headers.get('content-type') || 'application/json',
       'authorization': userToken ? `Bearer ${userToken}` : HUB_TOKEN ? `Bearer ${HUB_TOKEN}` : '',
       ...FONTE_PERSONA,
+      ...personaDa(req),
     },
     body: bodyText,
   };

@@ -217,9 +217,9 @@ async function proxyRequest(req: NextRequest, path: string[]): Promise<Response>
  * NON ci sono, e non per svista:
  *   - `devices/:id/command`, `command`: un device lo comanda solo il Brain
  *     (`/api/brain/*`), e l'Hub li chiude comunque col canale di esecuzione;
- *   - `security/state`, `projects/:id/mode`: in Mario ci sono tre «modi della
- *     casa» (Brain, allarme dell'Hub, modo del progetto) che non si parlano.
- *     Si riaprono quando ne resta uno — decisione aperta con Romeo, 21/10/2026;
+ *   - `projects/:id/mode`: il modo della casa è UNO, lo stato dell'allarme
+ *     (`security/state`, qui sotto). Il modo del progetto è tolto dall'Hub
+ *     (21/10/2026, «fuori casa = allarme inserito», decisione di Romeo);
  *   - `user-prefs/home-layout`: nessuna pagina la usa.
  *
  * `devices/:id` è la risorsa device e basta (nome e stanza): fino al 29/09
@@ -244,6 +244,7 @@ const SCRITTURE: Array<[string, RegExp]> = [
   ['DELETE', new RegExp(`^users/${SEG}$`)],
   ['PATCH',  new RegExp(`^projects/${SEG}/location$`)],       // posizione del meteo
   ['POST',   /^wireguard\/regenerate-qr$/],                   // accesso da fuori (solo admin)
+  ['POST',   /^security\/state$/],                            // IL modo della casa: l'allarme
 ];
 
 function scritturaConsentita(method: string, path: string[]): boolean {

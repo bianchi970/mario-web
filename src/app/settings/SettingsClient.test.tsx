@@ -90,19 +90,14 @@ describe('Settings offline mode wiring', () => {
     expect(window.localStorage.getItem('mario_installer_mode')).toBeNull();
   });
 
-  it('mostra selettore modalità impianto e chiama PUT al cambio', async () => {
-    global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+  // Il modo della casa è UNO, lo stato dell'allarme (pagina Sicurezza). Fino al
+  // 21/10/2026 qui c'era un secondo selettore, «Modalità impianto», che scriveva
+  // un modo che nessuno leggeva.
+  it('non mostra un secondo selettore del modo della casa', async () => {
+    global.fetch = jest.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/system/status') {
         return Promise.resolve({ ok: true, json: async () => ({ offline: false }) });
-      }
-      if (url === '/api/hub/projects/default/mode') {
-        if (!init?.method || init.method === 'GET') {
-          return Promise.resolve({ ok: true, json: async () => ({ project_id: 'default', mode: 'home' }) });
-        }
-        if (init.method === 'PUT') {
-          return Promise.resolve({ ok: true, json: async () => ({ project_id: 'default', mode: 'night' }) });
-        }
       }
       return Promise.resolve({ ok: true, json: async () => ({}) });
     }) as jest.Mock;
@@ -123,17 +118,9 @@ describe('Settings offline mode wiring', () => {
       </ProjectProvider>,
     );
 
-    await screen.findByText('Casa');
-    expect(screen.getByRole('button', { name: 'Casa' })).toHaveAttribute('aria-pressed', 'true');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Notte' }));
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/hub/projects/default/mode',
-        expect.objectContaining({ method: 'PUT' }),
-      );
-    });
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    expect(screen.queryByText('Modalità impianto')).toBeNull();
+    expect((global.fetch as jest.Mock).mock.calls.some(([u]) => String(u).includes('/mode'))).toBe(false);
   });
 
   it('toggles the real command flow on and off from the global setting', async () => {

@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Adapter, ProjectMode, SystemInfo } from '@/lib/hub-types';
+import type { Adapter, SystemInfo } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
-import { getProjectMode, MODE_LABELS, MODE_ORDER, setProjectMode } from '@/lib/api/mode';
 import { patchProjectLocation } from '@/lib/api/weather';
 import UsersSection from '@/components/settings/UsersSection';
 
@@ -48,8 +47,6 @@ export default function SettingsClient({
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationMsg, setLocationMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const locationMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [currentMode, setCurrentMode] = useState<ProjectMode | null>(null);
-  const [modeChanging, setModeChanging] = useState(false);
   const [me, setMe] = useState<{ id: string | null; role: string | null } | null>(null);
   const { projectId, setProjectId, authorizedProjects, projectsStatus, fetchAuthorizedProjects } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
@@ -90,21 +87,6 @@ export default function SettingsClient({
       .then((d) => setMe(d))
       .catch(() => { /* ignora */ });
   }, []);
-
-  useEffect(() => {
-    if (!projectId || !systemAvailable) return;
-    void getProjectMode(projectId).then((info) => {
-      if (info) setCurrentMode(info.mode);
-    });
-  }, [projectId, systemAvailable]);
-
-  async function handleSetMode(mode: ProjectMode) {
-    if (!projectId || modeChanging) return;
-    setModeChanging(true);
-    const ok = await setProjectMode(projectId, mode);
-    if (ok) setCurrentMode(mode);
-    setModeChanging(false);
-  }
 
   async function checkHealth() {
     if (offlineMode) return;
@@ -227,30 +209,8 @@ export default function SettingsClient({
         </div>
       </div>
 
-      {/* Modalità impianto — sempre visibile se disponibile */}
-      {currentMode && (
-        <div className="card space-y-3">
-          <h2 className="text-sm font-medium text-hub-text">Modalità impianto</h2>
-          <div className="flex flex-wrap gap-2">
-            {MODE_ORDER.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => void handleSetMode(m)}
-                disabled={modeChanging}
-                aria-pressed={currentMode === m}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
-                  currentMode === m
-                    ? 'bg-hub-accent text-white'
-                    : 'border border-hub-border text-hub-muted hover:text-hub-text'
-                }`}
-              >
-                {MODE_LABELS[m]}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Il modo della casa non sta qui: è lo stato dell'allarme, in Sicurezza
+          (21/10/2026). Qui c'era un secondo selettore che nessuno leggeva. */}
 
       {/* Modalità installatore — sempre visibile */}
       <div className="card space-y-3">

@@ -102,6 +102,7 @@ describe('hub proxy — il confine', () => {
     ['POST',   ['zwave', 'smartstart']],
     ['POST',   ['rooms', 'default']],
     ['PATCH',  ['notifications', 'default', 'n1', 'dismiss']],
+    ['POST',   ['security', 'state']],                 // il modo della casa: l'allarme
   ])('%s %j passa, con la persona', async (method, path) => {
     const res = await chiama(method, path as string[], 'jwt-romeo');
     expect(res.status).toBe(200);
@@ -112,7 +113,6 @@ describe('hub proxy — il confine', () => {
     ['POST',  ['devices', '2-ep1', 'command']],
     ['POST',  ['command']],
     ['PATCH', ['devices', '2-ep1', 'command']],
-    ['POST',  ['security', 'state']],
     ['PUT',   ['projects', 'default', 'mode']],
     ['PUT',   ['user-prefs', 'home-layout']],
     ['DELETE',['rooms', 'default', 'cucina']],

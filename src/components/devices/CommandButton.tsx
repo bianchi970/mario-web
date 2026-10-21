@@ -6,7 +6,7 @@ import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProjectId } from '@/hooks/useProjectId';
 import { ApiClientError } from '@/lib/api/client';
 import type { Device } from '@/lib/hub-types';
-import { executeUiCommand } from '@/lib/api/ui-command';
+import { executeUiCommand, esitoDetto } from '@/lib/api/ui-command';
 
 const HUB_ERROR_CODES: Record<string, string> = {
   DEVICE_NOT_FOUND: 'Dispositivo non trovato',
@@ -35,12 +35,13 @@ async function sendCommand(
   params: Record<string, unknown> = {},
 ): Promise<{ ok: boolean; errorMessage: string | null }> {
   try {
-    await executeUiCommand(projectId, {
+    const esito = esitoDetto(await executeUiCommand(projectId, {
       device_id: deviceId,
       action,
       params,
-    });
-    return { ok: true, errorMessage: null };
+    }));
+    // Riuscito solo se l'Hub l'ha eseguito: un simulato lo dice (21/10/2026).
+    return esito.fatto ? { ok: true, errorMessage: null } : { ok: false, errorMessage: esito.frase };
   } catch (error) {
     if (error instanceof ApiClientError) {
       return { ok: false, errorMessage: formatCommandError(error) };

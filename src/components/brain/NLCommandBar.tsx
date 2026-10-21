@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Bell, BellOff, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
-import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, type ExecutionRun } from '@/lib/api/ui-command';
+import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, esitoDetto, type ExecutionRun } from '@/lib/api/ui-command';
 import ExecutionProgressCard from './ExecutionProgressCard';
 import { parla, taci } from '@/lib/voce';
 
@@ -427,13 +427,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
     setPhase('confirming');
     try {
-      await executeUiCommand(projectId, {
+      const esito = esitoDetto(await executeUiCommand(projectId, {
         device_id: deviceId,
         action,
         params: r.parameters ?? {},
-      });
-      setHubMsg('Fatto.');
-      setPhase('success');
+      }));
+      setHubMsg(esito.frase);
+      setPhase(esito.fatto ? 'success' : 'error');
     } catch (err) {
       setHubMsg(err instanceof Error ? err.message : 'Errore hub');
       setPhase('error');

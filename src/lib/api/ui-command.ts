@@ -3,7 +3,9 @@
 import { fetchAPI } from './client';
 
 export type UiCommandResponse = {
+  /** executed · simulated (un comando fallito arriva come errore HTTP 502) */
   status?: string;
+  esito?: 'eseguito' | 'simulato' | 'fallito';
   success?: boolean;
   error?: {
     code?: string;
@@ -47,6 +49,20 @@ export async function executeUiCommand(
       }),
     },
   );
+}
+
+/**
+ * La frase dell'esito di un comando, in un posto solo.
+ *
+ * Fino al 21/10/2026 la barra dei comandi scriveva «Fatto.» a ogni risposta
+ * 2xx, senza leggerla: anche su un comando che l'Hub aveva solo simulato. Ora
+ * «Fatto.» si dice soltanto se l'Hub l'ha eseguito; un fallito arriva già come
+ * errore HTTP (502) e non passa di qui.
+ */
+export function esitoDetto(r: UiCommandResponse | null | undefined): { fatto: boolean; frase: string } {
+  if (r?.status === 'executed') return { fatto: true, frase: 'Fatto.' };
+  if (r?.status === 'simulated') return { fatto: false, frase: 'Simulato: il comando non ha raggiunto un dispositivo vero.' };
+  return { fatto: false, frase: 'Non so se è stato eseguito: MARIO non ha ricevuto un esito.' };
 }
 
 // ── B89: Compound execution ────────────────────────────────────────────────

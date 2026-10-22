@@ -21,15 +21,28 @@ export interface DeviceHistoryResponse {
   events: HistoryEvent[];
 }
 
-export interface HistorySummaryEntry {
-  type: string;
-  source: string | null;
-  count: number;
+/**
+ * Un comando dello storico — dal registro del Brain (`command_outbox`), l'unico
+ * dal 22/10/2026 (decisione di Romeo). Le parole (`detto`) le scrive il Brain.
+ */
+export interface ComandoStorico {
+  command_id: string;
+  device_id: string;
+  device_name: string | null;
+  action: string;
+  detto: string;
+  state: 'pending' | 'sent' | 'acked' | 'simulated' | 'failed' | 'expired';
+  conferma: 'device' | 'in_corso' | 'nessuna' | null;
+  origine: string | null;
+  error: string | null;
+  created_at: string;   // UTC, "YYYY-MM-DD HH:MM:SS"
+  chiuso_at: string | null;
 }
 
-export interface HistorySummaryResponse {
+export interface StoricoComandiResponse {
   project_id: string;
-  summary: HistorySummaryEntry[];
+  count: number;
+  comandi: ComandoStorico[];
 }
 
 export interface EnergyHistorySlot {
@@ -46,12 +59,13 @@ export interface EnergyHistoryResponse {
 
 // ── Client functions ───────────────────────────────────────────────────────────
 
-export async function getHistorySummary(
+export async function getStoricoComandi(
   projectId: string,
+  limite = 50,
   signal?: AbortSignal,
-): Promise<HistorySummaryResponse> {
-  return fetchAPI<HistorySummaryResponse>(
-    `/api/hub/history/${encodeURIComponent(projectId)}/summary`,
+): Promise<StoricoComandiResponse> {
+  return fetchAPI<StoricoComandiResponse>(
+    `/api/brain/projects/${encodeURIComponent(projectId)}/actions/storico?limite=${limite}`,
     { signal },
   );
 }

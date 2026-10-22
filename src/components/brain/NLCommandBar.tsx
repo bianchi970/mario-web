@@ -384,6 +384,33 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     }
   }
 
+  /**
+   * Le risposte che MARIO riconosce («sì», «no», i nomi fra cui scegliere):
+   * un pulsante manda la parola come se si scrivesse, nella stessa
+   * conversazione — la riconosce il Brain, dove la riconosce già.
+   */
+  function pulsantiRisposta(r: BrainInterpretResult) {
+    const risposte = r._v2?.risposte ?? [];
+    if (risposte.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-2 pt-0.5">
+        {risposte.map((parolaDetta) => (
+          <button
+            key={parolaDetta}
+            onClick={() => void handleSend(parolaDetta)}
+            className={`min-w-[4.5rem] flex-1 rounded-xl border py-2 text-sm font-medium ${
+              parolaDetta === 'no'
+                ? 'border-border bg-surface-2 text-text-2 active:bg-surface'
+                : 'border-emerald-500/30 bg-emerald-500/15 text-emerald-200 active:bg-emerald-500/25'
+            }`}
+          >
+            {parolaDetta === 'sì' ? 'Sì' : parolaDetta === 'no' ? 'No' : parolaDetta}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   async function dispatch(r: BrainInterpretResult) {
     // Compound: 1+ step con target valido
     const validCommands = r.commands.filter(c =>
@@ -700,7 +727,16 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             </div>
           )}
 
-          {(result.dispatchable || _isCompoundDispatchable(result)) ? (
+          {/* ⛔ Una PROPOSTA si conferma rispondendo a MARIO, non eseguendo da
+              qui. Fino al 22/10/2026 «Esegui» mandava il comando direttamente:
+              il «sì» aveva due strade, e il Brain lasciava la proposta aperta —
+              un «sì» scritto dopo, entro 10 minuti, l'avrebbe rifatta. */}
+          {result._v2?.outcome === 'propose' && (result._v2?.risposte?.length ?? 0) > 0 ? (
+            <div className="space-y-2 pt-1">
+              {result._v2.question && <p className="text-sm text-text">{result._v2.question}</p>}
+              {pulsantiRisposta(result)}
+            </div>
+          ) : (result.dispatchable || _isCompoundDispatchable(result)) ? (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => void dispatch(result)}
@@ -730,6 +766,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                 </span>
                 <button onClick={reset} className="ml-auto text-text-2/70 hover:text-text">✕</button>
               </div>
+              {pulsantiRisposta(result)}
               {result.suggest_diagnose && (
                 <button
                   onClick={() => void handleDiagnose()}

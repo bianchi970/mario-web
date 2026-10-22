@@ -37,6 +37,12 @@ export interface BrainInterpretResult {
     explanation?: string;
     task_kind?: string;
     question?: string | null;
+    /**
+     * Le parole che la domanda riconosce («sì», «no», i nomi fra cui scegliere).
+     * La PWA le offre come pulsanti; un pulsante le manda come se si
+     * scrivessero, nella stessa conversazione (mario-brain `_conRisposte`).
+     */
+    risposte?: string[] | null;
     /** B86 compound alias fast path: array semplice [{device_id, action}] */
     plan?: Array<{ device_id: string; action: string }> | Record<string, unknown> | null;
     proactive?: Array<{

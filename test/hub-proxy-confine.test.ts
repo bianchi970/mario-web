@@ -99,7 +99,9 @@ describe('hub proxy — il confine', () => {
     ['POST',   ['wireguard', 'regenerate-qr']],
     ['PATCH',  ['rooms', 'default', 'cucina']],
     ['PATCH',  ['devices', '2-ep1']],
+    ['DELETE', ['projects', 'default', 'devices', '2-ep1']], // ritirare: lo decide l'Hub chi può
     ['POST',   ['zwave', 'smartstart']],
+    ['POST',   ['zwave', 'exclusion', 'start']],           // togliere un device dalla rete
     ['POST',   ['rooms', 'default']],
     ['PATCH',  ['notifications', 'default', 'n1', 'dismiss']],
     ['POST',   ['security', 'state']],                 // il modo della casa: l'allarme
@@ -116,6 +118,8 @@ describe('hub proxy — il confine', () => {
     ['PUT',   ['projects', 'default', 'mode']],
     ['PUT',   ['user-prefs', 'home-layout']],
     ['DELETE',['rooms', 'default', 'cucina']],
+    ['DELETE',['devices', '2-ep1']],                    // la risorsa device non si cancella così
+    ['DELETE',['projects', 'default', 'devices']],      // né tutti insieme
   ])('%s %j NON passa: 405 e niente arriva all\'Hub', async (method, path) => {
     const res = await chiama(method, path as string[], 'jwt-romeo');
     expect(res.status).toBe(405);

@@ -60,6 +60,13 @@ export default function DeviceDetailPage() {
   // Room
   const [savingRoom, setSavingRoom] = useState(false);
 
+  // Togliere: dalla rete (esclusione Z-Wave, la cancella l'Hub quando il
+  // controller conferma) o dall'elenco (ritiro: «non c'è più», lo dice la persona)
+  const [togli, setTogli] = useState<'idle' | 'conferma' | 'escludendo' | 'tolto'>('idle');
+  const [togliMsg, setTogliMsg] = useState<string | null>(null);
+  const togliRef = useRef(togli);
+  togliRef.current = togli;
+
   useEffect(() => {
     if (!deviceId) return;
     let cancelled = false;
@@ -80,7 +87,13 @@ export default function DeviceDetailPage() {
     const timer = setInterval(() => {
       if (cancelled) return;
       getDevice(deviceId).then((dev) => {
-        if (!cancelled && dev) setDevice(dev);
+        if (cancelled) return;
+        if (dev) { setDevice(dev); return; }
+        // Durante un'esclusione, sparire dal catalogo è la conferma del controller.
+        if (togliRef.current === 'escludendo') {
+          setTogli('tolto');
+          setTogliMsg('Il dispositivo è uscito dalla rete ed è stato tolto da MARIO.');
+        }
       }).catch(() => {});
     }, 3000);
 
@@ -114,6 +127,53 @@ export default function DeviceDetailPage() {
       setDevice((prev) => prev ? { ...prev, room_id: roomId || null } : prev);
     } catch { /* silenzioso */ }
     setSavingRoom(false);
+  }
+
+  function motivo(err: unknown, fallback: string) {
+    const status = (err as { status?: number })?.status;
+    if (status === 403) return 'Solo un amministratore o un installatore può togliere un dispositivo.';
+    return (err as Error)?.message || fallback;
+  }
+
+  async function avviaEsclusione() {
+    setTogliMsg(null);
+    try {
+      await fetchAPI('/api/hub/zwave/exclusion/start', {
+        method: 'POST',
+        body:   JSON.stringify({ timeout_ms: 60000, project_id: device?.project_id }),
+      });
+      setTogli('escludendo');
+      setTogliMsg('Rete Z-Wave in esclusione per 60 secondi: premi il tasto del dispositivo come dice il suo manuale. Se è un modulo con più canali, escono tutti.');
+      setTimeout(() => {
+        if (togliRef.current === 'escludendo') {
+          setTogli('idle');
+          setTogliMsg('In 60 secondi questo dispositivo non è uscito dalla rete: è ancora qui.');
+        }
+      }, 65000);
+    } catch (err) {
+      setTogliMsg(motivo(err, 'Non sono riuscito ad avviare l\'esclusione.'));
+    }
+  }
+
+  async function fermaEsclusione() {
+    try { await fetchAPI('/api/hub/zwave/exclusion/stop', { method: 'POST', body: '{}' }); } catch { /* si ferma comunque a tempo */ }
+    setTogli('idle');
+    setTogliMsg('Esclusione fermata.');
+  }
+
+  async function ritira() {
+    if (!device) return;
+    setTogliMsg(null);
+    try {
+      await fetchAPI(`/api/hub/projects/${encodeURIComponent(device.project_id)}/devices/${encodeURIComponent(device.id)}`, {
+        method: 'DELETE',
+      });
+      setTogli('tolto');
+      setTogliMsg(`${device.name} è stato tolto: MARIO non lo mostra e non lo comanda più.`);
+    } catch (err) {
+      setTogli('idle');
+      setTogliMsg(motivo(err, 'Non sono riuscito a toglierlo.'));
+    }
   }
 
   const room = rooms.find((r) => r.id === device?.room_id);
@@ -263,6 +323,52 @@ export default function DeviceDetailPage() {
                 {room && <p className="mt-1 text-xs text-white/30">Attuale: {room.name}</p>}
               </div>
             )}
+
+            {/* Togliere */}
+            <div className="rounded-[24px] border border-red-500/20 bg-red-500/[0.04] p-5 space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Togliere questo dispositivo</div>
+              {togliMsg && <p className="text-sm text-white/70">{togliMsg}</p>}
+
+              {togli === 'tolto' ? (
+                <Link href="/devices" className="inline-block text-sm text-white/60 hover:text-white">← Torna ai dispositivi</Link>
+              ) : togli === 'escludendo' ? (
+                <button onClick={() => void fermaEsclusione()}
+                  className="w-full rounded-xl border border-white/20 px-3 py-2.5 text-sm text-white/80 hover:bg-white/5">
+                  Ferma l&apos;esclusione
+                </button>
+              ) : togli === 'conferma' ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-white/60">
+                    {device.protocol === 'zwave'
+                      ? 'Resta nella rete Z-Wave: se è ancora acceso parla, ma MARIO non lo mostra e non lo comanda più. Per liberarlo davvero usa l\'esclusione.'
+                      : 'MARIO non lo mostrerà e non lo comanderà più, anche se è ancora acceso.'}
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => void ritira()}
+                      className="flex-1 rounded-xl bg-red-500/80 px-3 py-2.5 text-sm font-medium text-white hover:bg-red-500">
+                      Sì, toglilo
+                    </button>
+                    <button onClick={() => setTogli('idle')}
+                      className="flex-1 rounded-xl border border-white/20 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5">
+                      Annulla
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {device.protocol === 'zwave' && (
+                    <button onClick={() => void avviaEsclusione()}
+                      className="w-full rounded-xl border border-red-400/40 px-3 py-2.5 text-sm text-red-200 hover:bg-red-500/10">
+                      Togli dalla rete Z-Wave (esclusione)
+                    </button>
+                  )}
+                  <button onClick={() => { setTogliMsg(null); setTogli('conferma'); }}
+                    className="w-full rounded-xl border border-white/15 px-3 py-2.5 text-sm text-white/60 hover:bg-white/5">
+                    Non c&apos;è più: toglilo dall&apos;elenco
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Metadata (solo se presente) */}
             {device.metadata && Object.keys(device.metadata).length > 0 && (

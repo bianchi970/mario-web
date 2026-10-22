@@ -233,6 +233,7 @@ const SCRITTURE: Array<[string, RegExp]> = [
   ['PATCH',  /^notifications\/.+$/],                          // letta, tutte lette
   ['DELETE', /^notifications\/.+$/],
   ['PATCH',  new RegExp(`^devices/${SEG}$`)],                 // nome e stanza di un device
+  ['DELETE', new RegExp(`^projects/${SEG}/devices/${SEG}$`)], // ritirare un device («non c'è più»)
   ['POST',   /^onboarding\/.+$/],                             // aggiungere un device
   ['DELETE', new RegExp(`^onboarding/session/${SEG}$`)],      // annullare l'aggiunta
   ['POST',   /^zwave\/.+$/],                                  // inclusione, SmartStart

@@ -11,7 +11,7 @@ import type { Room } from '@/lib/hub-types';
 // ── Tipi ─────────────────────────────────────────────────────────────────────
 
 type Step = 'idle' | 'waiting' | 'found' | 'room' | 'test' | 'done' | 'error';
-type Mode = 'discover' | 'manual' | 'zwave';
+type Mode = 'discover' | 'manual' | 'zwave' | 'zigbee';
 
 interface SessionData {
   session_id: string;
@@ -35,7 +35,9 @@ interface ScanResult {
 
 // ── Costanti ──────────────────────────────────────────────────────────────────
 
-const ADAPTER_ID   = 'vendor:zwave-js';
+// La stessa sessione per ogni radio: cambia solo chi apre la rete.
+const RADIO = { zwave: 'vendor:zwave-js', zigbee: 'vendor:zigbee2mqtt' } as const;
+type Radio = typeof RADIO[keyof typeof RADIO];
 const POLL_MS      = 2000;
 const SESSION_SECS = 120;
 
@@ -58,10 +60,10 @@ const PROTOCOL_LABELS: Record<string, string> = {
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
-async function openSession(projectId: string): Promise<SessionData> {
+async function openSession(projectId: string, adapterId: Radio): Promise<SessionData> {
   const res = await fetchAPI<SessionData>(
     '/api/hub/onboarding/session',
-    { method: 'POST', body: JSON.stringify({ adapter_id: ADAPTER_ID, project_id: projectId, timeout_ms: SESSION_SECS * 1000 }) },
+    { method: 'POST', body: JSON.stringify({ adapter_id: adapterId, project_id: projectId, timeout_ms: SESSION_SECS * 1000 }) },
   );
   return res as unknown as SessionData;
 }
@@ -87,6 +89,7 @@ export default function OnboardingPage() {
   const projectId = useProjectId() ?? 'default';
 
   const [mode, setMode]         = useState<Mode>('discover');
+  const [radio, setRadio]       = useState<Radio>(RADIO.zwave);
   const [step, setStep]         = useState<Step>('idle');
   const [session, setSession]   = useState<SessionData | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -189,7 +192,8 @@ export default function OnboardingPage() {
 
   // ── Z-Wave: sessione ──────────────────────────────────────────────────────
 
-  async function startSession(keepDsk = false) {
+  async function startSession(keepDsk = false, adapterId: Radio = radio) {
+    setRadio(adapterId);
     setErrMsg('');
     setSessionExpired(false);
     if (!keepDsk) {
@@ -202,7 +206,7 @@ export default function OnboardingPage() {
     setTimeLeft(SESSION_SECS);
     stopPolling();
     try {
-      const data = await openSession(projectId);
+      const data = await openSession(projectId, adapterId);
       setSession(data);
 
       timerRef.current = setInterval(() => {
@@ -241,7 +245,7 @@ export default function OnboardingPage() {
   async function resumeSession() {
     if (session?.session_token) await cancelSession(session.session_token).catch(() => {});
     setSession(null);
-    await startSession(true);
+    await startSession(true, radio);
   }
 
   // ── Z-Wave DSK SmartStart ─────────────────────────────────────────────────
@@ -370,6 +374,7 @@ export default function OnboardingPage() {
               { id: 'discover', label: '&#128269; Scopri', title: 'Scansione automatica rete' },
               { id: 'manual',   label: '&#127760; Per IP',  title: 'Inserisci IP manualmente' },
               { id: 'zwave',    label: '&#128246; Z-Wave',  title: 'Pairing Z-Wave/Radio' },
+              { id: 'zigbee',   label: '&#128309; Zigbee',  title: 'Associazione Zigbee' },
             ] as const).map(tab => (
               <button
                 key={tab.id}
@@ -627,10 +632,39 @@ export default function OnboardingPage() {
             </div>
 
             <button
-              onClick={() => startSession(false)}
+              onClick={() => startSession(false, RADIO.zwave)}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
             >
               Avvia pairing Z-Wave &#8250;
+            </button>
+          </div>
+        )}
+
+        {isIdle && mode === 'zigbee' && (
+          <div className="space-y-4">
+            <div className="space-y-3">
+              {[
+                { n: '1', title: 'Apri la rete', desc: `La rete Zigbee accetta un dispositivo nuovo per ${SESSION_SECS} secondi` },
+                { n: '2', title: 'Metti il dispositivo in associazione', desc: 'Come dice il suo manuale: di solito si tiene premuto il tasto finché la luce lampeggia' },
+                { n: '3', title: 'Attendi conferma', desc: 'Quando entra, la rete si richiude da sola' },
+              ].map(s => (
+                <div key={s.n} className="flex items-start gap-3 rounded-xl bg-hub-surface border border-hub-border p-3">
+                  <span className="w-6 h-6 rounded-full bg-hub-accent text-black text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    {s.n}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-hub-text">{s.title}</p>
+                    <p className="text-xs text-hub-muted mt-0.5">{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => startSession(false, RADIO.zigbee)}
+              className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
+            >
+              Apri la rete Zigbee &#8250;
             </button>
           </div>
         )}
@@ -681,8 +715,8 @@ export default function OnboardingPage() {
                   <p className="text-sm text-hub-muted">In attesa di inclusione...</p>
                 </div>
 
-                {/* DSK */}
-                {dskOpen ? (
+                {/* DSK — solo Z-Wave */}
+                {radio === RADIO.zwave && (dskOpen ? (
                   <div className="space-y-2">
                     <p className="text-xs text-hub-muted">Codice DSK — stampato sotto il QR sul dispositivo</p>
                     <input
@@ -715,11 +749,17 @@ export default function OnboardingPage() {
                   >
                     Inserisci codice DSK (SmartStart)
                   </button>
-                )}
+                ))}
 
-                <p className="text-hub-muted text-xs text-center">
-                  oppure premi <strong>3 volte</strong> il tasto fisico sul dispositivo
-                </p>
+                {radio === RADIO.zwave ? (
+                  <p className="text-hub-muted text-xs text-center">
+                    oppure premi <strong>3 volte</strong> il tasto fisico sul dispositivo
+                  </p>
+                ) : (
+                  <p className="text-hub-muted text-xs text-center">
+                    Rete Zigbee aperta: metti il dispositivo in associazione
+                  </p>
+                )}
               </>
             )}
 

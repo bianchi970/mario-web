@@ -35,25 +35,25 @@ const MISSING_LABEL: Record<string, string> = {
   'params.temperature': 'temperatura',
 };
 
-// Quick chips organizzati per categoria (pattern Apple Home / Google Home 2026)
+// Frasi pronte: le dice la persona, MARIO le compone su ciò che c'è in casa.
+// Nessuna stanza né nome scritti qui (24/10/2026): c'erano «la luce del
+// soggiorno» e «la luce cucina», giuste solo per i nomi di questa casa, e
+// «stasera vengono ospiti», a cui MARIO rispondeva «Non ho capito» — un tasto
+// che promette ciò che MARIO non sa fare. Misurate sul Pi, frase per frase.
 const QUICK_CHIPS = [
-  // Scene vita — tap immediato, conversazione con MARIO
   { label: '🌙 Buonanotte',     cmd: 'vado a dormire',            group: 'vita' },
   { label: '🏠 Sono tornato',   cmd: 'sono tornato a casa',       group: 'vita' },
   { label: '🚪 Sto uscendo',    cmd: 'sto per uscire',            group: 'vita' },
-  { label: '👥 Ospiti',          cmd: 'stasera vengono ospiti',    group: 'vita' },
   { label: '🎬 Cinema',          cmd: 'voglio guardare un film',   group: 'vita' },
-  // Comandi diretti
   { label: '⚡ Spegni tutto',   cmd: 'spegni tutto',               group: 'cmd' },
-  { label: '💡 Soggiorno',      cmd: 'accendi la luce del soggiorno', group: 'cmd' },
-  { label: '🍳 Cucina',          cmd: 'accendi la luce cucina',    group: 'cmd' },
 ];
 
 function buildUserMeaning(r: BrainInterpretResult): string {
   const action = r.action ? (ACTION_LABEL[r.action] ?? r.action) : '';
+  // Mai il `device_id`: un id non si mostra a una persona (regola
+  // dell'assimilazione). Senza stanza né selettore, niente bersaglio scritto.
   const target = (r.target as Record<string, unknown> | null)?.room as string
     ?? (r.target as Record<string, unknown> | null)?.selector as string
-    ?? (r.target as Record<string, unknown> | null)?.device_id as string
     ?? '';
   const at = r.parameters?.at as string | undefined;
   const parts = [action, target, at ? `alle ${at}` : ''].filter(Boolean);

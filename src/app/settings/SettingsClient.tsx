@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { useSession } from '@/context/SessionContext';
 import { patchProjectLocation } from '@/lib/api/weather';
 import UsersSection from '@/components/settings/UsersSection';
 
@@ -47,7 +48,11 @@ export default function SettingsClient({
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationMsg, setLocationMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const locationMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [me, setMe] = useState<{ id: string | null; role: string | null } | null>(null);
+  // Chi è collegato lo sa la sessione (`SessionContext`, montata nel layout):
+  // fino al 24/10/2026 questa pagina rifaceva la stessa chiamata e il logout
+  // per conto suo, accanto al provider che già li aveva.
+  const { user, logout } = useSession();
+  const me = user ? { id: user.id || null, role: user.role || null } : null;
   const { projectId, setProjectId, authorizedProjects, projectsStatus, fetchAuthorizedProjects } = useProject();
   const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
@@ -80,13 +85,6 @@ export default function SettingsClient({
   useEffect(() => {
     void fetchAuthorizedProjects();
   }, [fetchAuthorizedProjects]);
-
-  useEffect(() => {
-    void fetch('/api/auth/me')
-      .then((r) => r.json() as Promise<{ id: string | null; role: string | null }>)
-      .then((d) => setMe(d))
-      .catch(() => { /* ignora */ });
-  }, []);
 
   async function checkHealth() {
     if (offlineMode) return;
@@ -121,10 +119,7 @@ export default function SettingsClient({
     }
   }
 
-  async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
-  }
+  const handleLogout = logout;
 
   return (
     <div className="space-y-6">

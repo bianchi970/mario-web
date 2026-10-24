@@ -14,7 +14,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useRouter } from 'next/navigation';
 
 export interface SessionUser {
   id:         string;
@@ -38,7 +37,6 @@ const SessionContext = createContext<SessionContextValue>({
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user,    setUser]    = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -63,8 +61,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch { /* best-effort */ }
     setUser(null);
-    router.push('/login');
-  }, [router]);
+    // Un ricaricamento intero, non una navigazione: dopo il logout non resta in
+    // memoria niente della persona di prima (com'era il logout di Impostazioni).
+    window.location.href = '/login';
+  }, []);
 
   return (
     <SessionContext.Provider value={{ user, loading, logout }}>

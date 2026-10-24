@@ -69,6 +69,19 @@ describe('NLCommandBar — risposte a pulsanti', () => {
     expect(chiamateComando()).toHaveLength(0);
   });
 
+  // Fino al 24/10/2026 l'anteprima (`buildUserMeaning`) ripiegava sul
+  // `device_id` quando mancavano stanza e selettore: «accendi 7b1e…».
+  test('l\'anteprima non mostra mai il device_id', async () => {
+    const conUuid = { ...proposta, target: { device_id: '7b1e3c2a-uuid' }, action: 'turn_on' };
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes('/api/brain/interpret') ? risposta(conUuid) : risposta({}));
+    render(<NLCommandBar projectId="default" />);
+    await scrivi('accendi quella');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Sì' })).toBeInTheDocument());
+    expect(screen.queryByText(/7b1e3c2a-uuid/)).not.toBeInTheDocument();
+  });
+
   test('«Sì» manda «sì» al Brain, nella stessa conversazione', async () => {
     fetchMock.mockImplementation(async (url: string) =>
       String(url).includes('/api/brain/interpret') ? risposta(proposta) : risposta({}));

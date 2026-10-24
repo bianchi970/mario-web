@@ -41,4 +41,18 @@ describe('browser-side hub execution boundary', () => {
 
     expect(offendingFiles).toEqual([]);
   });
+
+  // Anche lato server: `lib/hub-client.ts` aveva `sendCommand` →
+  // `hubFetch('/devices/:id/command')` col token tecnico, e il controllo qui
+  // sopra non lo vedeva (cerca solo `/api/hub/…`). Nessuno la chiamava, ed è
+  // stata tolta il 24/10/2026: un device lo comanda solo il Brain.
+  test('nessun sorgente della PWA, nemmeno lato server, chiama il comando di un device sull\'Hub', () => {
+    const comandoHub = /\/devices\/\$\{[^}]+\}\/command/;
+    const offendingFiles = walk(sourceRoot)
+      .filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.(ts|tsx)$/.test(f))
+      .filter((f) => comandoHub.test(fs.readFileSync(f, 'utf8')))
+      .map((f) => path.relative(repoRoot, f));
+
+    expect(offendingFiles).toEqual([]);
+  });
 });

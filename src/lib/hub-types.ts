@@ -74,19 +74,6 @@ export interface HubHealth {
   error?: string;
 }
 
-export interface CommandResult {
-  outcome: {
-    status: string;
-    [key: string]: unknown;
-  };
-  command: {
-    device_id: string;
-    action: string;
-    params?: Record<string, unknown>;
-    [key: string]: unknown;
-  };
-}
-
 export interface RegistrySnapshot {
   devices: Device[];
   stateCache?: Record<string, unknown>;

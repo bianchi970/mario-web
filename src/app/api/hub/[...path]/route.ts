@@ -220,7 +220,10 @@ async function proxyRequest(req: NextRequest, path: string[]): Promise<Response>
  *   - `projects/:id/mode`: il modo della casa è UNO, lo stato dell'allarme
  *     (`security/state`, qui sotto). Il modo del progetto è tolto dall'Hub
  *     (21/10/2026, «fuori casa = allarme inserito», decisione di Romeo);
- *   - `user-prefs/home-layout`: nessuna pagina la usa.
+ *   - `user-prefs/home-layout`: nessuna pagina la usa;
+ *   - il resto di `zwave/`: `zwave/reset` CANCELLA la rete Z-Wave, e i
+ *     parametri dei nodi non li tocca nessuna pagina. Passano solo i tre
+ *     percorsi che la PWA usa (24/10/2026: fino ad allora `zwave/.+`).
  *
  * `devices/:id` è la risorsa device e basta (nome e stanza): fino al 29/09
  * bastava `path[0] === 'devices'`, e passava anche `devices/:id/command`.
@@ -236,7 +239,7 @@ const SCRITTURE: Array<[string, RegExp]> = [
   ['DELETE', new RegExp(`^projects/${SEG}/devices/${SEG}$`)], // ritirare un device («non c'è più»)
   ['POST',   /^onboarding\/.+$/],                             // aggiungere un device
   ['DELETE', new RegExp(`^onboarding/session/${SEG}$`)],      // annullare l'aggiunta
-  ['POST',   /^zwave\/.+$/],                                  // inclusione, SmartStart
+  ['POST',   /^zwave\/(smartstart|exclusion\/(start|stop))$/], // SmartStart, togliere dalla rete
   ['POST',   new RegExp(`^rooms/${SEG}$`)],                   // nuova stanza
   ['PATCH',  new RegExp(`^rooms/${SEG}/${SEG}$`)],            // rinominare una stanza
   ['POST',   new RegExp(`^rooms/${SEG}/${SEG}/devices/${SEG}$`)], // device in una stanza

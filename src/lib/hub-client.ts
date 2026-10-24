@@ -6,7 +6,7 @@
 
 import type {
   Device, Room, HubEvent, Adapter,
-  SystemInfo, HubHealth, RegistrySnapshot, CommandResult,
+  SystemInfo, HubHealth, RegistrySnapshot,
 } from './hub-types';
 
 const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
@@ -118,18 +118,6 @@ export async function getDevices(projectId = DEFAULT_PROJECT_ID): Promise<{ devi
 
 export async function getDeviceState(projectId: string, deviceId: string): Promise<{ state: Record<string, unknown>; driver?: unknown }> {
   return hubFetch(`/devices/${encodeURIComponent(projectId)}/${encodeURIComponent(deviceId)}/state`);
-}
-
-export async function sendCommand(
-  projectId: string,
-  deviceId: string,
-  action: string,
-  params: Record<string, unknown> = {},
-): Promise<CommandResult> {
-  return hubFetch<CommandResult>(`/devices/${encodeURIComponent(deviceId)}/command`, {
-    method: 'POST',
-    body: JSON.stringify({ project_id: projectId, action, params }),
-  });
 }
 
 // ── Registry ────────────────────────────────────────────────────

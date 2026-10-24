@@ -121,7 +121,12 @@ describe('NLCommandBar — B86 compound plan (outcome=plan)', () => {
     });
   });
 
-  test('outcome=plan con risk=high mostra preview con tasto Esegui', async () => {
+  // Fino al 24/10/2026 questo test pretendeva il tasto «Esegui»: un piano che
+  // chiede conferma si eseguiva da un pulsante, cioè il «sì» aveva una seconda
+  // strada accanto alla risposta a MARIO. Il Brain non produce più questa forma
+  // (`v1.js`: un `plan` non chiede conferma, una `propose` porta Sì / No), e se
+  // arrivasse la PWA non deve avere niente con cui eseguirla.
+  test('un piano che chiede conferma NON offre un tasto che esegue, e non manda niente', async () => {
     fetchMock.mockResolvedValueOnce(planResponseHigh);
 
     render(<NLCommandBar projectId="default" />);
@@ -131,12 +136,10 @@ describe('NLCommandBar — B86 compound plan (outcome=plan)', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '' }));
 
-    // Con risk=high deve mostrare il preview con il tasto Esegui
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /esegui/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '✕' })).toBeInTheDocument();
     });
-
-    // Non deve mostrare "Comando non riconosciuto"
-    expect(screen.queryByText(/Comando non riconosciuto/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /esegui/i })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);           // solo /interpret
   });
 });

@@ -26,7 +26,7 @@ import PushEnableBanner from '@/components/notifications/PushEnableBanner';
 import WeatherBanner from '@/components/dashboard/WeatherBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
-import { getDeviceHistory } from '@/lib/api/history';
+import { getLetture } from '@/lib/api/history';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
@@ -140,6 +140,7 @@ export default function DashboardPage() {
   const weatherTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [viewDay, setViewDay] = useState<'oggi' | 'ieri'>('oggi');
   const [yStats, setYStats] = useState<{ tempMin: number | null; tempMax: number | null; luxMax: number | null } | null>(null);
+  const [yErrore, setYErrore] = useState(false);
   const [yLoading, setYLoading] = useState(false);
 
   useEffect(() => {
@@ -209,33 +210,32 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (viewDay !== 'ieri' || !projectId) return;
-    const now = Date.now();
-    const y24 = now - 24 * 60 * 60 * 1000;
-    const y48 = now - 48 * 60 * 60 * 1000;
+    // Ieri come giorno del calendario, e i sensori che ci sono: nessun device
+    // scritto qui (fino al 24/10/2026 era il `'3'`).
+    const oggi = new Date();
+    oggi.setHours(0, 0, 0, 0);
+    const ieri = new Date(oggi.getTime() - 24 * 60 * 60 * 1000);
+    const valori = (r: Awaited<ReturnType<typeof getLetture>>) => (r.events ?? [])
+      .map((e) => (e.payload as Record<string, unknown>)?.sensor_value)
+      .filter((v): v is number => typeof v === 'number' && !isNaN(v));
     setYLoading(true);
     setYStats(null);
-    getDeviceHistory(projectId, '3', 500)
-      .then((data) => {
-        const evs = (data.events ?? []).filter((e) => {
-          const t = new Date(e.ts).getTime();
-          return t >= y48 && t <= y24;
+    setYErrore(false);
+    Promise.all([
+      getLetture(projectId, 'sensor.temperature.changed', ieri, oggi),
+      getLetture(projectId, 'sensor.lux.changed', ieri, oggi),
+    ])
+      .then(([temp, lux]) => {
+        const t = valori(temp);
+        const l = valori(lux);
+        setYStats({
+          tempMin: t.length ? Math.min(...t) : null,
+          tempMax: t.length ? Math.max(...t) : null,
+          luxMax: l.length ? Math.max(...l) : null,
         });
-        let tempMin: number | null = null, tempMax: number | null = null, luxMax: number | null = null;
-        for (const ev of evs) {
-          const p = ev.payload as Record<string, unknown>;
-          const temp = (p['temperature'] ?? p['temp']) as number | undefined;
-          const lux = (p['luminance'] ?? p['lux'] ?? p['illuminance']) as number | undefined;
-          if (typeof temp === 'number' && !isNaN(temp)) {
-            if (tempMin === null || temp < tempMin) tempMin = temp;
-            if (tempMax === null || temp > tempMax) tempMax = temp;
-          }
-          if (typeof lux === 'number' && !isNaN(lux)) {
-            if (luxMax === null || lux > luxMax) luxMax = lux;
-          }
-        }
-        setYStats({ tempMin, tempMax, luxMax });
       })
-      .catch(() => setYStats(null))
+      // Un errore non è «nessun dato»: la pagina lo dice diverso.
+      .catch(() => setYErrore(true))
       .finally(() => setYLoading(false));
   }, [viewDay, projectId]);
 
@@ -353,7 +353,11 @@ export default function DashboardPage() {
               {viewDay === 'ieri' && (
                 yLoading ? (
                   <div className="text-xs text-text-2 py-4 text-center">Caricamento dati ieri…</div>
-                ) : yStats ? (
+                ) : yErrore ? (
+                  <div className="text-xs text-text-2 py-4 text-center">
+                    Non riesco a leggere lo storico di ieri.
+                  </div>
+                ) : yStats && (yStats.tempMax !== null || yStats.luxMax !== null) ? (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <div className="flex items-center gap-2 text-sky-500">
@@ -364,7 +368,7 @@ export default function DashboardPage() {
                             : '—'}
                         </span>
                       </div>
-                      <div className="mt-1 text-xs text-text-2">Temp ieri (min–max)</div>
+                      <div className="mt-1 text-xs text-text-2">Temperatura ieri (min–max)</div>
                     </div>
                     <div>
                       <div className="flex items-center gap-2 text-amber-500">

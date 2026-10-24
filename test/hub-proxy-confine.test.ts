@@ -102,6 +102,7 @@ describe('hub proxy — il confine', () => {
     ['DELETE', ['projects', 'default', 'devices', '2-ep1']], // ritirare: lo decide l'Hub chi può
     ['POST',   ['zwave', 'smartstart']],
     ['POST',   ['zwave', 'exclusion', 'start']],           // togliere un device dalla rete
+    ['POST',   ['zwave', 'exclusion', 'stop']],
     ['POST',   ['rooms', 'default']],
     ['PATCH',  ['notifications', 'default', 'n1', 'dismiss']],
     ['POST',   ['security', 'state']],                 // il modo della casa: l'allarme
@@ -120,6 +121,9 @@ describe('hub proxy — il confine', () => {
     ['DELETE',['rooms', 'default', 'cucina']],
     ['DELETE',['devices', '2-ep1']],                    // la risorsa device non si cancella così
     ['DELETE',['projects', 'default', 'devices']],      // né tutti insieme
+    ['POST',  ['zwave', 'reset']],                      // cancella la rete Z-Wave
+    ['POST',  ['zwave', 'node', '4', 'config']],
+    ['POST',  ['zwave', 'exclusion', 'start', 'x']],
   ])('%s %j NON passa: 405 e niente arriva all\'Hub', async (method, path) => {
     const res = await chiama(method, path as string[], 'jwt-romeo');
     expect(res.status).toBe(405);

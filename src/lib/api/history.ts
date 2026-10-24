@@ -14,9 +14,8 @@ export interface HistoryEvent {
   source: string | null;
 }
 
-export interface DeviceHistoryResponse {
+export interface HistoryResponse {
   project_id: string;
-  device_id: string;
   count: number;
   events: HistoryEvent[];
 }
@@ -70,16 +69,24 @@ export async function getStoricoComandi(
   );
 }
 
-export async function getDeviceHistory(
+/**
+ * Le letture di un genere di sensore (`sensor.temperature.changed`,
+ * `sensor.lux.changed`…) fra due istanti, da QUALUNQUE device le misuri: il
+ * valore è in `payload.sensor_value`. Fino al 24/10/2026 la home leggeva gli
+ * ultimi 500 eventi del device `'3'`, scritto nel codice — e 500 eventi
+ * coprivano 9 ore, quindi «ieri» non arrivava mai.
+ */
+export async function getLetture(
   projectId: string,
-  deviceId: string,
-  limit = 100,
+  tipo: string,
+  da: Date,
+  a: Date,
   signal?: AbortSignal,
-): Promise<DeviceHistoryResponse> {
-  return fetchAPI<DeviceHistoryResponse>(
-    `/api/hub/history/${encodeURIComponent(projectId)}/device/${encodeURIComponent(deviceId)}?limit=${limit}`,
-    { signal },
-  );
+): Promise<HistoryResponse> {
+  const q = new URLSearchParams({
+    event_type: tipo, from: da.toISOString(), to: a.toISOString(), limit: '5000',
+  });
+  return fetchAPI<HistoryResponse>(`/api/hub/history/${encodeURIComponent(projectId)}?${q}`, { signal });
 }
 
 export async function getEnergyHistory(

@@ -730,26 +730,14 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           {/* ⛔ Una PROPOSTA si conferma rispondendo a MARIO, non eseguendo da
               qui. Fino al 22/10/2026 «Esegui» mandava il comando direttamente:
               il «sì» aveva due strade, e il Brain lasciava la proposta aperta —
-              un «sì» scritto dopo, entro 10 minuti, l'avrebbe rifatta. */}
+              un «sì» scritto dopo, entro 10 minuti, l'avrebbe rifatta.
+              Il 24/10/2026 è tolto anche l'«Esegui» rimasto come ripiego: una
+              proposta del Brain porta sempre le sue risposte (`_conRisposte`),
+              e una senza si conferma scrivendo, mai da un tasto che esegue. */}
           {result._v2?.outcome === 'propose' && (result._v2?.risposte?.length ?? 0) > 0 ? (
             <div className="space-y-2 pt-1">
               {result._v2.question && <p className="text-sm text-text">{result._v2.question}</p>}
               {pulsantiRisposta(result)}
-            </div>
-          ) : (result.dispatchable || _isCompoundDispatchable(result)) ? (
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => void dispatch(result)}
-                className="flex-1 rounded-xl border border-emerald-500/30 bg-emerald-500/20 py-1.5 text-xs text-emerald-300 active:bg-emerald-500/30"
-              >
-                Esegui
-              </button>
-              <button
-                onClick={reset}
-                className="flex-1 rounded-xl border border-border bg-surface-2 py-1.5 text-xs text-text-2 active:bg-surface"
-              >
-                Annulla
-              </button>
             </div>
           ) : (
             <div className="space-y-1.5">

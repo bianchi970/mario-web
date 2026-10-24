@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import DashboardPage from '@/app/page';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listDevices } from '@/lib/api/devices';
@@ -109,6 +109,56 @@ describe('Dashboard device inventory flow', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Casa non raggiungibile')).toBeInTheDocument();
+    });
+  });
+
+  // Fino al 24/10/2026 «Ieri» leggeva gli ultimi 500 eventi del device '3',
+  // scritto nel codice: 500 eventi coprivano 9 ore, e ieri non arrivava mai.
+  it('«Ieri» legge le letture di ogni sensore nel giorno di ieri, senza un device scritto nel codice', async () => {
+    mockedListDevices.mockResolvedValue([
+      { id: 'dev-1', project_id: 'proj-1', name: 'Sensore', protocol: 'zwave', online: true, state: {} } as never,
+    ]);
+    mockedFetchAPI.mockImplementation(async (url: string) => {
+      if (url.includes('sensor.temperature.changed')) {
+        return { events: [
+          { payload: { sensor_key: 'temperature', sensor_value: 23.9 } },
+          { payload: { sensor_key: 'temperature', sensor_value: 24.4 } },
+        ] } as never;
+      }
+      if (url.includes('sensor.lux.changed')) {
+        return { events: [{ payload: { sensor_key: 'lux', sensor_value: 155 } }] } as never;
+      }
+      return {} as never;
+    });
+
+    render(<DashboardPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ieri' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('23.9–24.4°')).toBeInTheDocument();
+    });
+    expect(screen.getByText('155')).toBeInTheDocument();
+
+    const storici = mockedFetchAPI.mock.calls.map(([u]) => String(u)).filter((u) => u.includes('/history/'));
+    expect(storici).toHaveLength(2);
+    for (const u of storici) {
+      expect(u).toMatch(/^\/api\/hub\/history\/proj-1\?event_type=sensor\.(temperature|lux)\.changed&from=.+&to=.+/);
+      expect(u).not.toContain('/device/');
+    }
+  });
+
+  it('«Ieri» con lo storico illeggibile lo dice, non mostra «nessun dato»', async () => {
+    mockedListDevices.mockResolvedValue([]);
+    mockedFetchAPI.mockImplementation(async (url: string) => {
+      if (url.includes('/history/')) throw new ApiClientError('hub error', 502);
+      return {} as never;
+    });
+
+    render(<DashboardPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ieri' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Non riesco a leggere lo storico di ieri.')).toBeInTheDocument();
     });
   });
 });

@@ -23,7 +23,7 @@ describe('CommandButton offline mode', () => {
 
   it('blocks live commands when offline mode is enabled', async () => {
     (global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL) => {
-      if (String(input) === '/api/system/status') {
+      if (String(input) === '/api/brain/system/status') {
         return Promise.resolve({
           ok: true,
           json: async () => ({ offline: true }),
@@ -51,7 +51,7 @@ describe('CommandButton offline mode', () => {
 
   it('dispatches the command when offline mode is disabled', async () => {
     (global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL) => {
-      if (String(input) === '/api/system/status') {
+      if (String(input) === '/api/brain/system/status') {
         return Promise.resolve({
           ok: true,
           json: async () => ({ offline: false }),
@@ -92,7 +92,7 @@ describe('CommandButton offline mode', () => {
 
   it('shows structured hub error messages to the user', async () => {
     (global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL) => {
-      if (String(input) === '/api/system/status') {
+      if (String(input) === '/api/brain/system/status') {
         return Promise.resolve({
           ok: true,
           json: async () => ({ offline: false }),
@@ -131,7 +131,7 @@ describe('CommandButton offline mode', () => {
 
   it('falls back to a generic communication error when the request throws', async () => {
     (global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL) => {
-      if (String(input) === '/api/system/status') {
+      if (String(input) === '/api/brain/system/status') {
         return Promise.resolve({
           ok: true,
           json: async () => ({ offline: false }),

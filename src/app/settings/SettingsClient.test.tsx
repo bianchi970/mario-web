@@ -17,13 +17,13 @@ describe('Settings offline mode wiring', () => {
     window.localStorage.setItem('mario_project_id', 'default');
     global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === '/api/system/status') {
+      if (url === '/api/brain/system/status') {
         return Promise.resolve({
           ok: true,
           json: async () => ({ offline: false }),
         });
       }
-      if (url === '/api/system/offline') {
+      if (url === '/api/brain/system/offline') {
         const body = init?.body ? JSON.parse(String(init.body)) : { offline: false };
         return Promise.resolve({
           ok: true,
@@ -96,7 +96,7 @@ describe('Settings offline mode wiring', () => {
   it('non mostra un secondo selettore del modo della casa', async () => {
     global.fetch = jest.fn((input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/system/status') {
+      if (url === '/api/brain/system/status') {
         return Promise.resolve({ ok: true, json: async () => ({ offline: false }) });
       }
       return Promise.resolve({ ok: true, json: async () => ({}) });

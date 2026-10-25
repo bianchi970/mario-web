@@ -71,7 +71,7 @@ async function checkBrain(): Promise<boolean> {
   try {
     const headers: Record<string, string> = {};
     if (BRAIN_TOKEN) headers.authorization = `Bearer ${BRAIN_TOKEN}`;
-    const res = await fetch(`${BRAIN_URL}/api/system/status`, {
+    const res = await fetch(`${BRAIN_URL}/api/brain/system/status`, {
       headers, signal: AbortSignal.timeout(2_000), cache: 'no-store',
     });
     return res.ok;

@@ -54,7 +54,7 @@ export default function SettingsClient({
   const { user, logout } = useSession();
   const me = user ? { id: user.id || null, role: user.role || null } : null;
   const { projectId, setProjectId, authorizedProjects, projectsStatus, fetchAuthorizedProjects } = useProject();
-  const { offlineMode, offlineModeLoading, setOfflineMode } = useOfflineMode();
+  const { offlineMode, offlineModeLoading, offlineModeUnknown, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
 
   // Carica contatto emergenza da localStorage
@@ -199,7 +199,7 @@ export default function SettingsClient({
               disabled={offlineModeLoading}
               className="h-4 w-4 accent-hub-red"
             />
-            {offlineModeLoading ? 'Sincronizzazione...' : offlineMode ? 'Attivo' : 'Disattivo'}
+            {offlineModeLoading ? 'Sincronizzazione...' : offlineModeUnknown ? 'Non riesco a leggerlo' : offlineMode ? 'Attivo' : 'Disattivo'}
           </label>
         </div>
       </div>

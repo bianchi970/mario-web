@@ -17,7 +17,7 @@ describe('UsersSection', () => {
       const url    = String(input);
       const method = init?.method ?? 'GET';
 
-      if (url === '/api/system/status') {
+      if (url === '/api/brain/system/status') {
         return Promise.resolve({ ok: true, json: async () => ({ offline: false }) });
       }
       if (url === '/api/hub/users' && method === 'GET') {

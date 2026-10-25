@@ -43,7 +43,7 @@ describe('DeviceCard — room assignment', () => {
     window.localStorage.clear();
     window.localStorage.setItem('mario_project_id', 'proj-1');
     global.fetch = jest.fn((input: RequestInfo | URL) => {
-      if (String(input) === '/api/system/status') {
+      if (String(input) === '/api/brain/system/status') {
         return Promise.resolve({ ok: true, json: async () => ({ offline: false }) });
       }
       return Promise.resolve({

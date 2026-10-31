@@ -6,7 +6,7 @@
 
 import type {
   Device, Room, HubEvent, Adapter,
-  SystemInfo, HubHealth, RegistrySnapshot,
+  SystemInfo, HubHealth,
 } from './hub-types';
 
 const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
@@ -132,12 +132,6 @@ export async function getDeviceState(projectId: string, deviceId: string): Promi
   return hubFetch(`/devices/${encodeURIComponent(projectId)}/${encodeURIComponent(deviceId)}/state`);
 }
 
-// ── Registry ────────────────────────────────────────────────────
-
-export async function getRegistry(projectId = DEFAULT_PROJECT_ID): Promise<RegistrySnapshot> {
-  return hubFetch<RegistrySnapshot>(`/registry/${encodeURIComponent(projectId)}`);
-}
-
 // ── Rooms ────────────────────────────────────────────────────────
 
 export async function getRooms(projectId = DEFAULT_PROJECT_ID): Promise<{ rooms: Room[] }> {
@@ -173,11 +167,9 @@ export async function getEvents(projectId = DEFAULT_PROJECT_ID, limit = 25): Pro
   return res.data;
 }
 
-// ── State ────────────────────────────────────────────────────────
-
-export async function getProjectState(projectId = DEFAULT_PROJECT_ID): Promise<{ state: Record<string, unknown> }> {
-  return hubFetch(`/state/${encodeURIComponent(projectId)}`);
-}
+// `getRegistry` e `getProjectState` tolte il 31/10/2026 con le loro rotte
+// nell'Hub: servivano una copia in memoria dello stato, e nessuno le chiamava.
+// Lo stato dei device viene dal catalogo (`getDevices`, `getDeviceState`).
 
 // ── Energy ───────────────────────────────────────────────────────
 

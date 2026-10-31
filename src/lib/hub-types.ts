@@ -74,8 +74,3 @@ export interface HubHealth {
   error?: string;
 }
 
-export interface RegistrySnapshot {
-  devices: Device[];
-  stateCache?: Record<string, unknown>;
-  project_id?: string;
-}

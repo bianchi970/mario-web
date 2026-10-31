@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Battery,
@@ -20,7 +20,8 @@ import { ApiClientError } from '@/lib/api/client';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
 import type { Device, Room } from '@/lib/hub-types';
-import { computeHouseState, computeRoomStates } from '@/lib/house-state';
+import { allarmiAperti, computeHouseState, computeRoomStates, type AllarmeAperto } from '@/lib/house-state';
+import type { HubNotification } from '@/lib/api/notifications';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import PushEnableBanner from '@/components/notifications/PushEnableBanner';
 import WeatherBanner from '@/components/dashboard/WeatherBanner';
@@ -29,6 +30,15 @@ import NLCommandBar from '@/components/brain/NLCommandBar';
 import { getLetture } from '@/lib/api/history';
 
 /* ─── helpers ─────────────────────────────────────────── */
+
+// L'Hub scrive `datetime('now')` di SQLite: UTC, senza fuso ("2026-10-31 12:00:00").
+function quandoLeggibile(ts: string): string {
+  const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(ts) ? ts : `${ts.replace(' ', 'T')}Z`;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ts
+    : d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 function serviceDot(ok: boolean) {
   return ok
@@ -142,6 +152,10 @@ export default function DashboardPage() {
   const [yStats, setYStats] = useState<{ tempMin: number | null; tempMax: number | null; luxMax: number | null } | null>(null);
   const [yErrore, setYErrore] = useState(false);
   const [yLoading, setYLoading] = useState(false);
+  // Gli allarmi di pericolo aperti: dalle notifiche che NotificationCenter già
+  // legge (in diretta), non da una seconda lettura.
+  const [allarmi, setAllarmi] = useState<AllarmeAperto[]>([]);
+  const suNotifiche = useCallback((n: HubNotification[]) => setAllarmi(allarmiAperti(n)), []);
 
   useEffect(() => {
     setMounted(true);
@@ -350,6 +364,33 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* Gas, fumo, acqua: in cima, oggi o ieri che sia. Restano finché
+                  una persona non li chiude nelle notifiche qui sotto. */}
+              {allarmi.length > 0 && (
+                <ul id="allarme" className="mb-5 space-y-2">
+                  {allarmi.map((a) => (
+                    <li
+                      key={a.id}
+                      className={`flex items-start gap-3 rounded-2xl border p-4 ${
+                        a.prova ? 'border-border bg-surface-2 text-text-2' : 'border-danger/40 bg-danger/15 text-danger'
+                      }`}
+                    >
+                      <ShieldAlert className="mt-0.5 h-6 w-6 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-lg font-semibold">
+                          {a.prova ? `Prova allarme ${a.pericolo} — nessun pericolo` : `Allarme ${a.pericolo}`}
+                        </div>
+                        <div className="mt-0.5 text-sm">{a.messaggio}</div>
+                        <div className="mt-1 text-xs opacity-80">
+                          {quandoLeggibile(a.quando)}
+                          {' · si chiude dalle notifiche qui sotto'}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               {viewDay === 'ieri' && (
                 yLoading ? (
                   <div className="text-xs text-text-2 py-4 text-center">Caricamento dati ieri…</div>
@@ -450,6 +491,7 @@ export default function DashboardPage() {
               <NotificationCenter
                 projectId={projectId}
                 audience={installerMode ? 'installer' : 'client'}
+                onItems={suNotifiche}
               />
             )}
             {projectId && <PushEnableBanner projectId={projectId} />}

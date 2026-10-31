@@ -46,3 +46,39 @@ describe('computeHouseState — batterie', () => {
     expect(s.alerts[0].label).toContain('Dispositivo Z-Wave 4ep1');
   });
 });
+
+import { allarmiAperti } from './house-state';
+
+// Le notifiche come le scrive l'Hub (notification-store.daAllarme), 31/10.
+const N = (o: Record<string, unknown>) => ({
+  id: 'n', source_event_type: null, title: 'Allarme', message: '', dismissed: 0, created_at: '2026-10-31 12:00:00', ...o,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any;
+
+describe('allarmiAperti — il gas si vede in Home', () => {
+  it('AA-01 un allarme gas aperto si vede, con il suo messaggio', () => {
+    const a = allarmiAperti([N({ id: 'g', source_event_type: 'anomaly.gas.detected', message: 'GAS rilevato da "Sensore Gas Caldaia"!' })]);
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ pericolo: 'gas', prova: false, messaggio: 'GAS rilevato da "Sensore Gas Caldaia"!' });
+  });
+
+  it('AA-02 chiuso dalla persona, non si vede più', () => {
+    expect(allarmiAperti([N({ source_event_type: 'anomaly.gas.detected', dismissed: 1 })])).toHaveLength(0);
+  });
+
+  it('AA-03 una prova resta una prova, e sta dopo un allarme vero', () => {
+    const a = allarmiAperti([
+      N({ id: 'p', source_event_type: 'anomaly.gas.detected', title: 'PROVA — nessun pericolo', created_at: '2026-10-31 13:00:00' }),
+      N({ id: 'v', source_event_type: 'anomaly.smoke.detected', created_at: '2026-10-31 12:00:00' }),
+    ]);
+    expect(a.map((x) => [x.id, x.pericolo, x.prova])).toEqual([['v', 'fumo', false], ['p', 'gas', true]]);
+  });
+
+  it('AA-04 il resto delle notifiche non è un pericolo', () => {
+    expect(allarmiAperti([
+      N({ source_event_type: 'anomaly.device.offline' }),
+      N({ source_event_type: 'weather.alert' }),
+      N({ source_event_type: null }),
+    ])).toHaveLength(0);
+  });
+});

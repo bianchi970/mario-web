@@ -1,6 +1,6 @@
 // MARIO Service Worker v5 — online-first, icone e manifest in cache
 // Aggiorna CACHE_V ad ogni release per invalidare la cache precedente.
-const CACHE_V = 'mario-v6';
+const CACHE_V = 'mario-v7';
 const STATIC_CACHE = [
   '/manifest.json',
   '/icons/icon-192x192.png',
@@ -75,7 +75,30 @@ self.addEventListener('push', (event) => {
   );
 });
 
+// Toccata, una notifica porta dove dice (`data.url`, es. l'allarme gas in Home:
+// `/#allarme`), non sempre alla pagina iniziale (31/10/2026). Solo indirizzi di
+// questa PWA: un indirizzo esterno in una push non si apre. Se l'app è già
+// aperta si usa quella finestra, invece di aprirne un'altra.
+function dovePorta(data) {
+  try {
+    const u = new URL((data && data.url) || '/', self.location.origin);
+    return u.origin === self.location.origin ? u.href : self.location.origin + '/';
+  } catch {
+    return self.location.origin + '/';
+  }
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow('/'));
+  const dove = dovePorta(event.notification.data);
+  event.waitUntil((async () => {
+    const aperte = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const mia = aperte.find((c) => new URL(c.url).origin === self.location.origin);
+    if (mia) {
+      await mia.focus();
+      if ('navigate' in mia) return mia.navigate(dove);
+      return undefined;
+    }
+    return clients.openWindow(dove);
+  })());
 });

@@ -115,3 +115,48 @@ export function computeRoomStates(devices: Device[], rooms: Room[]): RoomState[]
     return { room, temperature, lux, motionActive, lightsOn, lightsTotal };
   });
 }
+
+/* ─── Gli allarmi di pericolo aperti ─────────────────────────────────────── */
+
+/**
+ * Gas, fumo e acqua, come li vede la casa — Romeo, 31/10/2026: *«l'allarme gas
+ * in Home»*.
+ *
+ * Non si leggono dallo stato del device (`gas: true` qui sopra): il sensore
+ * gas vero è muto (`state: {}`), e l'allarme arriva come ANOMALIA dell'Hub
+ * (`anomaly-detector` → `notification-store`, `source_event_type`
+ * `anomaly.gas.detected`). Un allarme resta aperto finché una persona non lo
+ * chiude nelle notifiche: l'anomalia di gas non si risolve da sola.
+ * Una PROVA della catena si mostra come prova, mai come pericolo.
+ */
+export type Pericolo = 'gas' | 'fumo' | 'acqua';
+
+export interface AllarmeAperto {
+  id: string;
+  pericolo: Pericolo;
+  messaggio: string;
+  prova: boolean;
+  quando: string;
+}
+
+const PERICOLI: Record<string, Pericolo> = {
+  'anomaly.gas.detected':   'gas',
+  'anomaly.smoke.detected': 'fumo',
+  'anomaly.water.detected': 'acqua',
+};
+
+export function allarmiAperti(
+  notifiche: { id: string; source_event_type: string | null; title: string; message: string; dismissed: number; created_at: string }[],
+): AllarmeAperto[] {
+  return notifiche
+    .filter((n) => !n.dismissed && n.source_event_type != null && n.source_event_type in PERICOLI)
+    .map((n) => ({
+      id:        n.id,
+      pericolo:  PERICOLI[n.source_event_type as string],
+      messaggio: n.message,
+      prova:     /^PROVA/.test(n.title),
+      quando:    n.created_at,
+    }))
+    // prima i veri, poi le prove; fra pari il più recente
+    .sort((a, b) => Number(a.prova) - Number(b.prova) || b.quando.localeCompare(a.quando));
+}

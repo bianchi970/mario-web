@@ -19,10 +19,20 @@ jest.mock('@/components/layout/TopBar', () => ({
   default: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
-jest.mock('@/components/notifications/NotificationCenter', () => ({
-  __esModule: true,
-  default: () => null,
-}));
+// NotificationCenter è l'unico a leggere le notifiche; alla Home passa ciò che
+// ha letto (`onItems`). Qui gli si danno le notifiche del test.
+let mockNotifiche: unknown[] = [];
+jest.mock('@/components/notifications/NotificationCenter', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useEffect } = require('react');
+  return {
+    __esModule: true,
+    default: ({ onItems }: { onItems?: (n: unknown[]) => void }) => {
+      useEffect(() => { onItems?.(mockNotifiche); }, [onItems]);
+      return null;
+    },
+  };
+});
 
 jest.mock('@/hooks/useProjectId', () => ({
   useProjectId: jest.fn(),
@@ -72,6 +82,35 @@ describe('Dashboard device inventory flow', () => {
       active_adapters: 1,
     });
     mockedListRooms.mockResolvedValue([]);
+    mockNotifiche = [];
+  });
+
+  // Romeo, 31/10/2026: l'allarme gas in Home. Il sensore vero è muto: l'allarme
+  // arriva come notifica dell'Hub, e prima si vedeva solo in fondo alla pagina.
+  it('un allarme gas aperto si vede in «Stato Casa», con il suo messaggio', async () => {
+    mockNotifiche = [{
+      id: 'g1', source_event_type: 'anomaly.gas.detected', title: 'Allarme',
+      message: 'GAS rilevato da "Sensore Gas Caldaia"!', dismissed: 0, created_at: '2026-10-31 12:00:00',
+    }];
+    mockedListDevices.mockResolvedValue([{ id: 'gas', project_id: 'proj-1', name: 'Sensore Gas Caldaia', online: true, state: {} } as never]);
+
+    render(<DashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Allarme gas')).toBeInTheDocument());
+    expect(screen.getByText('GAS rilevato da "Sensore Gas Caldaia"!')).toBeInTheDocument();
+  });
+
+  it('senza allarmi aperti, nessun allarme', async () => {
+    mockNotifiche = [{
+      id: 'g1', source_event_type: 'anomaly.gas.detected', title: 'Allarme',
+      message: 'x', dismissed: 1, created_at: '2026-10-31 12:00:00',
+    }];
+    mockedListDevices.mockResolvedValue([{ id: 'gas', project_id: 'proj-1', name: 'Sensore Gas Caldaia', online: true, state: {} } as never]);
+
+    render(<DashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Stato Casa')).toBeInTheDocument());
+    expect(screen.queryByText(/^Allarme /)).not.toBeInTheDocument();
   });
 
   it('renders the house state section when devices resolve', async () => {

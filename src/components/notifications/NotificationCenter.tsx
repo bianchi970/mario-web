@@ -39,13 +39,19 @@ export default function NotificationCenter({
   projectId,
   audience,
   refreshIntervalMs = 30_000,
+  onItems,
 }: {
   projectId: string;
   audience?: 'client' | 'installer';
   refreshIntervalMs?: number;
+  /** Chi altro deve sapere quali notifiche sono aperte (la Home: gli allarmi
+   *  di pericolo in «Stato Casa»). Una lettura sola, la stessa di qui. */
+  onItems?: (items: HubNotification[]) => void;
 }) {
   const [items, setItems] = useState<HubNotification[]>([]);
   const [dismissing, setDismissing] = useState<Set<string>>(new Set());
+
+  useEffect(() => { onItems?.(items); }, [items, onItems]);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {

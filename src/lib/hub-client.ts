@@ -95,6 +95,18 @@ export async function getSystem(): Promise<SystemInfo> {
   return res.data;
 }
 
+export async function getGatewayIdentity(): Promise<{ gateway_id: string; name: string; version: string }> {
+  return hubFetch('/gateway/identity');
+}
+
+/**
+ * Il Brain si raggiunge DALL'HUB (`/api/hub/brain/*`), in casa come da fuori:
+ * dal VPS `BRAIN_URL` è localhost, dove il Brain non c'è (25/10/2026).
+ */
+export async function getBrainSystemStatus(): Promise<{ offline: boolean }> {
+  return hubFetch('/brain/system/status');
+}
+
 // ── Adapters ────────────────────────────────────────────────────
 
 export async function getAdapters(): Promise<{ adapters: Adapter[] }> {

@@ -1,94 +1,49 @@
 /**
  * GET /api/gateway/identity
  *
- * Identità del gateway locale. Combina:
+ * Identità del gateway. Combina:
  * - Info gateway da mario-hub (gateway_id, name, version)
  * - Stato hub e brain (reachable/unreachable)
  * - Versione mario-web
  *
- * Pubblica — nessuna auth richiesta (serve al Gateway Selector).
+ * Tutto passa da `hub-client`, che sa già scegliere la strada: diretta in
+ * casa, il relay del bridge dal VPS. Fino al 31/10/2026 qui c'era una seconda
+ * copia di quella scelta, che conosceva solo la prima: dal VPS chiedeva Hub e
+ * Brain a localhost e diceva sempre «non raggiungibile» (visto il 25/10).
  */
 
 import { NextResponse } from 'next/server';
 import { version as webVersion } from '../../../../../package.json';
+import { getGatewayIdentity, getHealth, getBrainSystemStatus, getAdapters } from '@/lib/hub-client';
 
-const HUB_URL    = process.env.HUB_URL    || 'http://localhost:4001';
-const BRAIN_URL  = process.env.BRAIN_URL  || 'http://localhost:4000';
-const HUB_TOKEN  = process.env.HUB_TOKEN  || '';
-const BRAIN_TOKEN = process.env.BRAIN_TOKEN || '';
+const MODE = process.env.REMOTE_BRIDGE_URL ? 'remote' : 'local';
+
+const prova = <T,>(p: Promise<T>): Promise<T | null> => p.catch(() => null);
 
 export async function GET() {
-  const [hubIdentity, hubOk, brainOk, zWaveOk] = await Promise.all([
-    fetchHubIdentity(),
-    checkHub(),
-    checkBrain(),
-    checkZWave(),
+  const [hubIdentity, health, brain, adapters] = await Promise.all([
+    prova(getGatewayIdentity()),
+    prova(getHealth()),
+    prova(getBrainSystemStatus()),
+    prova(getAdapters()),
   ]);
+
+  // Z-Wave è attivo se la sua lingua VERA (non il banco `protocol:zwave`) lo è.
+  const zWaveOk = adapters?.adapters?.some(
+    (a) => /zwave/.test(a.adapter_id ?? '') && a.status === 'active',
+  ) ?? false;
 
   return NextResponse.json({
     gateway_id: hubIdentity?.gateway_id ?? null,
     name:       hubIdentity?.name       ?? 'MARIO Gateway',
-    mode:       'local',
+    mode:       MODE,
     version:    {
       web: webVersion,
       hub: hubIdentity?.version ?? null,
     },
-    hub:    hubOk    ? 'reachable' : 'unreachable',
-    brain:  brainOk  ? 'reachable' : 'unreachable',
+    hub:    health   ? 'reachable' : 'unreachable',
+    brain:  brain    ? 'reachable' : 'unreachable',
     z_wave: zWaveOk  ? 'active'    : 'inactive',
     ts:     new Date().toISOString(),
   });
-}
-
-async function fetchHubIdentity() {
-  try {
-    const headers: Record<string, string> = {};
-    if (HUB_TOKEN) headers.authorization = `Bearer ${HUB_TOKEN}`;
-    const res = await fetch(`${HUB_URL}/api/hub/gateway/identity`, {
-      headers,
-      signal: AbortSignal.timeout(3_000),
-      cache: 'no-store',
-    });
-    if (!res.ok) return null;
-    return res.json() as Promise<{ gateway_id: string; name: string; version: string }>;
-  } catch {
-    return null;
-  }
-}
-
-async function checkHub(): Promise<boolean> {
-  try {
-    const headers: Record<string, string> = {};
-    if (HUB_TOKEN) headers.authorization = `Bearer ${HUB_TOKEN}`;
-    const res = await fetch(`${HUB_URL}/api/hub/health`, {
-      headers, signal: AbortSignal.timeout(2_000), cache: 'no-store',
-    });
-    return res.ok;
-  } catch { return false; }
-}
-
-async function checkBrain(): Promise<boolean> {
-  try {
-    const headers: Record<string, string> = {};
-    if (BRAIN_TOKEN) headers.authorization = `Bearer ${BRAIN_TOKEN}`;
-    const res = await fetch(`${BRAIN_URL}/api/brain/system/status`, {
-      headers, signal: AbortSignal.timeout(2_000), cache: 'no-store',
-    });
-    return res.ok;
-  } catch { return false; }
-}
-
-async function checkZWave(): Promise<boolean> {
-  try {
-    const headers: Record<string, string> = {};
-    if (HUB_TOKEN) headers.authorization = `Bearer ${HUB_TOKEN}`;
-    const res = await fetch(`${HUB_URL}/api/hub/adapters`, {
-      headers, signal: AbortSignal.timeout(2_000), cache: 'no-store',
-    });
-    if (!res.ok) return false;
-    const data = await res.json() as { adapters?: { status: string; adapter_id?: string }[] };
-    return data.adapters?.some(
-      (a) => a.adapter_id?.includes('zwave') && a.status === 'active',
-    ) ?? false;
-  } catch { return false; }
 }

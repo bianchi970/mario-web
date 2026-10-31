@@ -18,7 +18,20 @@ export default function PushEnableBanner({ projectId }: { projectId: string }) {
       }
       navigator.serviceWorker.ready
         .then((reg) => reg.pushManager.getSubscription())
-        .then((sub) => setStatus(sub ? 'subscribed' : 'idle'))
+        .then((sub) => {
+          setStatus(sub ? 'subscribed' : 'idle');
+          // Già iscritto: ci si ripresenta all'Hub, con la persona che è entrata
+          // (31/10/2026). Così l'Hub sa di chi è questo telefono — chi è
+          // installatore riceve anche quegli avvisi — e un'iscrizione che l'Hub
+          // avesse perso si rifà da sola. È un aggiornamento, non una seconda riga.
+          if (sub) {
+            fetch(`/api/hub/push/${projectId}/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...sub.toJSON(), role: 'user', label: 'PWA' }),
+            }).catch(() => { /* la prossima apertura riprova */ });
+          }
+        })
         .catch(() => setStatus('idle'));
     } catch {
       setStatus('unsupported');

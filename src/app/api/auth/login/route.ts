@@ -81,6 +81,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!hubRes.ok) {
+      // Troppi tentativi da questo IP: lo si dice, non «Hub non raggiungibile».
+      if (hubRes.status === 429) {
+        return NextResponse.json({ error: 'too_many_attempts' }, { status: 429 });
+      }
       const isAuthError = hubRes.status === 401 || hubRes.status === 400;
       return NextResponse.json(
         { error: isAuthError ? 'invalid_credentials' : 'hub_error' },

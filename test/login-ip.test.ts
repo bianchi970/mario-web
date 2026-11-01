@@ -41,6 +41,15 @@ describe('login: l\'IP della persona arriva all\'Hub', () => {
     delete process.env.REMOTE_BRIDGE_URL;
   });
 
+  it('troppi tentativi si dicono come tali (429), non come Hub irraggiungibile', async () => {
+    delete process.env.REMOTE_BRIDGE_URL;
+    global.fetch = jest.fn(async () => ({ ok: false, status: 429, json: async () => ({}) })) as unknown as typeof fetch;
+    const { POST } = await import('@/app/api/auth/login/route');
+    const r = await POST(richiesta('192.168.1.20') as never) as unknown as { status: number; body: { error: string } };
+    expect(r.status).toBe(429);
+    expect(r.body.error).toBe('too_many_attempts');
+  });
+
   it('senza X-Real-IP non si inventa niente', async () => {
     delete process.env.REMOTE_BRIDGE_URL;
     const { POST } = await import('@/app/api/auth/login/route');

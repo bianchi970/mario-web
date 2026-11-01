@@ -45,6 +45,8 @@ function LoginForm() {
         const data = await res.json().catch(() => ({})) as { error?: string };
         if (data.error === 'invalid_credentials') {
           setError('Credenziali non valide.');
+        } else if (data.error === 'too_many_attempts') {
+          setError('Troppi tentativi da questa connessione. Riprova fra 15 minuti.');
         } else if (data.error === 'hub_unreachable') {
           setError('Hub non raggiungibile. Verifica la connessione.');
         } else {

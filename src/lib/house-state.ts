@@ -37,9 +37,11 @@ function deviceRoomId(d: Device): string | null {
   return d.room_id ?? (d as unknown as { room?: string | null }).room ?? null;
 }
 
-// Nodo radice Z-Wave: "4-ep1" → "4", "4-ep2" → "4", "4" → "4"
-function rootNodeId(id: string): string {
-  return id.replace(/-ep\d+$/, '');
+// La radio del device, come la dice l'Hub (`4-ep1` → `4`). Fino all'1/11/2026
+// si ricavava dall'id con una regola Z-Wave (`-epN`): una seconda copia di ciò
+// che la lingua sa. Chi non dichiara una radio parla per sé.
+function radioDi(d: Device): string {
+  return d.radio || d.id;
 }
 
 export function computeHouseState(devices: Device[]): CasaState {
@@ -57,7 +59,7 @@ export function computeHouseState(devices: Device[]): CasaState {
     if (bool(s, 'motion') === true) motionActive = true;
 
     const battery = num(s, 'battery');
-    const rootId = rootNodeId(d.id);
+    const rootId = radioDi(d);
     if (battery !== null && battery < 30 && !seenBatteryNodes.has(rootId)) {
       seenBatteryNodes.add(rootId);
       batteryWarnings++;

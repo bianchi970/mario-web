@@ -11,6 +11,9 @@ export interface Device {
   vendor?: string | null;
   address?: string | null;
   room_id?: string | null;
+  // Chi parla per il device (il nodo di un canale: `4-ep1` → `4`), se la sua
+  // lingua lo dichiara. Lo dice l'Hub; qui non si ricava dall'id.
+  radio?: string | null;
   capabilities: string[];
   state: Record<string, unknown>;
   online: boolean;

@@ -14,12 +14,13 @@ import { computeHouseState } from './house-state';
 
 // La casa vera, nella forma in cui la PWA la riceve dall'Hub (4/10).
 // L'ordine e quello del catalogo: gli endpoint arrivano PRIMA della radice,
-// ed e esattamente la condizione che faceva sbagliare.
+// ed e esattamente la condizione che faceva sbagliare. `radio` la dice l'Hub
+// dall'1/11/2026: la PWA non la ricava piu dall'id.
 const CASA = [
-  { id: '4-ep1', name: 'Dispositivo Z-Wave 4ep1', type: 'generic',    online: true, state: { battery: 0 } },
-  { id: '4-ep2', name: 'Sensore Z-Wave 4ep2',     type: 'sensor',     online: true, state: { battery: 0, temperature: 24.8 } },
-  { id: '4',     name: 'Riscaldamento Studio',    type: 'thermostat', online: true, state: { battery: 0, temperature: 24.8 } },
-  { id: '2-ep1', name: 'Luce Cucina',             type: 'switch',     online: true, state: { on: false } },
+  { id: '4-ep1', radio: '4', name: 'Dispositivo Z-Wave 4ep1', type: 'generic',    online: true, state: { battery: 0 } },
+  { id: '4-ep2', radio: '4', name: 'Sensore Z-Wave 4ep2',     type: 'sensor',     online: true, state: { battery: 0, temperature: 24.8 } },
+  { id: '4',     radio: '4', name: 'Riscaldamento Studio',    type: 'thermostat', online: true, state: { battery: 0, temperature: 24.8 } },
+  { id: '2-ep1', radio: '2', name: 'Luce Cucina',             type: 'switch',     online: true, state: { on: false } },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ] as any;
 
@@ -44,6 +45,19 @@ describe('computeHouseState — batterie', () => {
     const s = computeHouseState(soloEndpoint);
     expect(s.batteryWarnings).toBe(1);
     expect(s.alerts[0].label).toContain('Dispositivo Z-Wave 4ep1');
+  });
+
+  it('HS-05 la radio e quella che dice l\'Hub, non la forma dell\'id', () => {
+    // Un id senza `-epN` e una radio dichiarata: la regola Z-Wave sull'id non c'e piu.
+    const altraLingua = [
+      { id: 'canale-a', radio: 'modulo', name: 'Canale A', type: 'sensor', online: true, state: { battery: 5 } },
+      { id: 'canale-b', radio: 'modulo', name: 'Canale B', type: 'sensor', online: true, state: { battery: 5 } },
+      { id: 'modulo', name: 'Termostato Bagno', type: 'thermostat', online: true, state: {} },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] as any;
+    const s = computeHouseState(altraLingua);
+    expect(s.batteryWarnings).toBe(1);
+    expect(s.alerts[0].label).toBe('Termostato Bagno: batteria 5%');
   });
 });
 

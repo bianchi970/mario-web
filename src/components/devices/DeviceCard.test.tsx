@@ -95,3 +95,31 @@ describe('DeviceCard — room assignment', () => {
     expect(body.project_id).toBe('proj-1');
   });
 });
+
+// 1/11/2026: la batteria è della radio, e la riga di un canale (`4-ep1`) non la
+// porta più. La scheda del canale la mostra da chi la porta: nessun dato perso.
+describe('DeviceCard — la batteria della radio', () => {
+  beforeEach(() => {
+    window.localStorage.setItem('mario_project_id', 'proj-1');
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => ({ offline: false }) })) as jest.Mock;
+  });
+  afterEach(() => { jest.resetAllMocks(); window.localStorage.clear(); });
+
+  const canale: Device = { ...device, id: '4-ep1', name: 'Caldaia', type: 'sensor', radio: '4', state: { temperature: 21 } };
+  const scheda = (d: Device, b?: number) => render(
+    <ProjectProvider><InstallerModeProvider><OfflineModeProvider>
+      <DeviceCard device={d} batteriaDellaRadio={b} />
+    </OfflineModeProvider></InstallerModeProvider></ProjectProvider>,
+  );
+
+  it('un canale mostra la batteria della sua radio', () => {
+    scheda(canale, 77);
+    expect(screen.getByText('77%')).toBeInTheDocument();
+  });
+
+  it('una batteria detta dal device stesso vince', () => {
+    scheda({ ...canale, state: { temperature: 21, battery: 50 } }, 77);
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.queryByText('77%')).toBeNull();
+  });
+});

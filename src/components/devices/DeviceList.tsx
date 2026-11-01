@@ -28,6 +28,13 @@ export default function DeviceList({ devices, rooms = [] }: { devices: Device[];
 
   const onlineCount = devices.filter((device) => device.online).length;
 
+  // La batteria di un canale è quella della sua radio, come la dice l'Hub.
+  const batteriaDellaRadio = (device: Device): number | undefined => {
+    if (!device.radio || device.radio === device.id) return undefined;
+    const b = devices.find((d) => d.id === device.radio)?.state?.battery;
+    return typeof b === 'number' ? b : undefined;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center">
@@ -75,7 +82,7 @@ export default function DeviceList({ devices, rooms = [] }: { devices: Device[];
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((device) => (
-            <DeviceCard key={device.id} device={device} rooms={rooms} />
+            <DeviceCard key={device.id} device={device} rooms={rooms} batteriaDellaRadio={batteriaDellaRadio(device)} />
           ))}
         </div>
       )}

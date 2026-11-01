@@ -141,7 +141,15 @@ function SensorState({
   );
 }
 
-export default function DeviceCard({ device, rooms = [] }: { device: Device; rooms?: Room[] }) {
+export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
+  device: Device; rooms?: Room[];
+  // La batteria è della radio: un canale (`4-ep1`) non la porta più nella sua
+  // riga dall'1/11/2026, e la scheda la mostra da chi la porta.
+  batteriaDellaRadio?: number;
+}) {
+  const stato: Record<string, unknown> = typeof batteriaDellaRadio === 'number' && !('battery' in (device.state ?? {}))
+    ? { ...(device.state ?? {}), battery: batteriaDellaRadio }
+    : (device.state ?? {});
   const icon = DEVICE_ICONS[device.type] ?? '◈';
   const lastSeen = formatLastSeen(device.last_seen ?? device.connectivity?.last_seen);
   const { installerMode } = useInstallerMode();
@@ -273,15 +281,15 @@ export default function DeviceCard({ device, rooms = [] }: { device: Device; roo
 
       {device.type === 'camera' ? (
         <CameraState state={device.state as Record<string, unknown>} />
-      ) : (SENSOR_TYPES.has(device.type) || Object.keys(device.state ?? {}).length > 0) ? (
+      ) : (SENSOR_TYPES.has(device.type) || Object.keys(stato).length > 0) ? (
         SENSOR_TYPES.has(device.type)
           ? <SensorState
-              state={device.state as Record<string, unknown>}
+              state={stato}
               capabilities={device.capabilities}
               capabilityTiming={device.capability_timing}
             />
           : <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
-              {JSON.stringify(device.state)}
+              {JSON.stringify(stato)}
             </div>
       ) : null}
 

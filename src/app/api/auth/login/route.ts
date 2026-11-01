@@ -47,6 +47,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 });
   }
 
+  // Chi sta tentando di entrare, come l'ha visto nginx (`X-Real-IP`, che nginx
+  // riscrive sempre): l'Hub conta i tentativi per persona e non per PWA, che
+  // arriva sempre da 127.0.0.1 (1/11/2026: 20 tentativi valevano per tutta la casa).
+  const ip = req.headers.get('x-real-ip')?.trim() || '';
+  const conIp: Record<string, string> = ip ? { 'x-mario-ip': ip } : {};
+
   let hubData: HubLoginData['data'];
   try {
     let hubRes: Response;
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           method:  'POST',
           path:    '/api/hub/auth/login',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', ...conIp },
           body:    JSON.stringify({ username, password }),
         }),
         signal: AbortSignal.timeout(8000),
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
     } else {
       hubRes = await fetch(`${HUB_URL}/api/hub/auth/login`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...conIp },
         body:    JSON.stringify({ username, password }),
         signal:  AbortSignal.timeout(5000),
       });

@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
-const BRAIN_TOKEN        = process.env.BRAIN_TOKEN        || '';
 const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
 const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
@@ -27,7 +26,7 @@ async function proxyLocal(projectId: string, body: unknown, persona: Record<stri
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        authorization:  `Bearer ${BRAIN_TOKEN}`,
+        authorization:  `Bearer ${HUB_TOKEN}`,
         ...persona,
       },
       body: JSON.stringify(body),

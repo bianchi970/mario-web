@@ -37,14 +37,13 @@ describe('web ui-command route', () => {
     jest.resetModules();
     jest.resetAllMocks();
     process.env.BRAIN_URL = 'http://brain.local';
-    process.env.BRAIN_TOKEN = 'brain-token';
+    // In casa la PWA parla al Brain col segreto di servizio (1/11/2026: era BRAIN_TOKEN).
+    process.env.HUB_TOKEN = 'servizio';
     delete process.env.REMOTE_BRIDGE_URL;
-    delete process.env.HUB_TOKEN;
   });
 
   afterEach(() => {
     delete process.env.BRAIN_URL;
-    delete process.env.BRAIN_TOKEN;
     delete process.env.REMOTE_BRIDGE_URL;
     delete process.env.HUB_TOKEN;
   });
@@ -84,7 +83,7 @@ describe('web ui-command route', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          authorization: 'Bearer brain-token',
+          authorization: 'Bearer servizio',
           'x-mario-persona': 'jwt-della-persona',
         }),
         body: JSON.stringify({

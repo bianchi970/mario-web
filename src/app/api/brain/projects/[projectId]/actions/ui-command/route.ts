@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL = process.env.BRAIN_URL || 'http://localhost:4000';
-const BRAIN_TOKEN = process.env.BRAIN_TOKEN || '';
 const REMOTE_BRIDGE_URL = process.env.REMOTE_BRIDGE_URL || '';
 const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const HUB_TOKEN = process.env.HUB_TOKEN || '';
@@ -141,7 +140,7 @@ async function proxyLocal(projectId: string, payload: JsonObject, persona: Recor
     headers: {
       accept: 'application/json',
       'content-type': 'application/json',
-      authorization: `Bearer ${BRAIN_TOKEN}`,
+      authorization: `Bearer ${HUB_TOKEN}`,
       ...persona,
     },
     body: JSON.stringify(payload),
@@ -191,7 +190,10 @@ async function proxyBridge(projectId: string, payload: JsonObject, persona: Reco
 
 export async function POST(req: NextRequest, { params: paramsPromise }: RouteContext) {
   const context = { params: await paramsPromise };
-  const hasProxyAuth = REMOTE_BRIDGE_URL ? Boolean(HUB_TOKEN) : Boolean(BRAIN_TOKEN);
+  // Verso il Brain parla il servizio col suo segreto, `HUB_TOKEN`: lo stesso del
+  // proxy Brain dell'Hub e degli script. Fino all'1/11/2026 qui c'era
+  // `BRAIN_TOKEN`, un JWT che scadeva il 28/9/2027.
+  const hasProxyAuth = Boolean(HUB_TOKEN);
   if (!hasProxyAuth) {
     return authRequiredResponse();
   }

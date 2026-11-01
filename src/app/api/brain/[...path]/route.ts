@@ -13,7 +13,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
-const BRAIN_TOKEN        = process.env.BRAIN_TOKEN        || '';
 const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
 const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
@@ -46,8 +45,9 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   const body      = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.from(await req.arrayBuffer());
   // La persona l'ha già verificata il middleware; il suo cookie è firmato
   // dall'Hub e il Brain non lo sa leggere (401). Verso il Brain parla il
-  // servizio, come fanno il proxy Brain dell'Hub e le altre rotte di questa PWA.
-  const userToken = BRAIN_TOKEN;
+  // servizio col suo segreto, `HUB_TOKEN`, come il proxy Brain dell'Hub (fino
+  // all'1/11/2026 era `BRAIN_TOKEN`, un JWT che scadeva il 28/9/2027).
+  const userToken = HUB_TOKEN;
   const isAi      = AI_BRAIN_PATHS.some(p => path.includes(p));
 
   const upstreamRes = await fetch(`${BRAIN_URL}/api/brain/${path.join('/')}${req.nextUrl.search}`, {

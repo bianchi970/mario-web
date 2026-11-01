@@ -7,7 +7,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
-const BRAIN_TOKEN        = process.env.BRAIN_TOKEN        || '';
 const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
 const BRIDGE_RELAY_TOKEN = process.env.BRIDGE_RELAY_TOKEN || '';
 const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
@@ -24,7 +23,7 @@ async function proxyLocal(projectId: string, executionId: string): Promise<Respo
     `${BRAIN_URL}/projects/${encodeURIComponent(projectId)}/execution/executions/${encodeURIComponent(executionId)}`,
     {
       method: 'GET',
-      headers: { authorization: `Bearer ${BRAIN_TOKEN}` },
+      headers: { authorization: `Bearer ${HUB_TOKEN}` },
       signal: AbortSignal.timeout(10_000),
     },
   );

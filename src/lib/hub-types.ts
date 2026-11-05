@@ -1,5 +1,7 @@
 // hub-types.ts — TypeScript interfaces mirroring mario-hub data shapes
 
+import type { CapacitaDallHub } from '@/lib/capacita';
+
 export interface Device {
   id: string;
   device_id?: string;
@@ -14,7 +16,9 @@ export interface Device {
   // Chi parla per il device (il nodo di un canale: `4-ep1` → `4`), se la sua
   // lingua lo dichiara. Lo dice l'Hub; qui non si ricava dall'id.
   radio?: string | null;
-  capabilities: string[];
+  // Oggetti `{ key, label, actions, letture }` o parole: si leggono con
+  // `@/lib/capacita`, mai come stringhe.
+  capabilities: CapacitaDallHub[];
   state: Record<string, unknown>;
   online: boolean;
   last_seen?: string | null;

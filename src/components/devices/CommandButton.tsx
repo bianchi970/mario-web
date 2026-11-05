@@ -7,6 +7,7 @@ import { useProjectId } from '@/hooks/useProjectId';
 import { ApiClientError } from '@/lib/api/client';
 import type { Device } from '@/lib/hub-types';
 import { executeUiCommand, esitoDetto } from '@/lib/api/ui-command';
+import { azioniDi, vuoleUnValore } from '@/lib/capacita';
 
 const HUB_ERROR_CODES: Record<string, string> = {
   DEVICE_NOT_FOUND: 'Dispositivo non trovato',
@@ -111,25 +112,13 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
 }
 
 // ── Comandi generici ──────────────────────────────────────────────────────
-
-const COMMANDS: Record<string, { action: string; label: string }[]> = {
-  light:     [{ action: 'turn_on', label: 'On' }, { action: 'turn_off', label: 'Off' }],
-  rgb_light: [{ action: 'turn_on', label: 'On' }, { action: 'turn_off', label: 'Off' }],
-  cover:     [{ action: 'turn_on', label: 'Apri' }, { action: 'stop', label: 'Stop' }, { action: 'turn_off', label: 'Chiudi' }],
-  blind:     [{ action: 'turn_on', label: 'Apri' }, { action: 'stop', label: 'Stop' }, { action: 'turn_off', label: 'Chiudi' }],
-  awning:    [{ action: 'turn_on', label: 'Apri' }, { action: 'stop', label: 'Stop' }, { action: 'turn_off', label: 'Chiudi' }],
-  switch:    [{ action: 'turn_on', label: 'On' }, { action: 'turn_off', label: 'Off' }],
-  plug:      [{ action: 'turn_on', label: 'On' }, { action: 'turn_off', label: 'Off' }],
-  alarm_panel: [{ action: 'arm', label: 'Inserisci' }, { action: 'disarm', label: 'Disinserisci' }],
-  ev_charger:  [{ action: 'turn_on', label: 'Avvia' }, { action: 'turn_off', label: 'Ferma' }],
-};
-
-const DEFAULT_CMDS = [{ action: 'turn_on', label: 'On' }, { action: 'turn_off', label: 'Off' }];
-
-const READ_ONLY_TYPES = new Set([
-  'motion_sensor', 'contact_sensor', 'temperature_sensor', 'humidity_sensor',
-  'sensor', 'meter', 'battery', 'camera', 'controller',
-]);
+//
+// ⛔ I pulsanti nascono da ciò che il device DICHIARA di saper fare, con il nome
+// che gli dà l'Hub — non dal suo tipo. Fino al 5/11/2026 c'era una tabella per
+// tipo con On/Off di ripiego: una tapparella aveva «Apri» = `turn_on` (che
+// l'Hub rifiuta), e la valvola `4-ep1`, di tipo `termostato` e non
+// `thermostat`, mostrava On/Off e nessun controllo della temperatura.
+// Un device che non dichiara azioni non ha pulsanti: non si inventano.
 
 // ── Componente principale ─────────────────────────────────────────────────
 
@@ -144,7 +133,10 @@ export default function CommandButton({ device }: Props) {
   const { offlineMode, offlineModeLoading } = useOfflineMode();
   const projectId = useProjectId();
 
-  if (READ_ONLY_TYPES.has(device.type)) return null;
+  const azioni = azioniDi(device);
+  const regolaTemperatura = azioni.some((a) => a.key === 'set_temperature');
+  const cmds = azioni.filter((a) => !vuoleUnValore(a.key)).map((a) => ({ action: a.key, label: a.label }));
+  if (!regolaTemperatura && cmds.length === 0) return null;
 
   if (offlineMode || offlineModeLoading) {
     return (
@@ -162,13 +154,6 @@ export default function CommandButton({ device }: Props) {
     );
   }
 
-  // Termostato: controllo dedicato
-  if (device.type === 'thermostat') {
-    return <ThermostatControl device={device} projectId={projectId} />;
-  }
-
-  const cmds = COMMANDS[device.type] ?? DEFAULT_CMDS;
-
   async function dispatch(action: string) {
     setLoading(action);
     setResult(null);
@@ -182,7 +167,9 @@ export default function CommandButton({ device }: Props) {
 
   return (
     <div className="flex flex-col items-end gap-1.5">
-      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+      {/* Chi sa regolare la temperatura ha il suo controllo (la valvola, il termostato) */}
+      {regolaTemperatura && <ThermostatControl device={device} projectId={projectId} />}
+      {cmds.length > 0 && <div className="flex items-center gap-1.5 flex-wrap justify-end">
         {cmds.map(({ action, label }) => (
           <Button
             key={action}
@@ -194,7 +181,7 @@ export default function CommandButton({ device }: Props) {
             {result === 'ok' && loading !== action ? 'OK' : label}
           </Button>
         ))}
-      </div>
+      </div>}
       {errorMessage && <p className="text-xs text-hub-red text-right">{errorMessage}</p>}
     </div>
   );

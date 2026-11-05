@@ -9,6 +9,9 @@ describe('CommandButton offline mode', () => {
     name: 'Kitchen Light',
     type: 'light',
     online: false,
+    // come lo manda l'Hub: cosa sa fare, e come si chiama
+    capabilities: [{ key: 'on_off', label: 'On/Off', actions: [
+      { key: 'turn_on', label: 'Accendi', type: 'command' }, { key: 'turn_off', label: 'Spegni', type: 'command' }] }],
   } as const;
 
   beforeEach(() => {
@@ -69,10 +72,10 @@ describe('CommandButton offline mode', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'On' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Accendi' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'On' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Accendi' }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -119,10 +122,10 @@ describe('CommandButton offline mode', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'On' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Accendi' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'On' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Accendi' }));
 
     await waitFor(() => {
       expect(screen.getByText('Device non trovato')).toBeInTheDocument();
@@ -149,10 +152,10 @@ describe('CommandButton offline mode', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'On' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Accendi' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'On' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Accendi' }));
 
     await waitFor(() => {
       expect(screen.getByText('Errore di comunicazione')).toBeInTheDocument();

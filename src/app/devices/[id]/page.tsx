@@ -13,6 +13,7 @@ import { listRooms } from '@/lib/api/rooms';
 import { fetchAPI } from '@/lib/api/client';
 import { useProjectId } from '@/hooks/useProjectId';
 import type { Device, Room } from '@/lib/hub-types';
+import { capacitaDi } from '@/lib/capacita';
 
 const DEVICE_ICONS: Record<string, string> = {
   light: '💡', rgb_light: '🌈', cover: '🪟', blind: '🪟', awning: '⛱',
@@ -287,18 +288,18 @@ export default function DeviceDetailPage() {
             )}
 
             {/* Capability */}
-            {device.capabilities.length > 0 && (
+            {capacitaDi(device).length > 0 && (
               <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                 <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
-                  Funzionalità ({device.capabilities.length})
+                  Funzionalità ({capacitaDi(device).length})
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {device.capabilities.map((c) => (
+                  {capacitaDi(device).map((c) => (
                     <span
-                      key={c}
+                      key={c.key}
                       className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-white/60"
                     >
-                      {c}
+                      {c.label}
                     </span>
                   ))}
                 </div>

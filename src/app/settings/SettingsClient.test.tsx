@@ -11,6 +11,10 @@ describe('Settings offline mode wiring', () => {
     name: 'Garage Cover',
     type: 'cover',
     online: true,
+    // come la dichiara l'Hub: «Apri» è `open` (fino al 5/11/2026 la PWA mandava `turn_on`)
+    capabilities: [{ key: 'cover', label: 'Apertura', actions: [
+      { key: 'open', label: 'Apri', type: 'command' }, { key: 'close', label: 'Chiudi', type: 'command' },
+      { key: 'stop', label: 'Stop', type: 'command' }] }],
   } as const;
 
   beforeEach(() => {

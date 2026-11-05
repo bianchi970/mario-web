@@ -9,6 +9,7 @@ import CommandButton from './CommandButton';
 import { fetchAPI } from '@/lib/api/client';
 import { executeUiCommand } from '@/lib/api/ui-command';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { dice, sa } from '@/lib/capacita';
 
 const DEVICE_ICONS: Record<string, string> = {
   light: '💡', rgb_light: '🌈', cover: '🪟', blind: '🪟', awning: '⛱',
@@ -70,17 +71,17 @@ type CapTiming = Record<string, 'realtime' | 'lazy' | 'cached'>;
 
 function SensorState({
   state,
-  capabilities = [],
+  rileva = false,
   capabilityTiming = {},
 }: {
   state: Record<string, unknown>;
-  capabilities?: string[];
+  rileva?: boolean;              // il device dichiara di rilevare il movimento
   capabilityTiming?: CapTiming;
 }) {
   const rows: { label: string; value: string; highlight?: boolean; muted?: boolean }[] = [];
 
   // MOTION — realtime
-  if ('motion' in state || capabilities.includes('motion')) {
+  if ('motion' in state || rileva) {
     rows.push({ label: 'Movimento', value: state.motion ? 'rilevato' : 'assente', highlight: !!state.motion });
     if ('last_motion_at' in state && state.last_motion_at) {
       rows.push({ label: 'Ultimo movimento', value: formatLastSeen(state.last_motion_at as string) ?? '' });
@@ -248,7 +249,7 @@ export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
         {!device.online && <Badge variant="red">Non in linea</Badge>}
       </div>
 
-      {device.capabilities.includes('brightness') && device.online && (
+      {sa(device, 'set_brightness') && device.online && (
         <div className="flex items-center gap-2">
           <input
             type="range"
@@ -285,7 +286,7 @@ export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
         SENSOR_TYPES.has(device.type)
           ? <SensorState
               state={stato}
-              capabilities={device.capabilities}
+              rileva={dice(device, 'motion')}
               capabilityTiming={device.capability_timing}
             />
           : <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">

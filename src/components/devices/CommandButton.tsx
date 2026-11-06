@@ -84,8 +84,14 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
     setTimeout(() => { setResult(null); setErrorMessage(null); }, 2500);
   }
 
+  // Si regola a partire dal setpoint LETTO, e da nient'altro. Fino al 6/11/2026
+  // senza setpoint si partiva dalla temperatura della stanza o dal minimo (5 °C
+  // inventato se il device non lo dichiara): il «+» mandava 5,5 °C alla valvola.
+  const regolabile = setpoint !== null;
+
   function adjust(delta: number) {
-    const base = setpoint ?? currentTemp ?? minTemp;
+    if (setpoint === null) return;
+    const base = setpoint;
     const next = Math.round((base + delta) / stepTemp) * stepTemp;
     const clamped = Math.min(maxTemp, Math.max(minTemp, next));
     setSetpoint(clamped);
@@ -98,13 +104,13 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
         <span className="text-xs text-hub-muted">Attuale: {currentTemp}{unit}</span>
       )}
       <div className="flex items-center gap-1.5">
-        <Button size="sm" variant="secondary" onClick={() => adjust(-stepTemp)} disabled={loading}>−</Button>
+        <Button size="sm" variant="secondary" onClick={() => adjust(-stepTemp)} disabled={loading || !regolabile}>−</Button>
         <span className={`min-w-[3.2rem] text-center text-sm font-mono tabular-nums ${
           result === 'ok' ? 'text-emerald-400' : result === 'error' ? 'text-red-400' : 'text-hub-text'
         }`}>
           {loading ? '…' : setpoint !== null ? `${setpoint.toFixed(1)}${unit}` : '—'}
         </span>
-        <Button size="sm" variant="secondary" onClick={() => adjust(+stepTemp)} disabled={loading}>+</Button>
+        <Button size="sm" variant="secondary" onClick={() => adjust(+stepTemp)} disabled={loading || !regolabile}>+</Button>
       </div>
       {errorMessage && <p className="text-xs text-hub-red text-right">{errorMessage}</p>}
     </div>

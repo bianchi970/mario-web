@@ -50,6 +50,28 @@ describe('i pulsanti di ciò che il device dichiara', () => {
     expect(screen.queryByRole('button', { name: 'Imposta temperatura' })).toBeNull();
   });
 
+  // Visto da Romeo il 6/11/2026 (pagina Stanze, «− — +»): senza un setpoint letto
+  // il «+» partiva dal minimo inventato (5 °C) e mandava 5,5 °C alla valvola.
+  it('senza una temperatura impostata letta, − e + non mandano un numero inventato', async () => {
+    disegna({ type: 'termostato', capabilities: [ONOFF, TEMPERATURA], state: {} });
+    await waitFor(() => expect(screen.getByRole('button', { name: '+' })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: '+' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '−' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '+' }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/brain/projects/default/actions/ui-command', expect.anything());
+  });
+
+  it('con 20 °C letti, «+» manda 20,5', async () => {
+    disegna({ type: 'termostato', capabilities: [ONOFF, TEMPERATURA], state: { setpoint: 20, step: 0.5 } });
+    await waitFor(() => expect(screen.getByRole('button', { name: '+' })).not.toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: '+' }));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      '/api/brain/projects/default/actions/ui-command',
+      expect.objectContaining({ body: JSON.stringify({ device_id: 'd', action: 'set_temperature', params: { temperature: 20.5 } }) }),
+    ));
+  });
+
   it('una tapparella: «Apri» manda `open`, non `turn_on`; la posizione non è un pulsante', async () => {
     disegna({ type: 'cover', capabilities: [COVER] });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Apri' })).toBeInTheDocument());

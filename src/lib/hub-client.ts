@@ -64,7 +64,8 @@ async function hubFetchBridge<T>(path: string, options: RequestInit = {}): Promi
     body: JSON.stringify({
       method,
       path:    `/api/hub${path}`,
-      headers: { 'content-type': 'application/json', ...authHeader() },
+      // Come la strada diretta: chi passa un'Authorization (la persona) vince sul token tecnico.
+      headers: { 'content-type': 'application/json', ...authHeader(), ...(options.headers as Record<string, string> ?? {}) },
       body,
     }),
     signal: AbortSignal.timeout(12_000),
@@ -98,6 +99,18 @@ export async function getSystem(): Promise<SystemInfo> {
 export async function getGatewayIdentity(): Promise<{ gateway_id: string; name: string; version: string }> {
   return hubFetch('/gateway/identity');
 }
+
+/**
+ * Chi è la persona di questo JWT, per l'Hub: in casa e dal ponte. Dal VPS
+ * `HUB_URL` è localhost, dove l'Hub non c'è (7/11/2026: «nessuno» fuori casa).
+ */
+export async function getMe(token: string): Promise<Persona> {
+  return unwrapHubPayload(await hubFetch<Persona | HubEnvelope<Persona>>('/auth/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  }));
+}
+
+type Persona = { id: string; username: string; role: string; project_id: string | null };
 
 /**
  * Il Brain si raggiunge DALL'HUB (`/api/hub/brain/*`), in casa come da fuori:

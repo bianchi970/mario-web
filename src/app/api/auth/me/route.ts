@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authAttiva } from '@/lib/auth-mode';
+import { getMe } from '@/lib/hub-client';
 
 /**
  * GET /api/auth/me
@@ -8,10 +9,12 @@ import { authAttiva } from '@/lib/auth-mode';
  * Con il login spento (REMOTE_AUTH_MODE=false, solo sviluppo): restituisce ruolo admin sintetico
  * così che la UI di gestione utenti sia accessibile anche in locale.
  *
- * Il Hub rimane l'autorità — questo endpoint è solo un relay.
+ * Il Hub rimane l'autorità — questo endpoint è solo un relay. La strada verso
+ * l'Hub (diretta in casa, il ponte dal VPS) la sceglie `hub-client`: fino al
+ * 7/11/2026 qui si chiedeva sempre a HUB_URL, e dal VPS la risposta era «nessuno».
  */
 
-const HUB_URL = process.env.HUB_URL || 'http://localhost:4001';
+const NESSUNO = { id: null, username: null, role: null, project_id: null };
 
 export async function GET(req: NextRequest) {
   // Login spento (solo sviluppo) → admin sintetico
@@ -20,21 +23,11 @@ export async function GET(req: NextRequest) {
   }
 
   const token = req.cookies.get('mario_hub_token')?.value;
-  if (!token) {
-    return NextResponse.json({ id: null, username: null, role: null, project_id: null });
-  }
+  if (!token) return NextResponse.json(NESSUNO);
 
   try {
-    const hubRes = await fetch(`${HUB_URL}/api/hub/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal:  AbortSignal.timeout(3000),
-    });
-    if (!hubRes.ok) {
-      return NextResponse.json({ id: null, username: null, role: null, project_id: null });
-    }
-    const data = await hubRes.json() as { success: boolean; data: { id: string; username: string; role: string; project_id: string | null } };
-    return NextResponse.json(data.data ?? { id: null, username: null, role: null, project_id: null });
+    return NextResponse.json((await getMe(token)) ?? NESSUNO);
   } catch {
-    return NextResponse.json({ id: null, username: null, role: null, project_id: null });
+    return NextResponse.json(NESSUNO);
   }
 }

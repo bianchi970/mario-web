@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { personaDa } from '@/lib/persona';
+import { personaDa, tokenPersona } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
 const REMOTE_BRIDGE_URL  = process.env.REMOTE_BRIDGE_URL  || '';
@@ -75,7 +75,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
   // Route through bridge relay → Hub → Hub brain proxy (/brain/*) → Brain
   const hubPath  = `/api/hub/brain/${path.join('/')}${req.nextUrl.search}`;
   const bodyText = ['GET', 'HEAD'].includes(req.method) ? null : await req.text();
-  const userToken = req.cookies.get('mario_hub_token')?.value || '';
+  const userToken = tokenPersona(req);
   const isAi      = AI_BRAIN_PATHS.some(p => path.includes(p));
 
   const relayPayload: Record<string, unknown> = {

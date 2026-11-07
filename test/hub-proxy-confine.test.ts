@@ -48,11 +48,13 @@ const UPSTREAM_OK = {
   text: async () => JSON.stringify({ ok: true }),
 };
 
-function richiesta(method: string, path: string[], cookie?: string) {
+// La persona arriva come la mette il middleware, verificata o rinnovata, in
+// `x-mario-persona`; il cookie dopo un rinnovo è il vecchio (7/11/2026).
+function richiesta(method: string, path: string[], persona?: string) {
   return {
     method,
-    headers: { get: () => null },
-    cookies: { get: (n: string) => (n === 'mario_hub_token' && cookie ? { value: cookie } : undefined) },
+    headers: { get: (n: string) => (n === 'x-mario-persona' && persona ? persona : null) },
+    cookies: { get: () => undefined },
     nextUrl: new URL(`http://localhost:3000/api/hub/${path.join('/')}`),
     arrayBuffer: async () => new ArrayBuffer(0),
   };

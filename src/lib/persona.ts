@@ -12,6 +12,16 @@ import type { NextRequest } from 'next/server';
  * confondersi con i token fra servizi.
  */
 export function personaDa(req: NextRequest): Record<string, string> {
-  const token = req.headers.get('x-mario-persona');
+  const token = tokenPersona(req);
   return token ? { 'x-mario-persona': token } : {};
+}
+
+/**
+ * Il JWT con cui la persona parla all'Hub: quello che il middleware ha
+ * verificato o rinnovato, mai il cookie della richiesta. Dopo un rinnovo il
+ * cookie è ancora il vecchio, e fino al 7/11/2026 i proxy lo mandavano:
+ * 16 minuti dopo il login, Hub e Brain rispondevano 401.
+ */
+export function tokenPersona(req: NextRequest): string {
+  return req.headers.get('x-mario-persona') ?? '';
 }

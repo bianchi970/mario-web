@@ -1,8 +1,14 @@
 import type { EnergySummary } from '@/lib/hub-client';
 
-function fmtWh(wh: number): string {
+// `null` è «nessuna misura», e si mostra «—»: non è 0 Wh.
+function fmtWh(wh: number | null): string {
+  if (wh === null) return '—';
   if (wh >= 1000) return `${(wh / 1000).toFixed(2)} kWh`;
   return `${wh} Wh`;
+}
+
+function fmtW(w: number | null): string {
+  return w === null ? '—' : `${w} W`;
 }
 
 interface Props {
@@ -11,10 +17,12 @@ interface Props {
 
 export default function EnergySummaryCard({ data }: Props) {
   const stats = [
-    { label: 'Oggi',    value: data ? fmtWh(data.today_wh)  : '—' },
-    { label: 'Corrente', value: data ? `${data.current_w} W` : '—' },
-    { label: 'Picco',   value: data ? `${data.peak_w} W`    : '—' },
+    { label: 'Oggi',    value: data ? fmtWh(data.today_wh) : '—' },
+    { label: 'Corrente', value: data ? fmtW(data.current_w) : '—' },
+    { label: 'Picco',   value: data ? fmtW(data.peak_w)    : '—' },
   ];
+  // Nemmeno una misura nei 30 giorni: lo si dice, invece di tre «—» muti.
+  const nessunaMisura = data !== null && data.month_wh === null;
 
   return (
     <div className="card">
@@ -27,11 +35,16 @@ export default function EnergySummaryCard({ data }: Props) {
           </div>
         ))}
       </div>
-      {data && (
+      {data && !nessunaMisura && (
         <div className="mt-3 flex gap-4 text-xs text-hub-muted">
           <span>7 gg: <span className="text-hub-text font-mono">{fmtWh(data.week_wh)}</span></span>
           <span>30 gg: <span className="text-hub-text font-mono">{fmtWh(data.month_wh)}</span></span>
         </div>
+      )}
+      {nessunaMisura && (
+        <p className="mt-3 text-xs text-hub-muted">
+          Nessuna misura di consumo negli ultimi 30 giorni: nessun dispositivo l&apos;ha riportata.
+        </p>
       )}
       {!data && (
         <p className="mt-3 text-xs text-hub-muted">Dati non disponibili</p>

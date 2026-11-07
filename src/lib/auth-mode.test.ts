@@ -28,7 +28,9 @@ describe('login attivo per default', () => {
   it('senza cookie, /api/hub e /api/brain rispondono 401 e le pagine mandano al login', async () => {
     delete process.env.REMOTE_AUTH_MODE;
     const { middleware } = await import('../middleware');
-    for (const p of ['/api/hub/projects/default/devices', '/api/hub/automations/default/x/run', '/api/brain/think']) {
+    // `/api/hub/auth/me` era pubblica (7/11/2026): il proxy, senza persona, ci
+    // attaccava il token tecnico, e da fuori casa senza login rispondeva «admin».
+    for (const p of ['/api/hub/projects/default/devices', '/api/hub/automations/default/x/run', '/api/brain/think', '/api/hub/auth/me']) {
       const res = await middleware(new NextRequest(`https://casa.local${p}`));
       expect(res.status).toBe(401);
     }

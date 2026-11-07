@@ -25,7 +25,9 @@ const IS_PROD          = process.env.NODE_ENV === 'production';
 const PUBLIC_PREFIXES = [
   '/login',
   '/api/auth/',
-  '/api/hub/auth/',
+  // `/api/hub/auth/` NON è qui (tolta il 7/11/2026): login, refresh e logout
+  // parlano all'Hub dalle rotte `/api/auth/*`; dal proxy `/api/hub/auth/me`
+  // senza login rispondeva «admin» col token tecnico.
   '/api/gateway/status',
   '/api/brain/status',
   '/_next/',

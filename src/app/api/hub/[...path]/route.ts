@@ -10,13 +10,15 @@
  *
  * Auth priority (locale):
  *   1. Authorization header incoming (passthrough — es. client con token esplicito)
- *   2. mario_hub_token cookie (JWT utente loggato — Hub enforces roles)
+ *   2. JWT della persona verificato (o rinnovato) dal middleware, `x-mario-persona`
+ *      — non il cookie, che dopo un rinnovo è ancora il vecchio (Hub enforces roles)
  *   3. HUB_TOKEN env (fallback tecnico: locale non autenticato, health check, etc.)
  *
  * SSE passthrough: se Accept: text/event-stream, streamma il body hub.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { tokenPersona } from '@/lib/persona';
 
 const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
 const HUB_TOKEN          = process.env.HUB_TOKEN          || '';
@@ -77,7 +79,7 @@ function buildHubUrl(path: string[], req: NextRequest): string {
 
 /**
  * Costruisce gli header da passare al Hub.
- * Priority: incomingAuth > userToken (JWT cookie) > HUB_TOKEN (tecnico)
+ * Priority: incomingAuth > userToken (persona dal middleware) > HUB_TOKEN (tecnico)
  */
 function buildHubHeaders(incoming: Headers, userToken: string, method: string): HeadersInit {
   const out: Record<string, string> = {};
@@ -118,7 +120,7 @@ function isLettura(method: string): boolean {
 
 async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   const isSSE      = req.headers.get('accept') === 'text/event-stream';
-  const userToken  = req.cookies.get('mario_hub_token')?.value || '';
+  const userToken  = tokenPersona(req);
   const body       = ['GET', 'HEAD'].includes(req.method)
     ? undefined
     : Buffer.from(await req.arrayBuffer());
@@ -157,7 +159,7 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
 async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> {
   const hubPath    = `/api/hub/${path.join('/')}${req.nextUrl.search}`;
   const bodyText   = ['GET', 'HEAD'].includes(req.method) ? null : await req.text();
-  const userToken  = req.cookies.get('mario_hub_token')?.value || '';
+  const userToken  = tokenPersona(req);
   const incomingAuth = req.headers.get('authorization');
 
   const relayPayload: Record<string, unknown> = {

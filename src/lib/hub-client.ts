@@ -173,13 +173,14 @@ export async function getEvents(projectId = DEFAULT_PROJECT_ID, limit = 25): Pro
 
 // ── Energy ───────────────────────────────────────────────────────
 
+/** `null` = nessuna misura nel periodo, che non è 0 (Hub, energy-service). */
 export interface EnergySummary {
   ok: boolean;
-  today_wh: number;
-  week_wh: number;
-  month_wh: number;
-  current_w: number;
-  peak_w: number;
+  today_wh: number | null;
+  week_wh: number | null;
+  month_wh: number | null;
+  current_w: number | null;
+  peak_w: number | null;
 }
 
 export interface EnergyDevice {

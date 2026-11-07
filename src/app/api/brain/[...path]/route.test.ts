@@ -43,7 +43,7 @@ describe('Brain proxy route — inoltro Bearer token', () => {
 
   // ── 16 — Cookie → Bearer nel relay ─────────────────────────────────────────
 
-  it('16 — forwarda cookie mario_hub_token come Bearer nella richiesta relay', async () => {
+  it('16 — forwarda il token della persona verificato dal middleware come Bearer nel relay', async () => {
     const USER_TOKEN = 'user-jwt-test-token-abc123';
     mockFetch.mockResolvedValue({
       status: 200,
@@ -56,6 +56,7 @@ describe('Brain proxy route — inoltro Bearer token', () => {
       headers: {
         'content-type': 'application/json',
         cookie: `mario_hub_token=${USER_TOKEN}`,
+        'x-mario-persona': USER_TOKEN,
       },
       body: JSON.stringify({ audio_base64: 'dGVzdA==', mime: 'audio/webm', lang: 'it' }),
     });
@@ -69,6 +70,36 @@ describe('Brain proxy route — inoltro Bearer token', () => {
     const relay = JSON.parse(init.body) as { path: string; headers: { authorization: string } };
     expect(relay.path).toContain('voice/transcribe');
     expect(relay.headers.authorization).toBe(`Bearer ${USER_TOKEN}`);
+  });
+
+  // ── TK-01 — dopo un rinnovo vale il token rinnovato, non il cookie ─────────
+  // Il 7/11/2026, 16 minuti dopo il login, `app.homemario.com` dava 401 su
+  // `/api/brain/system/status` (Impostazioni: «Non riesco a leggerlo») e sui
+  // device: il middleware rinnovava il token e lo metteva in `x-mario-persona`,
+  // il proxy mandava all'Hub il cookie della richiesta — quello scaduto.
+
+  it('TK-01 — col cookie scaduto e il token rinnovato dal middleware, manda il rinnovato', async () => {
+    mockFetch.mockResolvedValue({
+      status: 200,
+      text: async () => '{"offline":false}',
+      headers: { get: () => 'application/json' },
+    });
+
+    const req = new NextRequest('http://localhost/api/brain/system/status', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: 'mario_hub_token=scaduto',
+        'x-mario-persona': 'rinnovato',
+      },
+      body: '{}',
+    });
+
+    await POST(req, { params: Promise.resolve({ path: ['system', 'status'] }) });
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit & { body: string }];
+    const relay = JSON.parse(init.body) as { headers: { authorization: string } };
+    expect(relay.headers.authorization).toBe('Bearer rinnovato');
   });
 
   // ── 17 — Nessun cookie → 401 propagato ─────────────────────────────────────

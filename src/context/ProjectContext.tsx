@@ -36,7 +36,15 @@ function readStoredProjectId(): string | undefined {
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projectId, setProjectIdState] = useState<string | undefined>(() => readStoredProjectId());
+  // L'impianto salvato si legge DOPO il primo disegno: letto nel primo, il
+  // browser disegnava ciò che il server non sa (la campanella della barra) e
+  // l'hydration falliva — React ridisegnava tutto e toglieva il tema scelto
+  // (7/11/2026). Il primo istante senza impianto c'era già: è l'HTML del server.
+  const [projectId, setProjectIdState] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const salvato = readStoredProjectId();
+    if (salvato) setProjectIdState((ora) => ora ?? salvato);
+  }, []);
   const [authorizedProjects, setAuthorizedProjects] = useState<AuthorizedProject[]>([]);
   const [projectsStatus, setProjectsStatus] = useState<ProjectsStatus>('offline');
 

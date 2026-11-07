@@ -20,7 +20,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
 import type { Device, Room } from '@/lib/hub-types';
-import { allarmiAperti, computeHouseState, computeRoomStates, type AllarmeAperto } from '@/lib/house-state';
+import { accesiOra, allarmiAperti, computeHouseState, computeRoomStates, type AllarmeAperto } from '@/lib/house-state';
 import type { HubNotification } from '@/lib/api/notifications';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import PushEnableBanner from '@/components/notifications/PushEnableBanner';
@@ -565,11 +565,9 @@ export default function DashboardPage() {
 
             {/* Dispositivi accesi ora */}
             {(() => {
-              // switch_relay: i relè (Luce Cucina, Dispositivo Corridoio) — fino al 21/10/2026 mancavano, e un relè acceso non compariva qui.
-              const ACTIVE_TYPES = new Set(['light', 'rgb_light', 'switch', 'switch_relay', 'plug', 'ev_charger']);
-              const active = (devices ?? []).filter(
-                (d) => ACTIVE_TYPES.has(d.type) && (d.state as Record<string, unknown>)?.on === true,
-              );
+              // Acceso è chi sa spegnersi e dice `on` (`house-state.accesiOra`): fino al
+              // 7/11/2026 si sceglieva per tipo, e la radio di un modulo compariva qui.
+              const active = accesiOra(devices ?? []);
               if (active.length === 0) return null;
               return (
                 <div className="rounded-[24px] border border-success/40 bg-surface p-4">

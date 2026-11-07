@@ -96,3 +96,30 @@ describe('allarmiAperti — il gas si vede in Home', () => {
     ])).toHaveLength(0);
   });
 });
+
+import { accesiOra } from './house-state';
+
+// «Accesi ora» (7/11/2026): sceglieva PER TIPO e la radio del modulo — `2`,
+// tipo `switch_relay`, `on` dallo stato di un suo canale, zero azioni nel
+// catalogo — compariva accanto ai suoi relè; la Presa Studio (`attuatore`)
+// accesa non sarebbe comparsa mai. Acceso è chi SA spegnersi e dice `on`:
+// la stessa lista dei pulsanti e dell'Hub.
+const ONOFF = { key: 'on_off', actions: [{ key: 'turn_on', label: 'Accendi' }, { key: 'turn_off', label: 'Spegni' }] };
+const CASA_ACCESA = [
+  { id: '2',       name: 'Dispositivo Soggiorno', type: 'switch_relay', online: true, state: { on: true },  capabilities: [{ key: 'on_off', actions: [] }] },
+  { id: '2-ep2',   name: 'Dispositivo Corridoio', type: 'switch_relay', online: true, state: { on: true },  capabilities: [ONOFF] },
+  { id: '2-ep1',   name: 'Luce Cucina',           type: 'switch_relay', online: true, state: { on: false }, capabilities: [ONOFF] },
+  { id: 'matter-1', name: 'Presa Studio',         type: 'attuatore',    online: true, state: { on: true },  capabilities: [ONOFF] },
+  { id: '3',       name: 'Sensore movimento',     type: 'sensor',       online: true, state: { on: true },  capabilities: [{ key: 'motion_detect', actions: [] }] },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+] as any;
+
+describe('accesiOra — acceso è chi sa spegnersi e dice on', () => {
+  it('AO-01 la radio senza comandi non è «accesa», la presa sì', () => {
+    expect(accesiOra(CASA_ACCESA).map((d) => d.id).sort()).toEqual(['2-ep2', 'matter-1']);
+  });
+  it('AO-02 un device offline non si dice acceso', () => {
+    const fuori = CASA_ACCESA.map((d: { id: string }) => (d.id === 'matter-1' ? { ...d, online: false } : d));
+    expect(accesiOra(fuori).map((d) => d.id)).toEqual(['2-ep2']);
+  });
+});

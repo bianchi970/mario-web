@@ -1,4 +1,5 @@
 import type { Device, Room } from './hub-types';
+import { sa } from './capacita';
 
 export interface Alert {
   type: 'battery_low' | 'battery_critical' | 'tamper' | 'gas' | 'offline';
@@ -92,6 +93,17 @@ export function computeHouseState(devices: Device[]): CasaState {
   }
 
   return { temperature, lux, motionActive, batteryWarnings, alerts };
+}
+
+/**
+ * Chi è acceso adesso: chi SA spegnersi (lo dichiara: la lista dei pulsanti e
+ * dell'Hub, `capacita.ts`), dice `on: true`, ed è raggiungibile — uno stato di
+ * un device che non risponde non è «adesso». Fino al 7/11/2026 si sceglieva
+ * per TIPO: la radio del modulo (`on` di un suo canale, zero comandi) compariva
+ * accanto ai suoi relè, e la presa Matter (`attuatore`) non compariva mai.
+ */
+export function accesiOra(devices: Device[]): Device[] {
+  return devices.filter((d) => d.online !== false && sa(d, 'turn_off') && (d.state ?? {}).on === true);
 }
 
 export function computeRoomStates(devices: Device[], rooms: Room[]): RoomState[] {

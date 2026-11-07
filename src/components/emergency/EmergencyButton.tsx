@@ -2,37 +2,32 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Phone, X } from 'lucide-react';
+import { useProject } from '@/context/ProjectContext';
+import { contattoDelBrowser, contattoVecchio, leggiContattoSos, EVENTO_SOS, type ContattoSos } from '@/lib/api/contatto-sos';
 
-const LS_KEY  = 'mario_emergency_contact';
 const HOLD_MS = 800;
-
-interface EmergencyContact { name: string; number: string; }
-
-function loadContact(): EmergencyContact | null {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as { name?: string; number?: string };
-    if (p.name && p.number) return { name: p.name, number: p.number };
-    return null;
-  } catch { return null; }
-}
 
 export default function EmergencyButton({ variant = 'inline' }: { variant?: 'inline' | 'sidebar' }) {
   const [open,    setOpen]    = useState(false);
   const [confirm, setConfirm] = useState<{ label: string; number: string } | null>(null);
-  const [contact, setContact] = useState<EmergencyContact | null>(null);
+  const { projectId } = useProject();
+  const [contact, setContact] = useState<ContattoSos | null>(null);
   const [holding, setHolding] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Il contatto è della casa (Hub): lo si chiede all'Hub, e se non risponde
+  // vale l'ultima copia del browser (`lib/api/contatto-sos`). Fino al
+  // 7/11/2026 stava solo nel localStorage del telefono che l'aveva scritto: se
+  // la casa non ne ha ancora uno, resta quello vecchio di questo browser.
   useEffect(() => {
-    setContact(loadContact());
-    function onStorage(e: StorageEvent) {
-      if (e.key === LS_KEY) setContact(loadContact());
-    }
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
+    if (!projectId) return;
+    let vivo = true;
+    const leggi = () => { void leggiContattoSos(projectId).then((r) => { if (vivo) setContact(r.contatto ?? contattoVecchio()); }); };
+    const daCopia = () => { if (vivo) setContact(contattoDelBrowser()); };
+    leggi();
+    window.addEventListener(EVENTO_SOS, daCopia);
+    return () => { vivo = false; window.removeEventListener(EVENTO_SOS, daCopia); };
+  }, [projectId]);
 
   function startHold() {
     setHolding(true);
@@ -114,14 +109,14 @@ export default function EmergencyButton({ variant = 'inline' }: { variant?: 'inl
               {/* Familiare */}
               {contact && (
                 <button
-                  onClick={() => askConfirm(contact.name, contact.number)}
+                  onClick={() => askConfirm(contact.name || contact.number, contact.number)}
                   className="w-full flex items-center gap-4 rounded-[20px] border border-border bg-surface-2 px-5 py-4 active:bg-surface transition-colors"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface shrink-0">
                     <Phone className="h-5 w-5 text-text-2" strokeWidth={1.8} />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-text leading-tight">{contact.name}</div>
+                    <div className="font-semibold text-text leading-tight">{contact.name || 'Contatto di emergenza'}</div>
                     <div className="text-xs text-text-2">{contact.number}</div>
                   </div>
                 </button>

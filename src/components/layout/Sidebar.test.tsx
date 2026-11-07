@@ -1,16 +1,22 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Sidebar from '@/components/layout/Sidebar';
 import { InstallerModeProvider } from '@/context/InstallerModeContext';
+import { ProjectProvider } from '@/context/ProjectContext';
 
 jest.mock('next/navigation', () => ({
   usePathname: () => '/',
 }));
 
+// Come nel layout: la Sidebar sta dentro ProjectProvider (il pulsante SOS legge
+// il contatto della casa, 7/11/2026). La rete non risponde: si vede il 112.
 function renderSidebar() {
+  global.fetch = jest.fn().mockRejectedValue(new Error('rete')) as unknown as typeof fetch;
   return render(
-    <InstallerModeProvider>
-      <Sidebar />
-    </InstallerModeProvider>,
+    <ProjectProvider>
+      <InstallerModeProvider>
+        <Sidebar />
+      </InstallerModeProvider>
+    </ProjectProvider>,
   );
 }
 

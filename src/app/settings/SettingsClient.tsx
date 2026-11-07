@@ -9,6 +9,7 @@ import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
 import { useSession } from '@/context/SessionContext';
 import { patchProjectLocation } from '@/lib/api/weather';
+import { contattoVecchio, leggiContattoSos, salvaContattoSos } from '@/lib/api/contatto-sos';
 import UsersSection from '@/components/settings/UsersSection';
 
 function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
@@ -41,7 +42,8 @@ export default function SettingsClient({
   const [health, setHealth] = useState<'idle' | 'checking' | 'ok' | 'error'>('idle');
   const [emergencyName, setEmergencyName] = useState('');
   const [emergencyNumber, setEmergencyNumber] = useState('');
-  const [emergencySaved, setEmergencySaved] = useState(false);
+  // Cosa dire sotto il contatto: l'esito vero del salvataggio, o da dove viene.
+  const [emergencyMsg, setEmergencyMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [locationLat, setLocationLat] = useState('');
   const [locationLon, setLocationLon] = useState('');
   const [locationCity, setLocationCity] = useState('');
@@ -57,28 +59,32 @@ export default function SettingsClient({
   const { offlineMode, offlineModeLoading, offlineModeUnknown, setOfflineMode } = useOfflineMode();
   const { installerMode, setInstallerMode } = useInstallerMode();
 
-  // Carica contatto emergenza da localStorage
+  // Il contatto SOS è della casa (Hub): fino al 7/11/2026 stava solo nel
+  // localStorage di questo browser. Un contatto rimasto solo qui si propone,
+  // non si salva da sé: lo salva chi preme «Salva».
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('mario_emergency_contact');
-      if (raw) {
-        const parsed = JSON.parse(raw) as { name?: string; number?: string };
-        if (parsed.name) setEmergencyName(parsed.name);
-        if (parsed.number) setEmergencyNumber(parsed.number);
-      }
-    } catch { /* ignora */ }
-  }, []);
+    if (!projectId) return;
+    const delBrowser = contattoVecchio();
+    void leggiContattoSos(projectId).then(({ contatto, daCopia }) => {
+      const mostrato = contatto ?? (!daCopia ? delBrowser : null);
+      setEmergencyName(mostrato?.name ?? '');
+      setEmergencyNumber(mostrato?.number ?? '');
+      if (daCopia) setEmergencyMsg({ ok: false, text: 'Non riesco a leggere il contatto della casa: mostro l\x27ultima copia di questo browser.' });
+      else if (!contatto && delBrowser) setEmergencyMsg({ ok: false, text: 'Questo contatto era salvato solo in questo browser: premi «Salva contatto» per darlo a tutta la casa.' });
+    });
+  }, [projectId]);
 
-  function saveEmergencyContact() {
+  async function saveEmergencyContact() {
+    if (!projectId) return;
     try {
-      if (emergencyName.trim() && emergencyNumber.trim()) {
-        localStorage.setItem('mario_emergency_contact', JSON.stringify({ name: emergencyName.trim(), number: emergencyNumber.trim() }));
-      } else {
-        localStorage.removeItem('mario_emergency_contact');
-      }
-      setEmergencySaved(true);
-      setTimeout(() => setEmergencySaved(false), 3000);
-    } catch { /* ignora */ }
+      const c = await salvaContattoSos(projectId, { name: emergencyName, number: emergencyNumber });
+      setEmergencyMsg({ ok: true, text: c ? 'Contatto salvato per tutta la casa.' : 'Contatto tolto: il pulsante SOS offre solo il 112.' });
+    } catch (err) {
+      const st = (err as { status?: number }).status;
+      setEmergencyMsg({ ok: false, text: st === 400 ? 'Il numero non è valido.'
+        : st === 403 ? 'Solo un amministratore o l\x27installatore può cambiarlo.'
+        : 'Non salvato: la casa non risponde.' });
+    }
   }
 
   // B96: carica lista progetti autorizzati al mount della pagina Settings
@@ -147,7 +153,7 @@ export default function SettingsClient({
       <div className="card space-y-3">
         <h2 className="text-sm font-medium text-hub-text">Contatto emergenza</h2>
         <p className="text-xs text-hub-muted">
-          Usato dal pulsante SOS. Se vuoto, sarà mostrato solo il 112.
+          Usato dal pulsante SOS, su ogni telefono della casa. Se vuoto, sarà mostrato solo il 112.
         </p>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -171,11 +177,11 @@ export default function SettingsClient({
             />
           </div>
         </div>
-        {emergencySaved && (
-          <p className="text-xs text-hub-green">Contatto salvato.</p>
+        {emergencyMsg && (
+          <p className={`text-xs ${emergencyMsg.ok ? 'text-hub-green' : 'text-hub-amber'}`}>{emergencyMsg.text}</p>
         )}
         <button
-          onClick={saveEmergencyContact}
+          onClick={() => void saveEmergencyContact()}
           className="w-full rounded-lg border border-hub-accent/50 py-2 text-sm text-hub-accent hover:bg-hub-accent/10 transition-colors"
         >
           Salva contatto

@@ -98,6 +98,7 @@ describe('hub proxy — il confine', () => {
     ['DELETE', ['users', 'u1']],
     ['DELETE', ['onboarding', 'session', 'tok']],
     ['PATCH',  ['projects', 'default', 'location']],
+    ['PATCH',  ['projects', 'default', 'emergency-contact']],
     ['POST',   ['wireguard', 'regenerate-qr']],
     ['PATCH',  ['rooms', 'default', 'cucina']],
     ['PATCH',  ['devices', '2-ep1']],

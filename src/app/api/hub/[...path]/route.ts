@@ -249,6 +249,7 @@ const SCRITTURE: Array<[string, RegExp]> = [
   ['PUT',    new RegExp(`^users/${SEG}$`)],
   ['DELETE', new RegExp(`^users/${SEG}$`)],
   ['PATCH',  new RegExp(`^projects/${SEG}/location$`)],       // posizione del meteo
+  ['PATCH',  new RegExp(`^projects/${SEG}/emergency-contact$`)], // contatto SOS della casa (7/11/2026)
   ['POST',   /^wireguard\/regenerate-qr$/],                   // accesso da fuori (solo admin)
   ['POST',   /^security\/state$/],                            // IL modo della casa: l'allarme
 ];

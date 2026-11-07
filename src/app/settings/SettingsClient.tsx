@@ -136,7 +136,7 @@ export default function SettingsClient({
         <div>
           <button
             onClick={() => void handleLogout()}
-            className="text-sm text-red-400 hover:text-red-300 transition-colors"
+            className="text-sm text-hub-red hover:text-hub-red transition-colors"
           >
             Esci
           </button>
@@ -172,7 +172,7 @@ export default function SettingsClient({
           </div>
         </div>
         {emergencySaved && (
-          <p className="text-xs text-emerald-400">Contatto salvato.</p>
+          <p className="text-xs text-hub-green">Contatto salvato.</p>
         )}
         <button
           onClick={saveEmergencyContact}
@@ -275,7 +275,7 @@ export default function SettingsClient({
               {projectsStatus === 'loading' ? (
                 <span className="text-sm text-hub-muted italic">Caricamento...</span>
               ) : projectsStatus === 'empty' ? (
-                <span className="text-sm text-red-500 font-medium">
+                <span className="text-sm text-hub-red font-medium">
                   Nessuna casa autorizzata. Contatta l&apos;amministratore.
                 </span>
               ) : authorizedProjects.length > 0 ? (
@@ -342,7 +342,7 @@ export default function SettingsClient({
               />
             </div>
             {locationMsg && (
-              <p className={`text-xs ${locationMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+              <p className={`text-xs ${locationMsg.ok ? 'text-hub-green' : 'text-hub-red'}`}>
                 {locationMsg.text}
               </p>
             )}

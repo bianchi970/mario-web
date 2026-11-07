@@ -106,7 +106,7 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
       <div className="flex items-center gap-1.5">
         <Button size="sm" variant="secondary" onClick={() => adjust(-stepTemp)} disabled={loading || !regolabile}>−</Button>
         <span className={`min-w-[3.2rem] text-center text-sm font-mono tabular-nums ${
-          result === 'ok' ? 'text-emerald-400' : result === 'error' ? 'text-red-400' : 'text-hub-text'
+          result === 'ok' ? 'text-hub-green' : result === 'error' ? 'text-hub-red' : 'text-hub-text'
         }`}>
           {loading ? '…' : setpoint !== null ? `${setpoint.toFixed(1)}${unit}` : '—'}
         </span>

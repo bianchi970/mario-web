@@ -586,13 +586,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
   const riskColor =
     result?.risk === 'high'
-      ? 'text-red-300'
+      ? 'text-hub-red'
       : result?.risk === 'medium'
-      ? 'text-amber-300'
-      : 'text-emerald-300';
+      ? 'text-hub-amber'
+      : 'text-hub-green';
 
   return (
-    <div className="rounded-[24px] border border-primary/20 bg-primary/[0.04] p-4 space-y-3">
+    <div className="rounded-[24px] border border-primary/40 bg-surface p-4 space-y-3">
       <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">
         Comando Vocale
       </div>
@@ -618,7 +618,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             aria-label={voiceRecording ? 'Ferma registrazione' : 'Avvia registrazione vocale'}
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40 ${
               voiceRecording
-                ? 'border-red-500/50 bg-red-500/20 text-red-300 animate-pulse'
+                ? 'border-red-500/50 bg-red-500/20 text-hub-red animate-pulse'
                 : 'border-border bg-surface-2 text-text-2 active:bg-surface hover:text-text'
             }`}
           >
@@ -698,10 +698,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Banner voce — non silenzioso se STT non disponibile */}
       {voiceError && (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+        <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-hub-amber">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           <span>{voiceError}</span>
-          <button onClick={() => setVoiceError('')} className="ml-auto text-amber-400/60 hover:text-amber-300">✕</button>
+          <button onClick={() => setVoiceError('')} className="ml-auto text-hub-amber/60 hover:text-hub-amber">✕</button>
         </div>
       )}
 
@@ -722,7 +722,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
           {/* Missing fields */}
           {(result.missing?.length ?? 0) > 0 && (
-            <div className="text-xs text-amber-300/80">
+            <div className="text-xs text-hub-amber/80">
               Manca: {result.missing!.map((m) => MISSING_LABEL[m] ?? m).join(', ')}
             </div>
           )}
@@ -741,7 +741,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
             </div>
           ) : (
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-xs text-amber-300">
+              <div className="flex items-center gap-2 text-xs text-hub-amber">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 <span>
                   {result._v2?.outcome === 'ask' && result._v2.question
@@ -790,10 +790,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       {/* Success */}
       {phase === 'success' && (
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 rounded-[16px] border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-xs text-emerald-300">
+          <div className="flex items-center gap-2 rounded-[16px] border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-xs text-hub-green">
             <CheckCircle className="h-3.5 w-3.5 shrink-0" />
             <span className="flex-1">{hubMsg || 'Fatto.'}</span>
-            <button onClick={reset} className="text-emerald-400/50 hover:text-emerald-300">✕</button>
+            <button onClick={reset} className="text-hub-green/50 hover:text-hub-green">✕</button>
           </div>
           {executionRun && executionRun.steps.length > 1 && (
             <ExecutionProgressCard run={executionRun} phase="done" />
@@ -801,7 +801,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           {executionRun && executionRun.steps.some(s => s.status === 'failed' || s.status === 'blocked') && (
             <button
               onClick={() => void retryFailed()}
-              className="w-full rounded-xl border border-amber-500/20 bg-amber-500/[0.06] py-1.5 text-xs text-amber-300 active:bg-amber-500/10"
+              className="w-full rounded-xl border border-amber-500/20 bg-amber-500/[0.06] py-1.5 text-xs text-hub-amber active:bg-amber-500/10"
             >
               Riprova i falliti ({executionRun.steps.filter(s => s.status === 'failed' || s.status === 'blocked').length})
             </button>
@@ -813,7 +813,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       {phase === 'success' && result?.dispatchable && (
         <div className="text-xs">
           {correctionDone ? (
-            <span className="text-emerald-400/70">Grazie, imparato.</span>
+            <span className="text-hub-green/70">Grazie, imparato.</span>
           ) : correcting ? (
             <div className="flex gap-2 items-center">
               <input
@@ -837,7 +837,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
                   setCorrectionDone(true);
                   setTimeout(() => { setCorrecting(false); setCorrectionText(''); setCorrectionDone(false); }, 2000);
                 }}
-                className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300"
+                className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-hub-green"
               >
                 Invia
               </button>
@@ -879,10 +879,10 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
       {/* Error */}
       {phase === 'error' && (
-        <div className="flex items-center gap-2 rounded-[16px] border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-red-300">
+        <div className="flex items-center gap-2 rounded-[16px] border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-hub-red">
           <XCircle className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{errorMsg || hubMsg || 'Errore.'}</span>
-          <button onClick={reset} className="text-red-400/50 hover:text-red-300">✕</button>
+          <button onClick={reset} className="text-hub-red/50 hover:text-hub-red">✕</button>
         </div>
       )}
     </div>

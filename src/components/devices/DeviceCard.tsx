@@ -52,7 +52,7 @@ function CameraState({ state }: { state: Record<string, unknown> }) {
       {streamUrl ? (
         <div className="flex justify-between gap-2">
           <span className="text-hub-muted">Stream</span>
-          <span className="text-emerald-400 font-mono text-[10px] truncate max-w-[130px]">{streamUrl}</span>
+          <span className="text-hub-green font-mono text-[10px] truncate max-w-[130px]">{streamUrl}</span>
         </div>
       ) : (
         <div className="text-hub-muted italic">Stream non configurato</div>

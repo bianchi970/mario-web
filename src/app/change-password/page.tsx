@@ -108,7 +108,7 @@ export default function ChangePasswordPage() {
           </div>
 
           {error && (
-            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-xs text-hub-red">{error}</p>
           )}
 
           <button

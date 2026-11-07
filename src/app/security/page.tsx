@@ -42,23 +42,23 @@ const MODE_DESC: Record<SecurityMode, string> = {
 };
 
 function ModeIcon({ mode }: { mode: SecurityMode }) {
-  if (mode === 'disarmed') return <ShieldOff  className="h-8 w-8 text-white/30" />;
-  if (mode === 'home')     return <Shield     className="h-8 w-8 text-blue-400" />;
-  if (mode === 'night')    return <ShieldCheck className="h-8 w-8 text-violet-400" />;
-  return                          <ShieldAlert className="h-8 w-8 text-amber-400" />;
+  if (mode === 'disarmed') return <ShieldOff  className="h-8 w-8 text-hub-muted" />;
+  if (mode === 'home')     return <Shield     className="h-8 w-8 text-hub-accent" />;
+  if (mode === 'night')    return <ShieldCheck className="h-8 w-8 text-hub-text" />;
+  return                          <ShieldAlert className="h-8 w-8 text-hub-amber" />;
 }
 
 function modeColors(mode: SecurityMode) {
-  if (mode === 'disarmed') return 'border-white/10 bg-white/5 text-white/50';
-  if (mode === 'home')     return 'border-blue-500/40 bg-blue-500/10 text-blue-300';
-  if (mode === 'night')    return 'border-violet-500/40 bg-violet-500/10 text-violet-300';
-  return                          'border-amber-500/40 bg-amber-500/10 text-amber-300';
+  if (mode === 'disarmed') return 'border-hub-border bg-hub-surface text-hub-text';
+  if (mode === 'home')     return 'border-blue-500/60 bg-hub-surface text-hub-accent';
+  if (mode === 'night')    return 'border-violet-500/60 bg-hub-surface text-hub-text';
+  return                          'border-amber-500/60 bg-hub-surface text-hub-amber';
 }
 
 function severityColor(s: string) {
-  if (s === 'critical') return 'text-red-400';
-  if (s === 'warning')  return 'text-amber-400';
-  return 'text-white/40';
+  if (s === 'critical') return 'text-hub-red';
+  if (s === 'warning')  return 'text-hub-amber';
+  return 'text-hub-muted';
 }
 
 function formatEventType(t: string) {
@@ -155,8 +155,8 @@ export default function SecurityPage() {
       <>
         <TopBar title="Sicurezza" />
         <main className="flex-1 p-5">
-          <div className="rounded-[22px] border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/40">Seleziona un progetto nelle Impostazioni.</p>
+          <div className="rounded-[22px] border border-hub-border bg-hub-surface p-8 text-center">
+            <p className="text-sm text-hub-muted">Seleziona un progetto nelle Impostazioni.</p>
           </div>
         </main>
       </>
@@ -172,23 +172,23 @@ export default function SecurityPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
           <div className="w-full max-w-sm rounded-[24px] border border-amber-500/30 bg-hub-surface p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <ShieldAlert className="h-6 w-6 text-amber-400 shrink-0" />
-              <h2 className="font-semibold text-white">Conferma inserimento</h2>
+              <ShieldAlert className="h-6 w-6 text-hub-amber shrink-0" />
+              <h2 className="font-semibold text-hub-text">Conferma inserimento</h2>
             </div>
-            <p className="text-sm text-white/60">
-              Stai per attivare la modalità <strong className="text-white">{MODE_LABELS[confirm]}</strong>.
+            <p className="text-sm text-hub-text/60">
+              Stai per attivare la modalità <strong className="text-hub-text">{MODE_LABELS[confirm]}</strong>.
               Il sistema di sicurezza verrà armato.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirm(null)}
-                className="flex-1 rounded-xl border border-white/20 py-2.5 text-sm text-white/60 hover:bg-white/5"
+                className="flex-1 rounded-xl border border-hub-text/20 py-2.5 text-sm text-hub-text/60 hover:bg-hub-text/5"
               >
                 Annulla
               </button>
               <button
                 onClick={() => void doSetMode(confirm)}
-                className="flex-1 rounded-xl border border-amber-500/50 bg-amber-500/20 py-2.5 text-sm text-amber-300 hover:bg-amber-500/30"
+                className="flex-1 rounded-xl border border-amber-500/50 bg-amber-500/20 py-2.5 text-sm text-hub-amber hover:bg-amber-500/30"
               >
                 Conferma
               </button>
@@ -197,16 +197,16 @@ export default function SecurityPage() {
         </div>
       )}
 
-      <main className="flex-1 space-y-5 px-4 py-5 text-white">
+      <main className="flex-1 space-y-5 px-4 py-5 text-hub-text">
 
         {loading && (
-          <div className="rounded-[22px] border border-white/10 bg-white/5 p-5 text-center text-sm text-white/40">
+          <div className="rounded-[22px] border border-hub-border bg-hub-surface p-5 text-center text-sm text-hub-muted">
             Caricamento...
           </div>
         )}
 
         {error && !loading && (
-          <div className="flex items-center gap-3 rounded-[22px] border border-red-500/25 bg-red-500/10 p-4 text-red-100">
+          <div className="flex items-center gap-3 rounded-[22px] border border-red-500/40 bg-hub-surface p-4 text-hub-red">
             <ShieldAlert className="h-5 w-5 shrink-0" />
             <span className="flex-1 text-sm">{error}</span>
             <button
@@ -235,8 +235,8 @@ export default function SecurityPage() {
             </div>
 
             {/* Pulsanti modalità */}
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+            <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">
                 Modalità
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -248,7 +248,7 @@ export default function SecurityPage() {
                     className={`rounded-[18px] border px-4 py-3 text-sm font-medium transition-all disabled:opacity-40 ${
                       m === state.mode
                         ? modeColors(m) + ' opacity-100'
-                        : 'border-white/10 bg-white/5 text-white/60 hover:bg-white/10'
+                        : 'border-hub-text/10 bg-hub-text/5 text-hub-text/60 hover:bg-hub-text/10'
                     }`}
                   >
                     {MODE_LABELS[m]}
@@ -258,26 +258,26 @@ export default function SecurityPage() {
             </div>
 
             {/* Eventi recenti */}
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+            <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">
                 Eventi recenti
               </div>
               {events.length === 0 ? (
-                <p className="text-sm text-white/30 py-2">Nessun evento registrato</p>
+                <p className="text-sm text-hub-muted py-2">Nessun evento registrato</p>
               ) : (
                 <div className="space-y-2">
                   {events.map((e) => (
-                    <div key={e.id} className="flex items-start gap-3 py-1.5 border-b border-white/5 last:border-0">
+                    <div key={e.id} className="flex items-start gap-3 py-1.5 border-b border-hub-text/5 last:border-0">
                       <span className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${severityColor(e.severity)} bg-current`} />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-white/80">{formatEventType(e.event_type)}</div>
+                        <div className="text-sm text-hub-text/80">{formatEventType(e.event_type)}</div>
                         {(e.device_id || e.room) && (
-                          <div className="text-xs text-white/40 truncate">
+                          <div className="text-xs text-hub-muted truncate">
                             {[e.room, e.device_id].filter(Boolean).join(' · ')}
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-white/30 shrink-0">{formatTs(e.created_at)}</span>
+                      <span className="text-[10px] text-hub-muted shrink-0">{formatTs(e.created_at)}</span>
                     </div>
                   ))}
                 </div>

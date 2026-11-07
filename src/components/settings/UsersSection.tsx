@@ -109,7 +109,7 @@ export default function UsersSection({ currentUserId }: Props) {
             <option value="installatore">Installatore</option>
             <option value="admin">Admin</option>
           </select>
-          {createError && <p className="text-xs text-red-400">{createError}</p>}
+          {createError && <p className="text-xs text-hub-red">{createError}</p>}
           <Button type="submit" size="sm" loading={creating} disabled={!newUsername || !newPassword}>
             Crea
           </Button>
@@ -119,7 +119,7 @@ export default function UsersSection({ currentUserId }: Props) {
       {loading ? (
         <p className="text-xs text-hub-muted">Caricamento...</p>
       ) : error ? (
-        <p className="text-xs text-red-400">{error}</p>
+        <p className="text-xs text-hub-red">{error}</p>
       ) : users.length === 0 ? (
         <p className="text-xs text-hub-muted">Nessun utente.</p>
       ) : (

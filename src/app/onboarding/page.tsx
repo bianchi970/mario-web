@@ -432,7 +432,7 @@ export default function OnboardingPage() {
             )}
 
             {!scanning && scanErr && (
-              <div className="rounded-xl border border-amber-700/60 bg-amber-900/20 p-4 text-sm text-amber-300">
+              <div className="rounded-xl border border-amber-700/60 bg-amber-900/20 p-4 text-sm text-hub-amber">
                 <p className="font-medium mb-1">&#9888; Scansione non disponibile</p>
                 <p className="text-xs text-hub-muted">{scanErr}</p>
                 <button
@@ -536,10 +536,10 @@ export default function OnboardingPage() {
                     ${probeOk === true ? 'border-green-500' : probeOk === false ? 'border-red-500' : 'border-hub-border focus:border-hub-accent'}`}
                 />
                 {probeOk === true && (
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-green-400 text-xs">&#10003;</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-hub-green text-xs">&#10003;</span>
                 )}
                 {probeOk === false && (
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-red-400 text-xs">&#10007;</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-hub-red text-xs">&#10007;</span>
                 )}
               </div>
               <button
@@ -593,9 +593,9 @@ export default function OnboardingPage() {
             </select>
 
             {probeOk === false && (
-              <p className="text-xs text-amber-400">&#9888; Dispositivo non raggiungibile all&apos;IP inserito. Controlla IP e connessione.</p>
+              <p className="text-xs text-hub-amber">&#9888; Dispositivo non raggiungibile all&apos;IP inserito. Controlla IP e connessione.</p>
             )}
-            {errMsg && <p className="text-xs text-red-400 font-mono">{errMsg}</p>}
+            {errMsg && <p className="text-xs text-hub-red font-mono">{errMsg}</p>}
 
             <button
               onClick={saveManual}
@@ -679,7 +679,7 @@ export default function OnboardingPage() {
             {sessionExpired ? (
               <div className="rounded-xl border border-amber-600/60 bg-amber-900/20 p-4 space-y-3">
                 <div>
-                  <p className="text-amber-300 font-semibold text-sm">Sessione scaduta</p>
+                  <p className="text-hub-amber font-semibold text-sm">Sessione scaduta</p>
                   <p className="text-xs text-hub-muted mt-1">
                     {dskStatus === 'ok'
                       ? 'SmartStart registrato — riprendi per continuare l\'inclusione.'
@@ -702,13 +702,13 @@ export default function OnboardingPage() {
                       <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="4" className="text-hub-border" />
                       <circle
                         cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="4"
-                        className={`transition-all ${timeLeft < 20 ? 'text-red-400' : 'text-hub-accent'}`}
+                        className={`transition-all ${timeLeft < 20 ? 'text-hub-red' : 'text-hub-accent'}`}
                         strokeDasharray={`${2 * Math.PI * 34}`}
                         strokeDashoffset={`${2 * Math.PI * 34 * (1 - timeLeft / SESSION_SECS)}`}
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className={`text-xl font-bold font-mono tabular-nums ${timeLeft < 20 ? 'text-red-400' : 'text-hub-text'}`}>
+                    <span className={`text-xl font-bold font-mono tabular-nums ${timeLeft < 20 ? 'text-hub-red' : 'text-hub-text'}`}>
                       {timeLeft}
                     </span>
                   </div>
@@ -769,7 +769,7 @@ export default function OnboardingPage() {
               </div>
             )}
             {dskStatus === 'error' && (
-              <div className="rounded-xl bg-red-900/30 border border-red-700 p-3 text-xs text-red-300">{dskMsg}</div>
+              <div className="rounded-xl bg-red-900/30 border border-red-700 p-3 text-xs text-hub-red">{dskMsg}</div>
             )}
 
             <button onClick={reset} className="text-xs text-hub-muted underline w-full text-center">
@@ -784,7 +784,7 @@ export default function OnboardingPage() {
         {step === 'found' && deviceId && (
           <div className="space-y-4">
             <div className="rounded-xl border border-green-600/60 bg-green-900/20 p-4">
-              <p className="text-green-400 font-semibold mb-1">&#10003; Dispositivo trovato</p>
+              <p className="text-hub-green font-semibold mb-1">&#10003; Dispositivo trovato</p>
               <p className="text-hub-muted text-xs font-mono">{deviceId}</p>
             </div>
             <button
@@ -825,7 +825,7 @@ export default function OnboardingPage() {
               className="w-full bg-hub-surface border border-hub-border rounded-xl px-3.5 py-2.5 text-sm text-hub-text focus:border-hub-accent outline-none transition-colors"
             />
 
-            {errMsg && <p className="text-xs text-red-400 font-mono">{errMsg}</p>}
+            {errMsg && <p className="text-xs text-hub-red font-mono">{errMsg}</p>}
 
             <button
               onClick={confirmRoom}
@@ -877,7 +877,7 @@ export default function OnboardingPage() {
           <div className="space-y-4">
             <div className="rounded-xl border border-green-600/60 bg-green-900/20 p-5 text-center space-y-1">
               <div className="text-3xl">&#10003;</div>
-              <p className="text-green-400 font-semibold">Dispositivo salvato</p>
+              <p className="text-hub-green font-semibold">Dispositivo salvato</p>
               <p className="text-hub-muted text-xs font-mono">{deviceId}</p>
             </div>
             <button
@@ -894,7 +894,7 @@ export default function OnboardingPage() {
         ═══════════════════════════════════════════════════════════════════ */}
         {step === 'error' && (
           <div className="space-y-4">
-            <div className="rounded-xl bg-red-900/30 border border-red-700 p-4 text-sm text-red-300">
+            <div className="rounded-xl bg-red-900/30 border border-red-700 p-4 text-sm text-hub-red">
               {errMsg || 'Errore sconosciuto'}
             </div>
             <button

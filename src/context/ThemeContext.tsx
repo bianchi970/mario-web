@@ -14,24 +14,29 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
+function applica(t: Theme) {
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('auto');
 
+  // Il tema salvato si RIAPPLICA, non solo si legge: l'attributo messo dallo
+  // script anti-FOUC si perde se React ridisegna dopo un'hydration fallita, e
+  // «scuro» diventava «Auto» (7/11/2026, TH-01).
   useEffect(() => {
     const saved = localStorage.getItem('mario_theme') as Theme | null;
     if (saved === 'dark' || saved === 'light' || saved === 'auto') {
       setThemeState(saved);
+      applica(saved);
     }
   }, []);
 
   function setTheme(t: Theme) {
     setThemeState(t);
     localStorage.setItem('mario_theme', t);
-    if (t === 'auto') {
-      document.documentElement.removeAttribute('data-theme');
-    } else {
-      document.documentElement.setAttribute('data-theme', t);
-    }
+    applica(t);
   }
 
   return (

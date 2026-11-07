@@ -63,7 +63,7 @@ export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: 
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {devicesTotal !== undefined && devicesTotal > 0 && (
-            <span className={`text-xs font-medium tabular-nums ${devicesOnline === devicesTotal ? 'text-emerald-400' : devicesOnline === 0 ? 'text-hub-red' : 'text-amber-400'}`}>
+            <span className={`text-xs font-medium tabular-nums ${devicesOnline === devicesTotal ? 'text-hub-green' : devicesOnline === 0 ? 'text-hub-red' : 'text-hub-amber'}`}>
               {devicesOnline ?? 0}/{devicesTotal}
             </span>
           )}

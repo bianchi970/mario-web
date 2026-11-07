@@ -103,7 +103,7 @@ export default function EmergencyButton({ variant = 'inline' }: { variant?: 'inl
                 className="w-full flex items-center gap-4 rounded-[20px] border border-red-500/30 bg-red-500/10 px-5 py-4 active:bg-red-500/20 transition-colors"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 shrink-0">
-                  <Phone className="h-5 w-5 text-red-500" strokeWidth={2} />
+                  <Phone className="h-5 w-5 text-hub-red" strokeWidth={2} />
                 </div>
                 <div className="text-left">
                   <div className="font-bold text-text text-lg leading-tight">112</div>
@@ -148,11 +148,11 @@ export default function EmergencyButton({ variant = 'inline' }: { variant?: 'inl
           >
             <div className="mb-4 flex flex-col items-center gap-3 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15">
-                <Phone className="h-7 w-7 text-red-500" strokeWidth={2} />
+                <Phone className="h-7 w-7 text-hub-red" strokeWidth={2} />
               </div>
               <div>
                 <div className="font-bold text-text text-base">Stai per chiamare</div>
-                <div className="mt-1 text-2xl font-bold text-red-500">{confirm.label}</div>
+                <div className="mt-1 text-2xl font-bold text-hub-red">{confirm.label}</div>
               </div>
             </div>
 

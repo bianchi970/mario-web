@@ -4,12 +4,12 @@ import { CloudRain, Wind, Thermometer, CloudLightning, Snowflake, Sun, Cloud } f
 import type { WeatherData } from '@/lib/api/weather';
 
 function weatherIcon(code: number | null, isDay: number) {
-  if (code === null) return <Sun className="h-5 w-5 text-amber-400" />;
-  if (code >= 95)  return <CloudLightning className="h-5 w-5 text-yellow-400" />;
-  if (code >= 71)  return <Snowflake className="h-5 w-5 text-sky-300" />;
-  if (code >= 51)  return <CloudRain className="h-5 w-5 text-sky-400" />;
+  if (code === null) return <Sun className="h-5 w-5 text-hub-amber" />;
+  if (code >= 95)  return <CloudLightning className="h-5 w-5 text-hub-amber" />;
+  if (code >= 71)  return <Snowflake className="h-5 w-5 text-hub-accent" />;
+  if (code >= 51)  return <CloudRain className="h-5 w-5 text-hub-accent" />;
   if (code >= 3)   return <Cloud className="h-5 w-5 text-text-2" />;
-  return isDay ? <Sun className="h-5 w-5 text-amber-400" /> : <Cloud className="h-5 w-5 text-text-2" />;
+  return isDay ? <Sun className="h-5 w-5 text-hub-amber" /> : <Cloud className="h-5 w-5 text-text-2" />;
 }
 
 function alertBadge(weather: WeatherData): { text: string; color: string } | null {
@@ -19,12 +19,12 @@ function alertBadge(weather: WeatherData): { text: string; color: string } | nul
   const rain = weather.rain_prob_day ?? 0;
 
   if (code >= 95) return { text: 'Temporale in corso', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' };
-  if (code >= 71) return { text: 'Nevicate in atto', color: 'bg-sky-500/20 text-sky-300 border-sky-500/30' };
-  if (code >= 51) return { text: 'Pioggia in corso', color: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
+  if (code >= 71) return { text: 'Nevicate in atto', color: 'bg-sky-500/20 text-hub-accent border-sky-500/30' };
+  if (code >= 51) return { text: 'Pioggia in corso', color: 'bg-sky-500/15 text-hub-accent border-sky-500/30' };
   if (wind >= 40) return { text: `Vento forte ${Math.round(wind)} km/h`, color: 'bg-orange-500/15 text-orange-300 border-orange-500/30' };
-  if (temp >= 35) return { text: `Caldo estremo ${Math.round(temp)}°C`, color: 'bg-red-500/15 text-red-300 border-red-500/30' };
-  if (temp <= 0)  return { text: `Temperatura sotto zero ${Math.round(temp)}°C`, color: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
-  if (rain >= 60) return { text: `Alta probabilità pioggia ${rain}%`, color: 'bg-sky-500/10 text-sky-400 border-sky-500/20' };
+  if (temp >= 35) return { text: `Caldo estremo ${Math.round(temp)}°C`, color: 'bg-red-500/15 text-hub-red border-red-500/30' };
+  if (temp <= 0)  return { text: `Temperatura sotto zero ${Math.round(temp)}°C`, color: 'bg-blue-500/15 text-hub-accent border-blue-500/30' };
+  if (rain >= 60) return { text: `Alta probabilità pioggia ${rain}%`, color: 'bg-sky-500/10 text-hub-accent border-sky-500/20' };
   return null;
 }
 
@@ -58,7 +58,7 @@ export default function WeatherBanner({ weather }: { weather: WeatherData }) {
             </span>
           )}
           {weather.rain_prob_day !== null && weather.rain_prob_day > 0 && (
-            <span className="flex items-center gap-1 text-xs text-sky-400">
+            <span className="flex items-center gap-1 text-xs text-hub-accent">
               <CloudRain className="h-3 w-3" />
               {weather.rain_prob_day}%
             </span>

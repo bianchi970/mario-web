@@ -109,7 +109,7 @@ function RoomCard({
         <div className="grid grid-cols-2 gap-1.5">
           {temperature !== null && (
             <div className="flex items-center gap-1.5">
-              <Thermometer className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+              <Thermometer className="h-3.5 w-3.5 text-hub-accent shrink-0" />
               <span className="text-xs text-text-2">{temperature.toFixed(1)}°</span>
             </div>
           )}
@@ -295,7 +295,7 @@ export default function DashboardPage() {
 
         {/* Banner: nessun progetto */}
         {!effectiveProjectId && installerMode ? (
-          <div className="flex items-start gap-3 rounded-[22px] border border-amber-500/25 bg-amber-500/10 p-5 text-amber-700">
+          <div className="flex items-start gap-3 rounded-[22px] border border-amber-500/40 bg-surface p-5 text-warning">
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="flex-1">
               <div className="font-medium">Seleziona un progetto.</div>
@@ -327,7 +327,7 @@ export default function DashboardPage() {
             Caricamento...
           </div>
         ) : error ? (
-          <div className="flex items-center gap-3 rounded-[22px] border border-danger/25 bg-danger/10 p-4 text-danger">
+          <div className="flex items-center gap-3 rounded-[22px] border border-danger/40 bg-surface p-4 text-danger">
             <ShieldAlert className="h-5 w-5 shrink-0" />
             <span className="flex-1 text-sm">{error}</span>
             <button
@@ -401,7 +401,7 @@ export default function DashboardPage() {
                 ) : yStats && (yStats.tempMax !== null || yStats.luxMax !== null) ? (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="flex items-center gap-2 text-sky-500">
+                      <div className="flex items-center gap-2 text-hub-accent">
                         <Thermometer className="h-5 w-5" />
                         <span className="text-2xl font-semibold text-text">
                           {yStats.tempMin !== null && yStats.tempMax !== null
@@ -431,7 +431,7 @@ export default function DashboardPage() {
               {viewDay === 'oggi' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="flex items-center gap-2 text-sky-500">
+                    <div className="flex items-center gap-2 text-hub-accent">
                       <Thermometer className="h-5 w-5" />
                       <span className="text-2xl font-semibold text-text">
                         {casa.temperature !== null ? `${casa.temperature.toFixed(1)}°` : '—'}
@@ -498,9 +498,9 @@ export default function DashboardPage() {
 
             {/* Widget Meteo */}
             {weather && (
-              <div className="rounded-[24px] border border-sky-500/20 bg-sky-500/[0.04] p-4">
+              <div className="rounded-[24px] border border-sky-500/40 bg-surface p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-500/80">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-hub-accent/80">
                     {weather.city ?? 'Meteo'}
                   </div>
                   <span className="text-[10px] text-text-2">Open-Meteo</span>
@@ -542,7 +542,7 @@ export default function DashboardPage() {
               const offline = (devices ?? []).filter((d) => !d.online);
               if (offline.length === 0) return null;
               return (
-                <div className="rounded-[24px] border border-danger/20 bg-danger/[0.05] p-4">
+                <div className="rounded-[24px] border border-danger/40 bg-surface p-4">
                   <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-danger/80">
                     Offline ({offline.length})
                   </div>
@@ -572,7 +572,7 @@ export default function DashboardPage() {
               );
               if (active.length === 0) return null;
               return (
-                <div className="rounded-[24px] border border-success/20 bg-success/[0.05] p-4">
+                <div className="rounded-[24px] border border-success/40 bg-surface p-4">
                   <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-success/80">
                     Accesi ora ({active.length})
                   </div>
@@ -636,7 +636,7 @@ export default function DashboardPage() {
             <>
               <Link
                 href="/onboarding"
-                className="flex flex-col gap-2 rounded-[22px] border border-primary/25 bg-primary/10 px-4 py-5 active:bg-primary/20"
+                className="flex flex-col gap-2 rounded-[22px] border border-primary/50 bg-surface px-4 py-5 active:bg-surface-2"
               >
                 <PlusCircle className="h-6 w-6 text-primary" />
                 <div className="font-medium text-text">Aggiungi</div>

@@ -24,17 +24,20 @@ module.exports = {
         disabled:    'rgb(var(--color-disabled) / <alpha-value>)',
         'bg-app':    'var(--bg-app)',
 
-        // ── hub-* mantenuti per compatibilità fino a migrazione completa ──
+        // ── hub-*: altri NOMI degli stessi token, non una seconda palette ──
+        // Fino al 7/11/2026 erano i colori fissi del tema scuro (490 usi): nel
+        // tema chiaro la scheda era beige e il testo restava #e2e8f0, bianco.
+        // `src/app/tema.test.ts` (TE-01) fallisce se un colore fisso torna.
         hub: {
-          bg:       '#0f1117',
-          surface:  '#1a1d27',
-          border:   '#2a2d3a',
-          text:     '#e2e8f0',
-          muted:    '#9aa3b2',   /* alzato da #64748b → contrasto ~5:1 su dark bg */
-          accent:   '#3b82f6',
-          green:    '#22c55e',
-          red:      '#ef4444',
-          amber:    '#f59e0b',
+          bg:       'rgb(var(--color-inset) / <alpha-value>)',
+          surface:  'rgb(var(--color-surface) / <alpha-value>)',
+          border:   'rgb(var(--color-border) / <alpha-value>)',
+          text:     'rgb(var(--color-text) / <alpha-value>)',
+          muted:    'rgb(var(--color-text-2) / <alpha-value>)',
+          accent:   'rgb(var(--color-accent) / <alpha-value>)',
+          green:    'rgb(var(--color-success) / <alpha-value>)',
+          red:      'rgb(var(--color-danger) / <alpha-value>)',
+          amber:    'rgb(var(--color-warning) / <alpha-value>)',
         },
       },
     },

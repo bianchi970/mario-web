@@ -34,9 +34,9 @@ function formatLastSeen(ts: string | null | undefined) {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2 border-b border-white/5 last:border-0">
-      <span className="text-sm text-white/40 shrink-0">{label}</span>
-      <span className="text-sm text-white/80 text-right font-mono break-all">{value}</span>
+    <div className="flex items-start justify-between gap-3 py-2 border-b border-hub-text/5 last:border-0">
+      <span className="text-sm text-hub-muted shrink-0">{label}</span>
+      <span className="text-sm text-hub-text/80 text-right font-mono break-all">{value}</span>
     </div>
   );
 }
@@ -183,24 +183,24 @@ export default function DeviceDetailPage() {
   return (
     <>
       <TopBar title="Dispositivo" />
-      <main className="flex-1 px-4 py-5 space-y-5 max-w-2xl text-white">
+      <main className="flex-1 px-4 py-5 space-y-5 max-w-2xl text-hub-text">
 
         {/* Back */}
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-white/40 hover:text-white/70">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-hub-muted hover:text-hub-text/70">
           <ArrowLeft className="h-4 w-4" />
           Indietro
         </button>
 
         {loading && (
-          <div className="rounded-[22px] border border-white/10 bg-white/5 p-8 text-center text-white/40 text-sm">
+          <div className="rounded-[22px] border border-hub-text/10 bg-hub-text/5 p-8 text-center text-hub-muted text-sm">
             Caricamento...
           </div>
         )}
 
         {error && !loading && (
-          <div className="rounded-[22px] border border-red-500/25 bg-red-500/10 p-5 text-center">
-            <p className="text-sm text-red-300">{error}</p>
-            <Link href="/devices" className="mt-3 inline-block text-xs text-white/40 hover:text-white/60">
+          <div className="rounded-[22px] border border-red-500/40 bg-hub-surface p-5 text-center">
+            <p className="text-sm text-hub-red">{error}</p>
+            <Link href="/devices" className="mt-3 inline-block text-xs text-hub-muted hover:text-hub-text/60">
               ← Torna ai dispositivi
             </Link>
           </div>
@@ -209,7 +209,7 @@ export default function DeviceDetailPage() {
         {device && !loading && (
           <>
             {/* Header */}
-            <div className="rounded-[24px] border border-white/12 bg-white/[0.04] p-5 space-y-4">
+            <div className="rounded-[24px] border border-hub-text/12 bg-hub-surface p-5 space-y-4">
               <div className="flex items-start gap-3">
                 <span className="text-4xl">{icon}</span>
                 <div className="flex-1 min-w-0">
@@ -225,18 +225,18 @@ export default function DeviceDetailPage() {
                       }}
                       disabled={saving}
                       autoFocus
-                      className="w-full bg-white/10 border border-white/30 rounded-lg px-3 py-1.5 text-lg font-semibold text-white focus:outline-none"
+                      className="w-full bg-hub-text/10 border border-hub-text/30 rounded-lg px-3 py-1.5 text-lg font-semibold text-hub-text focus:outline-none"
                     />
                   ) : (
                     <button
                       onClick={() => { setNameInput(device.name); setEditing(true); }}
                       className="group flex items-center gap-2 text-left"
                     >
-                      <h1 className="text-xl font-semibold text-white truncate">{device.name}</h1>
-                      <span className="text-white/20 group-hover:text-white/50 text-sm">✏</span>
+                      <h1 className="text-xl font-semibold text-hub-text truncate">{device.name}</h1>
+                      <span className="text-hub-muted group-hover:text-hub-muted text-sm">✏</span>
                     </button>
                   )}
-                  <p className="text-xs text-white/30 font-mono mt-0.5 truncate">{device.id}</p>
+                  <p className="text-xs text-hub-muted font-mono mt-0.5 truncate">{device.id}</p>
                 </div>
                 <StatusDot online={device.online} />
               </div>
@@ -249,14 +249,14 @@ export default function DeviceDetailPage() {
               </div>
 
               {/* Comando */}
-              <div className="pt-2 border-t border-white/10">
+              <div className="pt-2 border-t border-hub-text/10">
                 <CommandButton device={device} />
               </div>
             </div>
 
             {/* Info */}
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Informazioni</div>
+            <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Informazioni</div>
               <Row label="Tipo"      value={device.type} />
               <Row label="Protocollo" value={device.protocol} />
               {device.vendor  && <Row label="Marca"      value={device.vendor} />}
@@ -273,8 +273,8 @@ export default function DeviceDetailPage() {
 
             {/* Stato corrente */}
             {Object.keys(device.state ?? {}).length > 0 && (
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Stato corrente</div>
+              <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Stato corrente</div>
                 <div className="space-y-1">
                   {Object.entries(device.state as Record<string, unknown>).map(([k, v]) => (
                     <Row key={k} label={k} value={
@@ -289,15 +289,15 @@ export default function DeviceDetailPage() {
 
             {/* Capability */}
             {capacitaDi(device).length > 0 && (
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+              <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">
                   Funzionalità ({capacitaDi(device).length})
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {capacitaDi(device).map((c) => (
                     <span
                       key={c.key}
-                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-white/60"
+                      className="rounded-full border border-hub-text/10 bg-hub-text/5 px-2.5 py-0.5 text-xs text-hub-text/60"
                     >
                       {c.label}
                     </span>
@@ -308,38 +308,38 @@ export default function DeviceDetailPage() {
 
             {/* Stanza */}
             {rooms.length > 0 && (
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Stanza</div>
+              <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Stanza</div>
                 <select
                   value={device.room_id ?? ''}
                   onChange={handleRoomChange}
                   disabled={savingRoom}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/40"
+                  className="w-full bg-hub-text/5 border border-hub-text/20 rounded-xl px-3 py-2.5 text-sm text-hub-text focus:outline-none focus:border-hub-text/40"
                 >
                   <option value="">— Nessuna stanza —</option>
                   {rooms.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
-                {room && <p className="mt-1 text-xs text-white/30">Attuale: {room.name}</p>}
+                {room && <p className="mt-1 text-xs text-hub-muted">Attuale: {room.name}</p>}
               </div>
             )}
 
             {/* Togliere */}
-            <div className="rounded-[24px] border border-red-500/20 bg-red-500/[0.04] p-5 space-y-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Togliere questo dispositivo</div>
-              {togliMsg && <p className="text-sm text-white/70">{togliMsg}</p>}
+            <div className="rounded-[24px] border border-red-500/40 bg-hub-surface p-5 space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Togliere questo dispositivo</div>
+              {togliMsg && <p className="text-sm text-hub-text/70">{togliMsg}</p>}
 
               {togli === 'tolto' ? (
-                <Link href="/devices" className="inline-block text-sm text-white/60 hover:text-white">← Torna ai dispositivi</Link>
+                <Link href="/devices" className="inline-block text-sm text-hub-text/60 hover:text-hub-text">← Torna ai dispositivi</Link>
               ) : togli === 'escludendo' ? (
                 <button onClick={() => void fermaEsclusione()}
-                  className="w-full rounded-xl border border-white/20 px-3 py-2.5 text-sm text-white/80 hover:bg-white/5">
+                  className="w-full rounded-xl border border-hub-text/20 px-3 py-2.5 text-sm text-hub-text/80 hover:bg-hub-text/5">
                   Ferma l&apos;esclusione
                 </button>
               ) : togli === 'conferma' ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-hub-text/60">
                     {device.protocol === 'zwave'
                       ? 'Resta nella rete Z-Wave: se è ancora acceso parla, ma MARIO non lo mostra e non lo comanda più. Per liberarlo davvero usa l\'esclusione.'
                       : 'MARIO non lo mostrerà e non lo comanderà più, anche se è ancora acceso.'}
@@ -350,7 +350,7 @@ export default function DeviceDetailPage() {
                       Sì, toglilo
                     </button>
                     <button onClick={() => setTogli('idle')}
-                      className="flex-1 rounded-xl border border-white/20 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5">
+                      className="flex-1 rounded-xl border border-hub-text/20 px-3 py-2.5 text-sm text-hub-text/70 hover:bg-hub-text/5">
                       Annulla
                     </button>
                   </div>
@@ -364,7 +364,7 @@ export default function DeviceDetailPage() {
                     </button>
                   )}
                   <button onClick={() => { setTogliMsg(null); setTogli('conferma'); }}
-                    className="w-full rounded-xl border border-white/15 px-3 py-2.5 text-sm text-white/60 hover:bg-white/5">
+                    className="w-full rounded-xl border border-hub-text/15 px-3 py-2.5 text-sm text-hub-text/60 hover:bg-hub-text/5">
                     Non c&apos;è più: toglilo dall&apos;elenco
                   </button>
                 </div>
@@ -373,9 +373,9 @@ export default function DeviceDetailPage() {
 
             {/* Metadata (solo se presente) */}
             {device.metadata && Object.keys(device.metadata).length > 0 && (
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Metadata</div>
-                <pre className="text-xs text-white/40 font-mono overflow-auto max-h-40">
+              <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Metadata</div>
+                <pre className="text-xs text-hub-muted font-mono overflow-auto max-h-40">
                   {JSON.stringify(device.metadata, null, 2)}
                 </pre>
               </div>

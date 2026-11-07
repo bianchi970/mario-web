@@ -154,19 +154,19 @@ export default function GatewaysPage() {
             <div className="text-xs text-hub-muted space-y-0.5">
               <div className="flex items-center gap-2">
                 <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                  mode === 'Locale' ? 'bg-green-400/15 text-green-400' : 'bg-hub-accent/15 text-hub-accent'
+                  mode === 'Locale' ? 'bg-green-400/15 text-hub-green' : 'bg-hub-accent/15 text-hub-accent'
                 }`}>
                   {mode}
                 </span>
               </div>
               <div className="flex gap-3 mt-1">
-                <span className={localIdentity.hub === 'reachable' ? 'text-green-400' : 'text-red-400'}>
+                <span className={localIdentity.hub === 'reachable' ? 'text-hub-green' : 'text-hub-red'}>
                   Hub {localIdentity.hub === 'reachable' ? '✓' : '✗'}
                 </span>
-                <span className={localIdentity.brain === 'reachable' ? 'text-green-400' : 'text-red-400'}>
+                <span className={localIdentity.brain === 'reachable' ? 'text-hub-green' : 'text-hub-red'}>
                   Brain {localIdentity.brain === 'reachable' ? '✓' : '✗'}
                 </span>
-                <span className={(localIdentity.z_wave === 'active') ? 'text-green-400' : 'text-hub-muted'}>
+                <span className={(localIdentity.z_wave === 'active') ? 'text-hub-green' : 'text-hub-muted'}>
                   Z-Wave {localIdentity.z_wave === 'active' ? '✓' : '–'}
                 </span>
               </div>
@@ -187,7 +187,7 @@ export default function GatewaysPage() {
               <p className="text-sm font-medium text-hub-text">VPN WireGuard</p>
               {wgStatus && (
                 <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                  wgStatus.active ? 'bg-green-400/15 text-green-400' : 'bg-hub-muted/20 text-hub-muted'
+                  wgStatus.active ? 'bg-green-400/15 text-hub-green' : 'bg-hub-muted/20 text-hub-muted'
                 }`}>
                   {wgStatus.active ? 'Connessa' : 'In attesa'}
                 </span>
@@ -205,7 +205,7 @@ export default function GatewaysPage() {
 
             {wgStatus?.public_ip && wgStatus.conf_endpoint &&
               !wgStatus.conf_endpoint.startsWith(wgStatus.public_ip) && (
-              <p className="text-xs text-yellow-400 bg-yellow-400/10 rounded px-2 py-1.5">
+              <p className="text-xs text-hub-amber bg-yellow-400/10 rounded px-2 py-1.5">
                 ⚠ IP TIM cambiato — rigenera il profilo per aggiornare il telefono.
               </p>
             )}
@@ -223,7 +223,7 @@ export default function GatewaysPage() {
                 <p className="text-xs text-hub-muted">Scansiona con WireGuard → + → Scansiona QR:</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={wgQr} alt="QR WireGuard" className="w-full rounded-lg border border-hub-border" />
-                <p className="text-xs text-yellow-400/80">Visibile solo all'installatore. Non condividere.</p>
+                <p className="text-xs text-hub-amber/80">Visibile solo all'installatore. Non condividere.</p>
               </div>
             )}
 
@@ -250,7 +250,7 @@ export default function GatewaysPage() {
                   </div>
                   <button
                     onClick={() => removeGateway(g.id)}
-                    className="text-xs text-hub-muted hover:text-red-400 transition-colors"
+                    className="text-xs text-hub-muted hover:text-hub-red transition-colors"
                   >
                     Rimuovi
                   </button>
@@ -292,7 +292,7 @@ export default function GatewaysPage() {
               className="w-full px-3 py-2 rounded-lg border border-hub-border bg-hub-bg text-hub-text text-sm focus:outline-none focus:border-hub-accent"
             />
           </div>
-          {addError && <p className="text-xs text-red-400">{addError}</p>}
+          {addError && <p className="text-xs text-hub-red">{addError}</p>}
           <button
             onClick={handleAdd}
             disabled={checking || !addUrl.trim()}

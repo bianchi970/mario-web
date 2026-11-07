@@ -121,8 +121,8 @@ function RoomCard({
           )}
           {motionActive && (
             <div className="flex items-center gap-1.5 col-span-2">
-              <Eye className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-              <span className="text-xs text-orange-600">Movimento</span>
+              <Eye className="h-3.5 w-3.5 text-primary-ink shrink-0" />
+              <span className="text-xs text-primary-ink">Movimento</span>
             </div>
           )}
         </div>
@@ -354,7 +354,7 @@ export default function DashboardPage() {
                       onClick={() => setViewDay(d)}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                         viewDay === d
-                          ? 'bg-primary/20 text-primary'
+                          ? 'bg-primary/20 text-primary-ink'
                           : 'text-text-2'
                       }`}
                     >
@@ -451,9 +451,9 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div>
-                    <div className={`flex items-center gap-2 ${casa.motionActive ? 'text-orange-500' : 'text-text-2'}`}>
+                    <div className={`flex items-center gap-2 ${casa.motionActive ? 'text-primary-ink' : 'text-text-2'}`}>
                       <Eye className="h-5 w-5" />
-                      <span className={`text-lg font-semibold ${casa.motionActive ? 'text-orange-600' : 'text-text-2'}`}>
+                      <span className={`text-lg font-semibold ${casa.motionActive ? 'text-primary-ink' : 'text-text-2'}`}>
                         {casa.motionActive ? 'Rilevato' : 'Assente'}
                       </span>
                     </div>
@@ -638,7 +638,7 @@ export default function DashboardPage() {
                 href="/onboarding"
                 className="flex flex-col gap-2 rounded-[22px] border border-primary/50 bg-surface px-4 py-5 active:bg-surface-2"
               >
-                <PlusCircle className="h-6 w-6 text-primary" />
+                <PlusCircle className="h-6 w-6 text-primary-ink" />
                 <div className="font-medium text-text">Aggiungi</div>
                 <div className="text-xs text-text-2">Nuovo dispositivo</div>
               </Link>

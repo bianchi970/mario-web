@@ -21,7 +21,7 @@ function alertBadge(weather: WeatherData): { text: string; color: string } | nul
   if (code >= 95) return { text: 'Temporale in corso', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' };
   if (code >= 71) return { text: 'Nevicate in atto', color: 'bg-sky-500/20 text-hub-accent border-sky-500/30' };
   if (code >= 51) return { text: 'Pioggia in corso', color: 'bg-sky-500/15 text-hub-accent border-sky-500/30' };
-  if (wind >= 40) return { text: `Vento forte ${Math.round(wind)} km/h`, color: 'bg-orange-500/15 text-orange-300 border-orange-500/30' };
+  if (wind >= 40) return { text: `Vento forte ${Math.round(wind)} km/h`, color: 'bg-orange-500/15 text-hub-amber border-orange-500/30' };
   if (temp >= 35) return { text: `Caldo estremo ${Math.round(temp)}°C`, color: 'bg-red-500/15 text-hub-red border-red-500/30' };
   if (temp <= 0)  return { text: `Temperatura sotto zero ${Math.round(temp)}°C`, color: 'bg-blue-500/15 text-hub-accent border-blue-500/30' };
   if (rain >= 60) return { text: `Alta probabilità pioggia ${rain}%`, color: 'bg-sky-500/10 text-hub-accent border-sky-500/20' };

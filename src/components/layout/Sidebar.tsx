@@ -93,7 +93,7 @@ export default function Sidebar() {
                 href={href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                   active
-                    ? 'bg-primary/15 text-primary font-medium'
+                    ? 'bg-primary/15 text-primary-ink font-medium'
                     : 'text-text-2 hover:text-text hover:bg-surface-2'
                 }`}
               >
@@ -110,14 +110,14 @@ export default function Sidebar() {
           {canInstall && (
             <button
               onClick={() => void install()}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary-ink bg-primary/10 hover:bg-primary/20 transition-colors"
             >
               <Download size={14} />
               Installa app
             </button>
           )}
           {installerMode && (
-            <div className="text-xs text-primary font-medium px-1">Modalità installatore</div>
+            <div className="text-xs text-primary-ink font-medium px-1">Modalità installatore</div>
           )}
           <div className="flex items-center gap-1" role="group" aria-label="Tema">
             {THEME_LABELS.map(({ value, label }) => (
@@ -150,7 +150,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-xs transition-colors ${
-                active ? 'text-primary' : 'text-text-2'
+                active ? 'text-primary-ink' : 'text-text-2'
               }`}
             >
               <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />

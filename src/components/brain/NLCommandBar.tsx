@@ -593,7 +593,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
 
   return (
     <div className="rounded-[24px] border border-primary/40 bg-surface p-4 space-y-3">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">
+      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-ink">
         Comando Vocale
       </div>
 
@@ -629,7 +629,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         <button
           onClick={() => void handleSend()}
           disabled={!text.trim() || phase === 'loading' || phase === 'confirming' || phase === 'executing'}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/20 text-primary active:bg-primary/40 disabled:opacity-40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/20 text-primary-ink active:bg-primary/40 disabled:opacity-40"
         >
           {phase === 'loading' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -655,7 +655,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               <button
                 key={label}
                 onClick={() => void handleChip(cmd)}
-                className="shrink-0 rounded-full border border-primary/25 bg-primary/[0.08] px-3.5 py-2 text-xs text-primary/80 hover:text-primary hover:bg-primary/15 active:bg-primary/25 transition-colors min-h-[36px] whitespace-nowrap"
+                className="shrink-0 rounded-full border border-primary/25 bg-primary/[0.08] px-3.5 py-2 text-xs text-primary-ink hover:text-primary-ink hover:bg-primary/15 active:bg-primary/25 transition-colors min-h-[36px] whitespace-nowrap"
               >
                 {label}
               </button>
@@ -679,11 +679,11 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
       {/* Banner notifiche push — idle o denied */}
       {pushStatus === 'idle' && (
         <div className="flex items-center gap-3 rounded-[20px] border border-primary/20 bg-primary/[0.06] px-4 py-2.5">
-          <Bell className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <Bell className="h-3.5 w-3.5 shrink-0 text-primary-ink" />
           <span className="flex-1 text-xs text-text-2">Abilita notifiche push per MARIO</span>
           <button
             onClick={() => void handlePushSubscribe()}
-            className="rounded-xl border border-primary/30 bg-primary/20 px-3 py-1 text-xs text-primary active:bg-primary/30"
+            className="rounded-xl border border-primary/30 bg-primary/20 px-3 py-1 text-xs text-primary-ink active:bg-primary/30"
           >
             Abilita
           </button>

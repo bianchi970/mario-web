@@ -44,7 +44,12 @@ function contrasto(a: number[], b: number[]): number {
   return (l1 + 0.05) / (l2 + 0.05);
 }
 
-const TESTI = ['text', 'text-2', 'accent', 'success', 'warning', 'danger', 'offline'];
+/** Un colore al `alfa` sopra un fondo, come lo disegna `bg-x/20`. */
+const sopra = (c: number[], fondo: number[], alfa: number) => c.map((v, i) => v * alfa + fondo[i] * (1 - alfa));
+
+// `primary-ink`: l'arancio del marchio come TESTO (7/11/2026: in chiaro `primary` come
+// testo faceva 2,2:1). Il `primary` pieno resta per fondi, bordi e marchio.
+const TESTI = ['text', 'text-2', 'accent', 'success', 'warning', 'danger', 'offline', 'primary-ink'];
 const FONDI = ['surface', 'inset'];
 
 describe('il tema', () => {
@@ -60,6 +65,11 @@ describe('il tema', () => {
   });
 
   for (const [nome, tema] of [['scuro', SCURO], ['chiaro', CHIARO]] as const) {
+    it(`TE-04 ${nome}: l'arancio-testo si legge anche sulla tinta arancio (voce attiva, badge)`, () => {
+      const tinta = sopra(tema.primary, tema.surface, 0.2);
+      expect(Number(contrasto(tema['primary-ink'] ?? [0, 0, 0], tinta).toFixed(2))).toBeGreaterThanOrEqual(4.5);
+    });
+
     it(`TE-03 ${nome}: ogni testo si legge sulle schede e sulle caselle (≥ 4,5:1)`, () => {
       const bassi: string[] = [];
       for (const t of TESTI) for (const f of FONDI) {

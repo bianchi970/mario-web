@@ -27,7 +27,7 @@ const STYLES: Record<ToastType, string> = {
   success: 'bg-success/15 border-success/40 text-success',
   warning: 'bg-warning/15 border-warning/40 text-warning',
   danger:  'bg-danger/15  border-danger/40  text-danger',
-  info:    'bg-primary/15 border-primary/40 text-primary',
+  info:    'bg-primary/15 border-primary/40 text-primary-ink',
 };
 
 export default function Toast({ item, onDismiss }: ToastProps) {

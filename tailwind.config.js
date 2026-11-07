@@ -11,6 +11,8 @@ module.exports = {
         // ── Token semantici B97 (via CSS custom properties) ──────────────
         // Formato: rgb(R G B / <alpha-value>) per supportare /opacity in Tailwind
         primary:     'rgb(var(--color-primary) / <alpha-value>)',
+        // L'arancio come TESTO (7/11/2026): `primary` resta per fondi, bordi e marchio.
+        'primary-ink': 'rgb(var(--color-primary-ink) / <alpha-value>)',
         surface:     'rgb(var(--color-surface) / <alpha-value>)',
         'surface-2': 'rgb(var(--color-surface-2) / <alpha-value>)',
         text:        'rgb(var(--color-text) / <alpha-value>)',

@@ -13,13 +13,13 @@ const VARIANTS: Record<BadgeVariant, string> = {
   success: 'bg-success/20 text-success border-success/30',
   danger:  'bg-danger/20  text-danger  border-danger/30',
   warning: 'bg-warning/20 text-warning border-warning/30',
-  primary: 'bg-primary/20 text-primary border-primary/30',
+  primary: 'bg-primary/20 text-primary-ink border-primary/30',
   gray:    'bg-surface-2  text-text-2  border-border',
   // Alias legacy
   green:   'bg-success/20 text-success border-success/30',
   red:     'bg-danger/20  text-danger  border-danger/30',
   amber:   'bg-warning/20 text-warning border-warning/30',
-  blue:    'bg-primary/20 text-primary border-primary/30',
+  blue:    'bg-primary/20 text-primary-ink border-primary/30',
 };
 
 export default function Badge({ children, variant = 'gray', className = '' }: BadgeProps) {

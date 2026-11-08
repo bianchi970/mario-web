@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // `scripts/deploy.sh` costruisce in `.next-nuovo` e scambia a build finita:
+  // senza variabile resta `.next`, ed è quella che il server legge sempre.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   async headers() {
     return [
       // sw.js non va mai in cache — il browser lo aggiorna ad ogni deploy

@@ -1,5 +1,8 @@
 # Next.js
 .next/
+.next-nuovo/
+.next-vecchio/
+.next-rotta/
 out/
 
 # Dependencies

@@ -10,7 +10,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
-import { useTheme } from '@/context/ThemeContext';
+import ThemeSelector from '@/components/ui/ThemeSelector';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 interface NavItem {
@@ -37,16 +37,9 @@ const NAV_ALL: NavItem[] = [
   { href: '/gateways',   label: 'Gateway',                   Icon: Router,     installerOnly: true,  mobileHidden: true },
 ];
 
-const THEME_LABELS: { value: 'light' | 'dark' | 'auto'; label: string }[] = [
-  { value: 'light', label: '☀' },
-  { value: 'dark',  label: '☾' },
-  { value: 'auto',  label: 'Auto' },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
   const { installerMode } = useInstallerMode();
-  const { theme, setTheme } = useTheme();
   const { canInstall, install } = usePWAInstall();
   const [logoOpen, setLogoOpen] = useState(false);
 
@@ -119,22 +112,7 @@ export default function Sidebar() {
           {installerMode && (
             <div className="text-xs text-primary-ink font-medium px-1">Modalità installatore</div>
           )}
-          <div className="flex items-center gap-1" role="group" aria-label="Tema">
-            {THEME_LABELS.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setTheme(value)}
-                aria-pressed={theme === value}
-                className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
-                  theme === value
-                    ? 'bg-primary text-white'
-                    : 'text-text-2 hover:text-text hover:bg-surface-2'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <ThemeSelector />
         </div>
       </aside>
 

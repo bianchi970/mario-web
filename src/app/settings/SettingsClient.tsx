@@ -11,6 +11,7 @@ import { useSession } from '@/context/SessionContext';
 import { patchProjectLocation } from '@/lib/api/weather';
 import { contattoVecchio, leggiContattoSos, salvaContattoSos } from '@/lib/api/contatto-sos';
 import UsersSection from '@/components/settings/UsersSection';
+import ThemeSelector from '@/components/ui/ThemeSelector';
 
 function formatAdapterStatus(status: string): { label: string; variant: 'green' | 'red' | 'amber' | 'gray' } {
   const map: Record<string, { label: string; variant: 'green' | 'red' | 'amber' | 'gray' }> = {
@@ -208,6 +209,12 @@ export default function SettingsClient({
             {offlineModeLoading ? 'Sincronizzazione...' : offlineModeUnknown ? 'Non riesco a leggerlo' : offlineMode ? 'Attivo' : 'Disattivo'}
           </label>
         </div>
+      </div>
+
+      {/* Aspetto — sul telefono la barra laterale col selettore è nascosta */}
+      <div className="card space-y-3">
+        <h2 className="text-sm font-medium text-hub-text">Aspetto</h2>
+        <ThemeSelector />
       </div>
 
       {/* Il modo della casa non sta qui: è lo stato dell'allarme, in Sicurezza

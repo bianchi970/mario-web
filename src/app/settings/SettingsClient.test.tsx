@@ -4,6 +4,7 @@ import CommandButton from '@/components/devices/CommandButton';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
 import { ProjectProvider } from '@/context/ProjectContext';
 import { InstallerModeProvider } from '@/context/InstallerModeContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 describe('Settings offline mode wiring', () => {
   const device = {
@@ -125,6 +126,36 @@ describe('Settings offline mode wiring', () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     expect(screen.queryByText('Modalità impianto')).toBeNull();
     expect((global.fetch as jest.Mock).mock.calls.some(([u]) => String(u).includes('/mode'))).toBe(false);
+  });
+
+  // Il tema si sceglieva solo dalla barra laterale, che sul telefono è nascosta
+  // (`hidden md:flex`): dal telefono non si poteva cambiare (Romeo, 8/11/2026).
+  // Impostazioni c'è anche sul telefono: il selettore sta anche qui.
+  it('TS-01 il tema si sceglie da Impostazioni, e la scelta si applica e resta', async () => {
+    render(
+      <ThemeProvider>
+        <ProjectProvider>
+          <InstallerModeProvider>
+            <OfflineModeProvider>
+              <SettingsClient
+                adapters={[]}
+                system={null}
+                adaptersAvailable={false}
+                systemAvailable={false}
+                hubDisplayUrl="http://localhost:4001"
+              />
+            </OfflineModeProvider>
+          </InstallerModeProvider>
+        </ProjectProvider>
+      </ThemeProvider>,
+    );
+    const gruppo = await screen.findByRole('group', { name: 'Tema' });
+    const scuro = Array.from(gruppo.querySelectorAll('button')).find((b) => /scuro/i.test(b.textContent || ''));
+    expect(scuro).toBeTruthy();
+    fireEvent.click(scuro!);
+    expect(window.localStorage.getItem('mario_theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    document.documentElement.removeAttribute('data-theme');
   });
 
   it('toggles the real command flow on and off from the global setting', async () => {

@@ -34,8 +34,13 @@ export async function listDevices(projectId: string, signal?: AbortSignal): Prom
 
 export async function getDevice(deviceId: string): Promise<Device | null> {
   try {
-    const payload = await fetchAPI<Device | null>(`/api/hub/devices/${encodeURIComponent(deviceId)}`);
-    return payload ?? null;
+    // L'Hub risponde `{ success, data: { device } }`: fino al 13/11/2026 la
+    // pagina riceveva l'involucro, e la scheda si apriva vuota (DV-01).
+    const payload = await fetchAPI<{ device?: Device } | HubEnvelope<{ device?: Device }>>(
+      `/api/hub/devices/${encodeURIComponent(deviceId)}`,
+    );
+    const data = unwrapPayload<{ device?: Device } | null>(payload as { device?: Device } | null);
+    return data?.device ?? null;
   } catch {
     return null;
   }

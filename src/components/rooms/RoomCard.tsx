@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Device, Room } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
@@ -26,9 +26,11 @@ type Props = {
   allDevices?: Device[];
   /** Qualcosa è cambiato (stanza, nome, dispositivi): la pagina ricarica. */
   onChanged?: () => void;
+  /** Scelta toccandola nella Casa (`/rooms?stanza=<id>`): si apre da sola. */
+  aperta?: boolean;
 };
 
-export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices = [], onChanged }: Props) {
+export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices = [], onChanged, aperta = false }: Props) {
   const [open, setOpen] = useState(false);
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -63,6 +65,14 @@ export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices
     setOpen(true);
   }
 
+  const card = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aperta) return;
+    void toggle();
+    card.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- una volta, all'arrivo
+  }, [aperta]);
+
   /** Una chiamata all'Hub; il suo «no» diventa una frase. */
   async function hub(url: string, method: string, body?: unknown): Promise<boolean> {
     setError(null);
@@ -84,6 +94,14 @@ export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices
   async function addDevice(deviceId: string) {
     if (!base || !deviceId) return;
     if (await hub(`${base}/devices/${encodeURIComponent(deviceId)}`, 'POST')) {
+      await loadDevices();
+      onChanged?.();
+    }
+  }
+
+  async function removeDevice(deviceId: string) {
+    if (!base) return;
+    if (await hub(`${base}/devices/${encodeURIComponent(deviceId)}`, 'DELETE')) {
       await loadDevices();
       onChanged?.();
     }
@@ -111,7 +129,7 @@ export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices
   const daAggiungere = allDevices.filter((d) => !qui.has(d.id) && d.room_id !== room.id);
 
   return (
-    <div className="card cursor-pointer select-none" onClick={toggle}>
+    <div ref={card} className="card cursor-pointer select-none scroll-mt-4" onClick={toggle}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3">
           <span className="text-3xl leading-none">{icon}</span>
@@ -146,6 +164,11 @@ export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices
                     {device.name}
                   </Link>
                   {!device.online && <Badge variant="red" className="shrink-0 text-xs">Offline</Badge>}
+                  <button type="button" aria-label={`Togli ${device.name} dalla stanza`}
+                    onClick={() => void removeDevice(device.id)}
+                    className="shrink-0 rounded-md border border-hub-border px-2 py-0.5 text-xs text-hub-muted">
+                    Togli
+                  </button>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <Badge variant="gray" className="shrink-0 text-xs">{device.protocol}</Badge>

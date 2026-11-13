@@ -3,11 +3,13 @@
 import type { Device, Room } from '@/lib/hub-types';
 import RoomCard from './RoomCard';
 
-export default function RoomGrid({ rooms, deviceCounts = {}, allDevices = [], onChanged }: {
+export default function RoomGrid({ rooms, deviceCounts = {}, allDevices = [], onChanged, aperta = null }: {
   rooms: Room[];
   deviceCounts?: Record<string, { total: number; online: number }>;
   allDevices?: Device[];
   onChanged?: () => void;
+  /** La stanza toccata nella Casa. */
+  aperta?: string | null;
 }) {
   if (rooms.length === 0) {
     return (
@@ -23,7 +25,8 @@ export default function RoomGrid({ rooms, deviceCounts = {}, allDevices = [], on
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {rooms.map((room) => (
         <RoomCard key={room.id} room={room} devicesTotal={deviceCounts[room.id]?.total}
-          devicesOnline={deviceCounts[room.id]?.online} allDevices={allDevices} onChanged={onChanged} />
+          devicesOnline={deviceCounts[room.id]?.online} allDevices={allDevices} onChanged={onChanged}
+          aperta={room.id === aperta} />
       ))}
     </div>
   );

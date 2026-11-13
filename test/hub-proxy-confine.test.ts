@@ -107,6 +107,8 @@ describe('hub proxy — il confine', () => {
     ['POST',   ['zwave', 'exclusion', 'start']],           // togliere un device dalla rete
     ['POST',   ['zwave', 'exclusion', 'stop']],
     ['POST',   ['rooms', 'default']],
+    ['DELETE', ['rooms', 'default', 'cucina']],            // eliminare una stanza (13/11/2026, Romeo)
+    ['DELETE', ['rooms', 'default', 'cucina', 'devices', '2-ep1']], // togliere un device dalla stanza
     ['PATCH',  ['notifications', 'default', 'n1', 'dismiss']],
     ['POST',   ['security', 'state']],                 // il modo della casa: l'allarme
   ])('%s %j passa, con la persona', async (method, path) => {
@@ -121,7 +123,6 @@ describe('hub proxy — il confine', () => {
     ['PATCH', ['devices', '2-ep1', 'command']],
     ['PUT',   ['projects', 'default', 'mode']],
     ['PUT',   ['user-prefs', 'home-layout']],
-    ['DELETE',['rooms', 'default', 'cucina']],
     ['DELETE',['devices', '2-ep1']],                    // la risorsa device non si cancella così
     ['DELETE',['projects', 'default', 'devices']],      // né tutti insieme
     ['POST',  ['zwave', 'reset']],                      // cancella la rete Z-Wave

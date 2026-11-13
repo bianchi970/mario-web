@@ -12,6 +12,8 @@
  *   RC-03  la stanza si rinomina
  *   RC-04  la stanza si elimina, dopo una conferma che dice cosa succede
  *   RC-05  un «no» dell'Hub si dice, non si tace
+ *   RC-06  un dispositivo si toglie dalla stanza
+ *   RC-07  la stanza toccata nella Casa si apre da sola
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import RoomCard from '@/components/rooms/RoomCard';
@@ -105,6 +107,22 @@ describe('RoomCard — gestire la stanza', () => {
     await apri();
     fireEvent.click(screen.getByRole('button', { name: 'Elimina' }));
     expect(chiamate.some((c) => c.method === 'DELETE')).toBe(false);
+  });
+
+  it('RC-06 un dispositivo si toglie dalla stanza (resta nella casa, senza stanza)', async () => {
+    hub({ 'DELETE /api/hub/rooms/proj-1/room-cucina/devices/0xf044': { status: 200 } });
+    const onChanged = jest.fn();
+    await apri({ onChanged });
+    fireEvent.click(screen.getByRole('button', { name: 'Togli Sensore allagamento d3b6 dalla stanza' }));
+    await waitFor(() => expect(chiamate.some((c) => c.method === 'DELETE'
+      && c.url === '/api/hub/rooms/proj-1/room-cucina/devices/0xf044')).toBe(true));
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+  });
+
+  it('RC-07 una stanza scelta dalla Casa si apre da sola', async () => {
+    hub();
+    render(<RoomCard room={cucina} devicesTotal={1} devicesOnline={1} allDevices={[sensore]} aperta />);
+    await waitFor(() => expect(screen.getByText('Sensore allagamento d3b6')).toBeInTheDocument());
   });
 
   it('RC-05 un «no» dell\'Hub si dice', async () => {

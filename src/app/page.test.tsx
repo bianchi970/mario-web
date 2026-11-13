@@ -113,6 +113,17 @@ describe('Dashboard device inventory flow', () => {
     expect(screen.queryByText(/^Allarme /)).not.toBeInTheDocument();
   });
 
+  // Romeo, 13/11/2026: «se clicco sulle stanze non posso fare nulla».
+  it('una stanza della Casa porta alla sua gestione, già aperta', async () => {
+    mockedListRooms.mockResolvedValue([{ id: 'r-cucina', project_id: 'proj-1', name: 'Cucina', created_at: '2026-01-01' } as never]);
+    mockedListDevices.mockResolvedValue([{ id: 'luce', project_id: 'proj-1', name: 'Luce', room_id: 'r-cucina', online: true, state: {} } as never]);
+
+    render(<DashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('Cucina')).toBeInTheDocument());
+    expect(screen.getByText('Cucina').closest('a')).toHaveAttribute('href', '/rooms?stanza=r-cucina');
+  });
+
   it('renders the house state section when devices resolve', async () => {
     mockedListDevices.mockResolvedValue([
       {

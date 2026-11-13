@@ -85,8 +85,10 @@ function RoomCard({
 }) {
   const hasData = temperature !== null || lux !== null || motionActive || lightsTotal > 0;
   const lightsActive = lightsOn > 0;
+  // Toccata, porta alla sua gestione già aperta (13/11/2026, Romeo: «se clicco
+  // sulle stanze non posso fare nulla»).
   return (
-    <div className={`rounded-[22px] border p-4 transition-colors ${
+    <Link href={`/rooms?stanza=${encodeURIComponent(room.id)}`} className={`block rounded-[22px] border p-4 transition-colors active:opacity-80 ${
       lightsActive
         ? 'border-amber-500/20 bg-amber-500/[0.05]'
         : motionActive
@@ -129,7 +131,7 @@ function RoomCard({
       ) : (
         <div className="text-xs text-text-2/60">Nessun sensore</div>
       )}
-    </div>
+    </Link>
   );
 }
 

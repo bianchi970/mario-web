@@ -23,6 +23,12 @@ export default function RoomsPage() {
   const [search, setSearch] = useState('');
   const [newRoomName, setNewRoomName] = useState('');
   const [creating, setCreating] = useState(false);
+  // La stanza toccata nella Casa: `/rooms?stanza=<id>`. Letta in un effetto, non
+  // con useSearchParams, che in una pagina client chiede un Suspense alla build.
+  const [aperta, setAperta] = useState<string | null>(null);
+  useEffect(() => {
+    setAperta(new URLSearchParams(window.location.search).get('stanza'));
+  }, []);
 
   useEffect(() => {
     if (!projectId) {
@@ -146,7 +152,7 @@ export default function RoomsPage() {
               />
             </div>
             <RoomGrid rooms={filtered} deviceCounts={deviceCounts} allDevices={allDevices}
-              onChanged={() => setReload((n) => n + 1)} />
+              onChanged={() => setReload((n) => n + 1)} aperta={aperta} />
           </>
         )}
       </main>

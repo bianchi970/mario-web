@@ -15,7 +15,7 @@ import { listRooms } from '@/lib/api/rooms';
 import { fetchAPI } from '@/lib/api/client';
 import { useProjectId } from '@/hooks/useProjectId';
 import type { Device, Room } from '@/lib/hub-types';
-import { capacitaDi } from '@/lib/capacita';
+import { capacitaDi, nomeDellaLettura } from '@/lib/capacita';
 
 const DEVICE_ICONS: Record<string, string> = {
   light: '💡', rgb_light: '🌈', cover: '🪟', blind: '🪟', awning: '⛱',
@@ -282,13 +282,20 @@ export default function DeviceDetailPage() {
               <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
                 <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Stato corrente</div>
                 <div className="space-y-1">
-                  {Object.entries(device.state as Record<string, unknown>).map(([k, v]) => (
-                    <Row key={k} label={k} value={
-                      typeof v === 'boolean' ? (v ? 'sì' : 'no') :
-                      v === null ? '—' :
-                      String(v)
-                    } />
-                  ))}
+                  {/* Ogni lettura col nome che le dà il device; quelle che nessuna
+                      capability dichiara (`signal`…) solo a chi installa. */}
+                  {Object.entries(device.state as Record<string, unknown>).map(([k, v]) => {
+                    const nome = nomeDellaLettura(device, k);
+                    if (!nome && !installerMode) return null;
+                    return (
+                      <Row key={k} label={nome ?? k} value={
+                        typeof v === 'boolean' ? (v ? 'sì' : 'no') :
+                        v === null ? '—' :
+                        k === 'battery' && typeof v === 'number' ? `${v}%` :
+                        String(v)
+                      } />
+                    );
+                  })}
                 </div>
               </div>
             )}

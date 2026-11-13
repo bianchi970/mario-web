@@ -66,3 +66,14 @@ export function vuoleUnValore(azione: string): boolean {
 export function dice(device: { capabilities?: CapacitaDallHub[] | null }, cosa: string): boolean {
   return capacitaDi(device).some((c) => c.key === cosa || c.letture.includes(cosa));
 }
+
+/**
+ * Il nome di una lettura dello stato (`flood`, `battery`) come lo dichiara il
+ * device: la capability che la legge (`letture`) porta il suo `label`
+ * («Allagamento», «Batteria»). `null` = nessuna capability la dichiara: è un
+ * dettaglio tecnico, non qualcosa da mostrare a chi abita (13/11/2026: la
+ * scheda diceva «flood: no», «signal: 20»).
+ */
+export function nomeDellaLettura(device: { capabilities?: CapacitaDallHub[] | null }, chiave: string): string | null {
+  return capacitaDi(device).find((c) => c.letture.includes(chiave))?.label ?? null;
+}

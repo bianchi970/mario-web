@@ -71,6 +71,23 @@ describe('la scheda di un device', () => {
     installatore = false;
   });
 
+  it('DD-04 lo stato si legge coi nomi che dà il device; ciò che non dichiara, no', async () => {
+    installatore = false;
+    mockedGetDevice.mockResolvedValue({
+      ...gas, name: 'Sensore allagamento d3b6', state: { flood: false, battery: 100, signal: 20 },
+      capabilities: [
+        { key: 'flood_detect', label: 'Allagamento', actions: [], letture: ['flood'] },
+        { key: 'battery_read', label: 'Batteria', actions: [], letture: ['battery'] },
+      ],
+    } as never);
+    render(<DevicePage />);
+    await waitFor(() => expect(screen.getByText('Sensore allagamento d3b6')).toBeInTheDocument());
+    expect(screen.getAllByText('Allagamento').length).toBeGreaterThan(0);
+    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.queryByText('flood')).not.toBeInTheDocument();
+    expect(screen.queryByText('signal')).not.toBeInTheDocument();
+  });
+
   it('DD-03 una rinomina rifiutata dall\'Hub si dice', async () => {
     mockedGetDevice.mockResolvedValue(gas as never);
     (fetchAPI as jest.Mock).mockRejectedValueOnce(Object.assign(new Error('forbidden'), { status: 403 }));

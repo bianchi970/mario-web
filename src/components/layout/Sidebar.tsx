@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { useSession } from '@/context/SessionContext';
 import ThemeSelector from '@/components/ui/ThemeSelector';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
@@ -17,24 +18,25 @@ interface NavItem {
   href: string;
   label: string;
   Icon: LucideIcon;
-  installerOnly: boolean;
+  /** 'tutti' · 'chi-aggiunge' (il ruolo: admin, installatore — come l'Hub) · 'installatore' (l'interruttore) */
+  perChi: 'tutti' | 'chi-aggiunge' | 'installatore';
   mobileHidden: boolean;
 }
 
-// mobileHidden: non appare nella bottom nav mobile (solo sidebar desktop)
-// Routine e Storico aggiunti al nav utente in B97-C dopo che le pagine sono pronte.
+// Nella barra del telefono (13/11/2026, Romeo: comandare, allarmi, aggiungere
+// dal telefono): Casa · Stanze · Sicurezza · Aggiungi · Impostazioni.
+// «Aggiungi» e «Dispositivi» li vede chi l'Hub lascia aggiungere: fino a oggi
+// solo con l'interruttore installatore del browser, che non è un permesso.
 const NAV_ALL: NavItem[] = [
-  { href: '/',           label: 'Casa',                      Icon: Home,       installerOnly: false, mobileHidden: false },
-  { href: '/rooms',      label: 'Stanze',                    Icon: LayoutGrid, installerOnly: false, mobileHidden: false },
-  { href: '/settings',   label: 'Impostazioni',              Icon: Settings,   installerOnly: false, mobileHidden: false },
-  { href: '/security',   label: 'Sicurezza',                 Icon: Shield,     installerOnly: false, mobileHidden: true },
-  { href: '/energy',     label: 'Energia',                   Icon: Zap,        installerOnly: false, mobileHidden: true },
-  // Storico: visibile a tutti in B97-C (ora solo installatore)
-  { href: '/storico',    label: 'Storico',                   Icon: Clock,      installerOnly: true,  mobileHidden: true },
-  // Routine: aggiunto in B97-C quando la pagina sarà disponibile
-  { href: '/devices',    label: 'Dispositivi',               Icon: Cpu,        installerOnly: true,  mobileHidden: true },
-  { href: '/onboarding', label: 'Aggiungi',                  Icon: Plus,       installerOnly: true,  mobileHidden: true },
-  { href: '/gateways',   label: 'Gateway',                   Icon: Router,     installerOnly: true,  mobileHidden: true },
+  { href: '/',           label: 'Casa',         Icon: Home,       perChi: 'tutti',        mobileHidden: false },
+  { href: '/rooms',      label: 'Stanze',       Icon: LayoutGrid, perChi: 'tutti',        mobileHidden: false },
+  { href: '/security',   label: 'Sicurezza',    Icon: Shield,     perChi: 'tutti',        mobileHidden: false },
+  { href: '/onboarding', label: 'Aggiungi',     Icon: Plus,       perChi: 'chi-aggiunge', mobileHidden: false },
+  { href: '/settings',   label: 'Impostazioni', Icon: Settings,   perChi: 'tutti',        mobileHidden: false },
+  { href: '/energy',     label: 'Energia',      Icon: Zap,        perChi: 'tutti',        mobileHidden: true },
+  { href: '/devices',    label: 'Dispositivi',  Icon: Cpu,        perChi: 'chi-aggiunge', mobileHidden: true },
+  { href: '/storico',    label: 'Storico',      Icon: Clock,      perChi: 'installatore', mobileHidden: true },
+  { href: '/gateways',   label: 'Gateway',      Icon: Router,     perChi: 'installatore', mobileHidden: true },
 ];
 
 export default function Sidebar() {
@@ -43,7 +45,10 @@ export default function Sidebar() {
   const { canInstall, install } = usePWAInstall();
   const [logoOpen, setLogoOpen] = useState(false);
 
-  const NAV        = NAV_ALL.filter((item) => !item.installerOnly || installerMode);
+  const { user } = useSession();
+  const aggiunge = installerMode || user?.role === 'admin' || user?.role === 'installatore';
+  const NAV        = NAV_ALL.filter((item) =>
+    item.perChi === 'tutti' || (item.perChi === 'chi-aggiunge' ? aggiunge : installerMode));
   const MOBILE_NAV = NAV.filter((item) => !item.mobileHidden);
 
   return (

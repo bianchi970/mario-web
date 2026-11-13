@@ -63,6 +63,12 @@ export default function WeatherBanner({ weather }: { weather: WeatherData }) {
               {weather.rain_prob_day}%
             </span>
           )}
+          {weather.feels_like !== null && (
+            <span className="text-xs text-text-2">Percepita {Math.round(weather.feels_like)}°</span>
+          )}
+          {weather.humidity !== null && (
+            <span className="text-xs text-text-2">Umidità {weather.humidity}%</span>
+          )}
           {weather.wind_speed !== null && weather.wind_speed > 0 && (
             <span className="flex items-center gap-1 text-xs text-text-2">
               <Wind className="h-3 w-3" />

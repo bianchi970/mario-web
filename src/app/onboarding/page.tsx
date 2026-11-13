@@ -43,14 +43,14 @@ const POLL_MS      = 2000;
 const SESSION_SECS = 120;
 
 const PROTOCOL_ICONS: Record<string, string> = {
-  http:      '&#127760;',
-  shelly:    '&#9889;',
-  mqtt:      '&#128225;',
-  websocket: '&#128247;',
-  zwave:     '&#128246;',
-  zigbee:    '&#128309;',
-  ble:       '&#128309;',
-  matter:    '&#11088;',
+  http:      '🌐',
+  shelly:    '⚡',
+  mqtt:      '📡',
+  websocket: '📷',
+  zwave:     '📶',
+  zigbee:    '🔵',
+  ble:       '🔵',
+  matter:    '⭐',
 };
 
 const PROTOCOL_LABELS: Record<string, string> = {
@@ -360,8 +360,7 @@ export default function OnboardingPage() {
     return (
       <span
         className="inline-flex items-center gap-1 text-xs bg-hub-border/60 text-hub-muted px-1.5 py-0.5 rounded font-mono"
-        dangerouslySetInnerHTML={{ __html: `${PROTOCOL_ICONS[p] ?? '&#128246;'} ${PROTOCOL_LABELS[p] ?? p}` }}
-      />
+      >{`${PROTOCOL_ICONS[p] ?? '📶'} ${PROTOCOL_LABELS[p] ?? p}`}</span>
     );
   }
 
@@ -377,18 +376,17 @@ export default function OnboardingPage() {
         {isIdle && (
           <div className="flex rounded-xl overflow-hidden border border-hub-border text-sm">
             {([
-              { id: 'discover', label: '&#128269; Scopri', title: 'Scansione automatica rete' },
-              { id: 'manual',   label: '&#127760; Per IP',  title: 'Inserisci IP manualmente' },
-              { id: 'zwave',    label: '&#128246; Z-Wave',  title: 'Pairing Z-Wave/Radio' },
-              { id: 'zigbee',   label: '&#128309; Zigbee',  title: 'Associazione Zigbee' },
+              { id: 'discover', label: '🔍 Scopri', title: 'Scansione automatica rete' },
+              { id: 'manual',   label: '🌐 Per IP',  title: 'Inserisci IP manualmente' },
+              { id: 'zwave',    label: '📶 Z-Wave',  title: 'Pairing Z-Wave/Radio' },
+              { id: 'zigbee',   label: '🔵 Zigbee',  title: 'Associazione Zigbee' },
             ] as const).map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setMode(tab.id)}
                 title={tab.title}
                 className={`flex-1 py-2.5 font-medium transition-colors text-xs ${mode === tab.id ? 'bg-hub-accent text-black' : 'bg-hub-surface text-hub-muted hover:text-hub-text'}`}
-                dangerouslySetInnerHTML={{ __html: tab.label }}
-              />
+              >{tab.label}</button>
             ))}
           </div>
         )}
@@ -402,7 +400,7 @@ export default function OnboardingPage() {
               const active = i === idx;
               return (
                 <span key={label} className="flex items-center gap-1">
-                  {i > 0 && <span className="text-hub-border">&#8250;</span>}
+                  {i > 0 && <span className="text-hub-border">›</span>}
                   <span className={done ? 'text-hub-muted line-through' : active ? 'text-hub-accent font-semibold' : 'text-hub-muted'}>
                     {label}
                   </span>
@@ -424,7 +422,7 @@ export default function OnboardingPage() {
                 disabled={scanning}
                 className="text-xs text-hub-accent border border-hub-accent/40 rounded-lg px-3 py-1.5 hover:bg-hub-accent/10 disabled:opacity-40 transition-colors"
               >
-                {scanning ? 'Scansione...' : '&#8635; Aggiorna'}
+                {scanning ? 'Scansione...' : '↻ Aggiorna'}
               </button>
             </div>
 
@@ -439,27 +437,27 @@ export default function OnboardingPage() {
 
             {!scanning && scanErr && (
               <div className="rounded-xl border border-amber-700/60 bg-amber-900/20 p-4 text-sm text-hub-amber">
-                <p className="font-medium mb-1">&#9888; Scansione non disponibile</p>
+                <p className="font-medium mb-1">⚠ Scansione non disponibile</p>
                 <p className="text-xs text-hub-muted">{scanErr}</p>
                 <button
                   onClick={() => setMode('manual')}
                   className="mt-3 text-xs text-hub-accent underline"
                 >
-                  Inserisci IP manualmente &#8250;
+                  Inserisci IP manualmente ›
                 </button>
               </div>
             )}
 
             {!scanning && scanResults !== null && scanResults.length === 0 && !scanErr && (
               <div className="rounded-xl border border-hub-border bg-hub-surface p-6 text-center space-y-2">
-                <p className="text-2xl">&#128308;</p>
+                <p className="text-2xl">🔴</p>
                 <p className="text-sm text-hub-text font-medium">Nessun dispositivo trovato</p>
                 <p className="text-xs text-hub-muted">Assicurati che i dispositivi siano accesi e sulla stessa rete Wi-Fi.</p>
                 <button
                   onClick={() => setMode('manual')}
                   className="mt-2 text-xs text-hub-accent underline"
                 >
-                  Inserisci IP manualmente &#8250;
+                  Inserisci IP manualmente ›
                 </button>
               </div>
             )}
@@ -483,7 +481,7 @@ export default function OnboardingPage() {
                         <div className="text-xs text-hub-muted font-mono mt-0.5">{r.ip}</div>
                       </div>
                       <span className="text-hub-accent text-sm opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        Aggiungi &#8250;
+                        Aggiungi ›
                       </span>
                     </div>
                   </button>
@@ -542,10 +540,10 @@ export default function OnboardingPage() {
                     ${probeOk === true ? 'border-green-500' : probeOk === false ? 'border-red-500' : 'border-hub-border focus:border-hub-accent'}`}
                 />
                 {probeOk === true && (
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-hub-green text-xs">&#10003;</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-hub-green text-xs">✓</span>
                 )}
                 {probeOk === false && (
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-hub-red text-xs">&#10007;</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-hub-red text-xs">✗</span>
                 )}
               </div>
               <button
@@ -571,7 +569,7 @@ export default function OnboardingPage() {
               <div className="rounded-xl border border-hub-border overflow-hidden">
                 <div className="px-3 py-2 bg-hub-surface border-b border-hub-border flex items-center justify-between">
                   <span className="text-xs text-hub-muted font-medium">Trovati in rete</span>
-                  <button onClick={() => setScanResults(null)} className="text-xs text-hub-muted">&#10005;</button>
+                  <button onClick={() => setScanResults(null)} className="text-xs text-hub-muted">✕</button>
                 </div>
                 {scanResults.map((r, i) => (
                   <button
@@ -599,7 +597,7 @@ export default function OnboardingPage() {
             </select>
 
             {probeOk === false && (
-              <p className="text-xs text-hub-amber">&#9888; Dispositivo non raggiungibile all&apos;IP inserito. Controlla IP e connessione.</p>
+              <p className="text-xs text-hub-amber">⚠ Dispositivo non raggiungibile all&apos;IP inserito. Controlla IP e connessione.</p>
             )}
             {errMsg && <p className="text-xs text-hub-red font-mono">{errMsg}</p>}
 
@@ -608,7 +606,7 @@ export default function OnboardingPage() {
               disabled={!manIp.trim() || manSaving}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm disabled:opacity-40 transition-opacity"
             >
-              {manSaving ? 'Registrazione...' : 'Registra dispositivo &#8250;'}
+              {manSaving ? 'Registrazione...' : 'Registra dispositivo ›'}
             </button>
           </div>
         )}
@@ -641,7 +639,7 @@ export default function OnboardingPage() {
               onClick={() => startSession(false, RADIO.zwave)}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
             >
-              Avvia pairing Z-Wave &#8250;
+              Avvia pairing Z-Wave ›
             </button>
           </div>
         )}
@@ -670,7 +668,7 @@ export default function OnboardingPage() {
               onClick={() => startSession(false, RADIO.zigbee)}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
             >
-              Apri la rete Zigbee &#8250;
+              Apri la rete Zigbee ›
             </button>
           </div>
         )}
@@ -696,7 +694,7 @@ export default function OnboardingPage() {
                   onClick={resumeSession}
                   className="w-full bg-hub-accent text-black font-semibold py-2.5 rounded-xl text-sm"
                 >
-                  Riprendi sessione +{SESSION_SECS}s &#8635;
+                  Riprendi sessione +{SESSION_SECS}s ↻
                 </button>
               </div>
             ) : (
@@ -771,7 +769,7 @@ export default function OnboardingPage() {
 
             {dskStatus === 'ok' && (
               <div className="rounded-xl bg-green-900/30 border border-green-700 p-3 text-xs text-green-300">
-                &#10003; {dskMsg}
+                ✓ {dskMsg}
               </div>
             )}
             {dskStatus === 'error' && (
@@ -830,7 +828,7 @@ export default function OnboardingPage() {
               onClick={confirmRoom}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
             >
-              Avanti &#8250;
+              Avanti ›
             </button>
           </div>
         )}
@@ -846,13 +844,13 @@ export default function OnboardingPage() {
                 onClick={() => testCmd('turn_on')}
                 className="flex-1 bg-hub-surface border border-hub-border py-3 rounded-xl text-sm text-hub-text hover:border-hub-accent hover:text-hub-accent transition-colors"
               >
-                &#128161; ON
+                💡 ON
               </button>
               <button
                 onClick={() => testCmd('turn_off')}
                 className="flex-1 bg-hub-surface border border-hub-border py-3 rounded-xl text-sm text-hub-text hover:border-hub-border/60 transition-colors"
               >
-                &#9866; OFF
+                ⚊ OFF
               </button>
             </div>
             {testLog.length > 0 && (
@@ -864,7 +862,7 @@ export default function OnboardingPage() {
               onClick={() => setStep('done')}
               className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
             >
-              Salva &#10003;
+              Salva ✓
             </button>
           </div>
         )}
@@ -875,7 +873,7 @@ export default function OnboardingPage() {
         {step === 'done' && (
           <div className="space-y-4">
             <div className="rounded-xl border border-green-600/60 bg-green-900/20 p-5 text-center space-y-1">
-              <div className="text-3xl">&#10003;</div>
+              <div className="text-3xl">✓</div>
               <p className="text-hub-green font-semibold">{trovato?.name ?? 'Dispositivo'} salvato</p>
               {stanzaDetta && <p className="text-hub-muted text-xs">in {stanzaDetta}</p>}
             </div>

@@ -478,7 +478,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* ── Banner meteo ── */}
+            {/* ── Meteo: uno solo (13/11/2026: erano due, un banner e una scheda) ── */}
             {weather && <WeatherBanner weather={weather} />}
 
             {/* ── Notifiche — sempre visibili in cima ── */}
@@ -490,42 +490,6 @@ export default function DashboardPage() {
               />
             )}
             {projectId && <PushEnableBanner projectId={projectId} />}
-
-            {/* Widget Meteo */}
-            {weather && (
-              <div className="rounded-[24px] border border-sky-500/40 bg-surface p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-hub-accent/80">
-                    {weather.city ?? 'Meteo'}
-                  </div>
-                  <span className="text-[10px] text-text-2">Open-Meteo</span>
-                </div>
-                <div className="flex items-end gap-4">
-                  <div>
-                    <div className="text-3xl font-semibold text-text">
-                      {weather.temperature !== null ? `${Math.round(weather.temperature)}°` : '—'}
-                    </div>
-                    {weather.condition && (
-                      <div className="mt-0.5 text-xs text-text-2">{weather.condition}</div>
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-0.5 text-xs text-text-2">
-                    {weather.feels_like !== null && (
-                      <div>Percepita {Math.round(weather.feels_like)}°</div>
-                    )}
-                    {weather.temp_max !== null && weather.temp_min !== null && (
-                      <div>↑{Math.round(weather.temp_max)}° ↓{Math.round(weather.temp_min)}°</div>
-                    )}
-                    {weather.rain_prob_day !== null && (
-                      <div>Pioggia {weather.rain_prob_day}%</div>
-                    )}
-                    {weather.humidity !== null && (
-                      <div>Umidità {weather.humidity}%</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Brain NL Command Bar */}
             {projectId && (

@@ -227,7 +227,8 @@ export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
               </button>
             )}
 
-            <p className="text-xs text-hub-muted font-mono truncate">{device.id}</p>
+            {/* L'id solo a chi installa: a chi abita non si mostra (13/11/2026). */}
+            {installerMode && <p className="text-xs text-hub-muted font-mono truncate">{device.id}</p>}
           </div>
         </div>
         <StatusDot online={device.online} />
@@ -284,9 +285,11 @@ export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
               rileva={dice(device, 'motion')}
               capabilityTiming={device.capability_timing}
             />
-          : <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
-              {JSON.stringify(stato)}
-            </div>
+          : installerMode
+            ? <div className="text-xs text-hub-muted font-mono bg-hub-bg rounded-lg px-2 py-1.5 break-all line-clamp-2">
+                {JSON.stringify(stato)}
+              </div>
+            : null
       ) : null}
 
       {installerMode && rooms.length > 0 && (

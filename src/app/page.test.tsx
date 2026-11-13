@@ -46,6 +46,8 @@ jest.mock('@/lib/api/devices', () => ({
   listDevices: jest.fn(),
 }));
 
+let mockMeteo: unknown = null;
+jest.mock('@/lib/api/weather', () => ({ getWeatherData: () => Promise.resolve(mockMeteo) }));
 jest.mock('@/lib/api/rooms', () => ({
   listRooms: jest.fn(),
 }));
@@ -111,6 +113,19 @@ describe('Dashboard device inventory flow', () => {
 
     await waitFor(() => expect(screen.getByText('Stato Casa')).toBeInTheDocument());
     expect(screen.queryByText(/^Allarme /)).not.toBeInTheDocument();
+  });
+
+  // 13/11/2026: il meteo compariva due volte in Casa (un banner e una scheda).
+  it('il meteo si mostra una volta, con percepita e umidità', async () => {
+    mockedListDevices.mockResolvedValue([]);
+    mockMeteo = { city: 'Villa San Giovanni', temperature: 21, feels_like: 21, temp_max: 26, temp_min: 20,
+      rain_prob_day: 0, humidity: 64, wind_speed: 10, weather_code: 0, is_day: 1, condition: 'Sereno' };
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getAllByText(/Villa San Giovanni/i).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(/Villa San Giovanni/i)).toHaveLength(1);
+    expect(screen.getByText(/Percepita 21°/)).toBeInTheDocument();
+    expect(screen.getByText(/Umidità 64%/)).toBeInTheDocument();
+    mockMeteo = null;
   });
 
   // Romeo, 13/11/2026: «se clicco sulle stanze non posso fare nulla».

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { giornoLeggibile, vistoDaQuanto } from '@/lib/ora';
+import { useInstallerMode } from '@/context/InstallerModeContext';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -54,6 +55,9 @@ export default function DeviceDetailPage() {
 
   // Room
   const [savingRoom, setSavingRoom] = useState(false);
+  // Un «no» dell'Hub su nome o stanza si dice (13/11/2026: si perdeva in silenzio).
+  const [salvaMsg, setSalvaMsg] = useState<string | null>(null);
+  const { installerMode } = useInstallerMode();
 
   // Togliere: dalla rete (esclusione Z-Wave, la cancella l'Hub quando il
   // controller conferma) o dall'elenco (ritiro: «non c'è più», lo dice la persona)
@@ -105,7 +109,8 @@ export default function DeviceDetailPage() {
         body:   JSON.stringify({ name: trimmed, project_id: device.project_id }),
       });
       setDevice((prev) => prev ? { ...prev, name: trimmed } : prev);
-    } catch { /* silenzioso */ }
+      setSalvaMsg(null);
+    } catch (err) { setSalvaMsg(perche(err, 'Non sono riuscito a rinominarlo.')); }
     setSaving(false);
     setEditing(false);
   }
@@ -120,8 +125,15 @@ export default function DeviceDetailPage() {
         body:   JSON.stringify({ room_id: roomId || null, project_id: device.project_id }),
       });
       setDevice((prev) => prev ? { ...prev, room_id: roomId || null } : prev);
-    } catch { /* silenzioso */ }
+      setSalvaMsg(null);
+    } catch (err) { setSalvaMsg(perche(err, 'Non sono riuscito a cambiare stanza.')); }
     setSavingRoom(false);
+  }
+
+  function perche(err: unknown, fallback: string) {
+    const status = (err as { status?: number })?.status;
+    if (status === 401 || status === 403) return 'Solo un amministratore o un installatore può farlo.';
+    return fallback;
   }
 
   function motivo(err: unknown, fallback: string) {
@@ -230,7 +242,7 @@ export default function DeviceDetailPage() {
                       <span className="text-hub-muted group-hover:text-hub-muted text-sm">✏</span>
                     </button>
                   )}
-                  <p className="text-xs text-hub-muted font-mono mt-0.5 truncate">{device.id}</p>
+                  {salvaMsg && <p className="text-xs text-hub-red mt-1">{salvaMsg}</p>}
                 </div>
                 <StatusDot online={device.online} />
               </div>
@@ -365,13 +377,17 @@ export default function DeviceDetailPage() {
               )}
             </div>
 
-            {/* Metadata (solo se presente) */}
-            {device.metadata && Object.keys(device.metadata).length > 0 && (
+            {/* Dettagli tecnici: solo a chi installa. A chi abita la casa non si
+                mostra un id (per il gas un UUID) né un JSON (13/11/2026). */}
+            {installerMode && (
               <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-5">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Metadata</div>
-                <pre className="text-xs text-hub-muted font-mono overflow-auto max-h-40">
-                  {JSON.stringify(device.metadata, null, 2)}
-                </pre>
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">Dettagli tecnici</div>
+                <Row label="Id" value={device.id} />
+                {device.metadata && Object.keys(device.metadata).length > 0 && (
+                  <pre className="mt-2 text-xs text-hub-muted font-mono overflow-auto max-h-40">
+                    {JSON.stringify(device.metadata, null, 2)}
+                  </pre>
+                )}
               </div>
             )}
           </>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import TopBar from '@/components/layout/TopBar';
+import { quandoLeggibile as quando } from '@/lib/ora';
 import { useProjectId } from '@/hooks/useProjectId';
 import DeviceHistoryChart from '@/components/dashboard/DeviceHistoryChart';
 import {
@@ -33,12 +34,6 @@ const CONFERMA: Record<string, string> = {
   nessuna:  'arrivato, ma il dispositivo non lo conferma',
 };
 
-/** `created_at` è UTC senza fuso ("YYYY-MM-DD HH:MM:SS"): si legge come UTC. */
-function quando(utc: string): string {
-  const d = new Date(utc.replace(' ', 'T') + 'Z');
-  if (Number.isNaN(d.getTime())) return utc;
-  return d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
 
 function maiuscola(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;

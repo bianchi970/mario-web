@@ -123,3 +123,19 @@ describe('accesiOra — acceso è chi sa spegnersi e dice on', () => {
     expect(accesiOra(fuori).map((d) => d.id)).toEqual(['2-ep2']);
   });
 });
+
+describe('confermaCancellaTutte', () => {
+  const { confermaCancellaTutte } = jest.requireActual('./house-state') as typeof import('./house-state');
+  const n = (o: Record<string, unknown>) => ({ id: 'n', source_event_type: 'anomaly.water.detected', title: 'Allarme',
+    message: 'x', dismissed: 0, created_at: '2026-11-13 18:00:00', ...o });
+  it('CT-01 con un allarme aperto chiede, e dice quale', () => {
+    const chiedi = jest.fn().mockReturnValue(false);
+    expect(confermaCancellaTutte([n({})], chiedi)).toBe(false);
+    expect(chiedi.mock.calls[0][0]).toMatch(/acqua/);
+  });
+  it('CT-02 senza allarmi aperti non chiede', () => {
+    const chiedi = jest.fn();
+    expect(confermaCancellaTutte([n({ source_event_type: 'alert.weather' })], chiedi)).toBe(true);
+    expect(chiedi).not.toHaveBeenCalled();
+  });
+});

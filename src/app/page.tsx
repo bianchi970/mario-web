@@ -28,17 +28,10 @@ import WeatherBanner from '@/components/dashboard/WeatherBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
 import { getLetture } from '@/lib/api/history';
+import { quandoLeggibile } from '@/lib/ora';
 
 /* ─── helpers ─────────────────────────────────────────── */
 
-// L'Hub scrive `datetime('now')` di SQLite: UTC, senza fuso ("2026-10-31 12:00:00").
-function quandoLeggibile(ts: string): string {
-  const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(ts) ? ts : `${ts.replace(' ', 'T')}Z`;
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ts
-    : d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
 
 function serviceDot(ok: boolean) {
   return ok

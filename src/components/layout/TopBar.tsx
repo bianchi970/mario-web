@@ -8,6 +8,8 @@ import { useProjectId } from '@/hooks/useProjectId';
 import { listNotifications, dismissNotification, dismissAllNotifications, type HubNotification } from '@/lib/api/notifications';
 import HouseStatusBar from '@/components/dashboard/HouseStatusBar';
 import EmergencyButton from '@/components/emergency/EmergencyButton';
+import { quandoLeggibile } from '@/lib/ora';
+import { confermaCancellaTutte } from '@/lib/house-state';
 
 // ── Severity helpers ──────────────────────────────────────────────────────────
 
@@ -23,13 +25,6 @@ function severityRow(severity: HubNotification['severity']) {
   return 'border-border bg-surface';
 }
 
-function formatTime(ts: string) {
-  try {
-    return new Date(ts).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
-}
 
 // ── TopBar ────────────────────────────────────────────────────────────────────
 
@@ -132,6 +127,7 @@ export default function TopBar({ title }: { title: string }) {
 
   async function handleDismissAll() {
     if (!projectId || notifications.length === 0) return;
+    if (!confermaCancellaTutte(notifications)) return;
     try {
       await dismissAllNotifications(projectId);
       setNotifications([]);
@@ -207,7 +203,7 @@ export default function TopBar({ title }: { title: string }) {
                           <div className="text-sm font-medium text-text leading-snug">{n.title}</div>
                           <div className="text-xs text-text-2 mt-0.5 leading-snug">{n.message}</div>
                           {n.created_at && (
-                            <div className="text-[10px] text-text-2 opacity-60 mt-1">{formatTime(n.created_at)}</div>
+                            <div className="text-[10px] text-text-2 opacity-60 mt-1">{quandoLeggibile(n.created_at)}</div>
                           )}
                         </div>
                         <button

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { giornoLeggibile, vistoDaQuanto } from '@/lib/ora';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -23,14 +24,7 @@ const DEVICE_ICONS: Record<string, string> = {
   lock: '🔒', sensor: '📡', switch: '🔄',
 };
 
-function formatLastSeen(ts: string | null | undefined) {
-  if (!ts) return null;
-  const diff = Date.now() - new Date(ts).getTime();
-  if (diff < 60000) return 'adesso';
-  if (diff < 3600000) return `${Math.round(diff / 60000)}m fa`;
-  if (diff < 86400000) return `${Math.round(diff / 3600000)}h fa`;
-  return new Date(ts).toLocaleDateString('it-IT');
-}
+const formatLastSeen = vistoDaQuanto;
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -268,7 +262,7 @@ export default function DeviceDetailPage() {
               {device.connectivity?.signal !== undefined && device.connectivity.signal !== null && (
                 <Row label="Segnale" value={`${device.connectivity.signal} dBm`} />
               )}
-              <Row label="Creato" value={new Date(device.created_at).toLocaleDateString('it-IT')} />
+              <Row label="Creato" value={giornoLeggibile(device.created_at) || '—'} />
             </div>
 
             {/* Stato corrente */}

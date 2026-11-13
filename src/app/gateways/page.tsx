@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { quandoLeggibile } from '@/lib/ora';
 import TopBar from '@/components/layout/TopBar';
 import { useGateway, type GatewayEntry } from '@/context/GatewayContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
@@ -258,7 +259,7 @@ export default function GatewaysPage() {
                 <div className="text-xs text-hub-muted font-mono">{g.url}</div>
                 {g.last_seen && (
                   <div className="text-xs text-hub-muted">
-                    Visto: {new Date(g.last_seen).toLocaleString('it-IT')}
+                    Visto: {quandoLeggibile(g.last_seen)}
                   </div>
                 )}
                 <button

@@ -11,7 +11,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { listDevices } from '@/lib/api/devices';
-import { computeHouseState } from '@/lib/house-state';
+import { allarmiAperti, computeHouseState } from '@/lib/house-state';
+import { listNotifications, type HubNotification } from '@/lib/api/notifications';
 import { useProjectId } from '@/hooks/useProjectId';
 import { useOfflineMode } from '@/components/layout/OfflineModeProvider';
 
@@ -22,7 +23,22 @@ interface StatusInfo {
   label: string;
 }
 
-function computeStatus(devices: Awaited<ReturnType<typeof listDevices>>): StatusInfo {
+const NOME_PERICOLO = { gas: 'gas', fumo: 'fumo', acqua: 'acqua' } as const;
+
+/**
+ * Gli allarmi di pericolo si leggono dalle notifiche dell'Hub, come in «Stato
+ * Casa» (`allarmiAperti`): il sensore gas vero ha lo stato vuoto, e fino al
+ * 13/11/2026 questa barra diceva «Casa OK» con un allarme gas aperto (HS-01).
+ */
+export function computeStatus(
+  devices: Awaited<ReturnType<typeof listDevices>>,
+  notifiche: HubNotification[] = [],
+): StatusInfo {
+  const pericoli = allarmiAperti(notifiche).filter((a) => !a.prova);
+  if (pericoli.length > 0) {
+    const tipi = [...new Set(pericoli.map((a) => NOME_PERICOLO[a.pericolo]))];
+    return { level: 'error', label: `Allarme ${tipi.join(', ')}` };
+  }
   if (!devices.length) return { level: 'ok', label: 'Casa OK' };
 
   const state       = computeHouseState(devices);
@@ -68,9 +84,12 @@ export default function HouseStatusBar() {
       }
 
       try {
-        const devices = await listDevices(projectId);
+        const [devices, notifiche] = await Promise.all([
+          listDevices(projectId),
+          listNotifications(projectId).catch(() => [] as HubNotification[]),
+        ]);
         if (cancelRef.current) return;
-        setInfo(computeStatus(devices));
+        setInfo(computeStatus(devices, notifiche));
         timerRef.current = setTimeout(poll, 30_000);
       } catch {
         if (cancelRef.current) return;
@@ -99,7 +118,8 @@ export default function HouseStatusBar() {
   return (
     <div className="flex items-center gap-1.5 text-xs text-text-2 select-none">
       <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${DOT_CLASS[info.level]}`} />
-      <span className="hidden sm:inline truncate max-w-[120px]">{info.label}</span>
+      {/* Sul telefono restava solo il pallino: un allarme si dice anche lì. */}
+      <span className={`${info.level === 'error' ? 'inline' : 'hidden sm:inline'} truncate max-w-[120px]`}>{info.label}</span>
     </div>
   );
 }

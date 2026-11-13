@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BellOff, X } from 'lucide-react';
 import { listNotifications, dismissNotification, dismissAllNotifications } from '@/lib/api/notifications';
 import type { HubNotification } from '@/lib/api/notifications';
+import { quandoLeggibile } from '@/lib/ora';
+import { confermaCancellaTutte } from '@/lib/house-state';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -25,13 +27,6 @@ function severityIcon(severity: HubNotification['severity']) {
   return <AlertTriangle className={`h-4 w-4 shrink-0 ${cls}`} />;
 }
 
-function formatTime(ts: string) {
-  try {
-    return new Date(ts).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
-}
 
 /* ─── NotificationCenter ─────────────────────────────────────────────────── */
 
@@ -134,6 +129,7 @@ export default function NotificationCenter({
   }
 
   async function handleDismissAll() {
+    if (!confermaCancellaTutte(items)) return;
     try {
       await dismissAllNotifications(projectId);
       setItems([]);
@@ -163,7 +159,7 @@ export default function NotificationCenter({
             <div className="font-medium leading-snug">{n.title}</div>
             <div className="mt-0.5 text-sm opacity-80">{n.message}</div>
             {n.created_at && (
-              <div className="mt-1 text-xs opacity-50">{formatTime(n.created_at)}</div>
+              <div className="mt-1 text-xs opacity-50">{quandoLeggibile(n.created_at)}</div>
             )}
           </div>
           <button

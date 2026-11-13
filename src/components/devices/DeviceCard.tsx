@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { vistoDaQuanto } from '@/lib/ora';
 import Link from 'next/link';
 import type { Device, Room } from '@/lib/hub-types';
 import Badge, { deviceTypeBadge } from '@/components/ui/Badge';
@@ -19,13 +20,7 @@ const DEVICE_ICONS: Record<string, string> = {
   lock: '🔒', sensor: '📡', switch: '🔄',
 };
 
-function formatLastSeen(ts: string | null | undefined) {
-  if (!ts) return null;
-  const diff = Date.now() - new Date(ts).getTime();
-  if (diff < 60000) return 'adesso';
-  if (diff < 3600000) return `${Math.round(diff / 60000)}m fa`;
-  return `${Math.round(diff / 3600000)}h fa`;
-}
+const formatLastSeen = vistoDaQuanto;
 
 const SENSOR_TYPES = new Set(['sensor', 'motion_sensor', 'contact_sensor', 'temperature_sensor', 'humidity_sensor', 'co2_sensor']);
 

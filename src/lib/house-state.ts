@@ -174,3 +174,18 @@ export function allarmiAperti(
     // prima i veri, poi le prove; fra pari il più recente
     .sort((a, b) => Number(a.prova) - Number(b.prova) || b.quando.localeCompare(a.quando));
 }
+
+/**
+ * «Cancella tutte» chiude anche gli allarmi di pericolo: con uno aperto si
+ * chiede prima, e si dice quale (13/11/2026: chiudeva gas e acqua senza
+ * chiedere). `true` = si può procedere.
+ */
+export function confermaCancellaTutte(
+  notifiche: Parameters<typeof allarmiAperti>[0],
+  chiedi: (testo: string) => boolean = (t) => window.confirm(t),
+): boolean {
+  const veri = allarmiAperti(notifiche).filter((a) => !a.prova);
+  if (veri.length === 0) return true;
+  const tipi = [...new Set(veri.map((a) => a.pericolo))].join(', ');
+  return chiedi(`Ci sono allarmi aperti (${tipi}). Cancellando tutte le notifiche li segni come visti. Procedo?`);
+}

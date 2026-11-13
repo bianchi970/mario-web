@@ -5,6 +5,7 @@ import { ShieldCheck, ShieldAlert, ShieldOff, Shield } from 'lucide-react';
 import TopBar from '@/components/layout/TopBar';
 import { useProjectId } from '@/hooks/useProjectId';
 import { fetchAPI } from '@/lib/api/client';
+import { quandoLeggibile } from '@/lib/ora';
 
 // ── Tipi ──────────────────────────────────────────────────────────────────────
 
@@ -75,14 +76,6 @@ function formatEventType(t: string) {
   return map[t] ?? t;
 }
 
-function formatTs(ts: string) {
-  try {
-    return new Date(ts).toLocaleString('it-IT', {
-      day: '2-digit', month: '2-digit',
-      hour: '2-digit', minute: '2-digit',
-    });
-  } catch { return ts; }
-}
 
 const MODES: SecurityMode[] = ['disarmed', 'home', 'night', 'away'];
 
@@ -228,7 +221,7 @@ export default function SecurityPage() {
                   <div className="text-xl font-semibold">{MODE_LABELS[state.mode]}</div>
                   <div className="mt-0.5 text-sm opacity-70">{MODE_DESC[state.mode]}</div>
                   {state.updated_at && (
-                    <div className="mt-1 text-xs opacity-50">{formatTs(state.updated_at)}</div>
+                    <div className="mt-1 text-xs opacity-50">{quandoLeggibile(state.updated_at)}</div>
                   )}
                 </div>
               </div>
@@ -277,7 +270,7 @@ export default function SecurityPage() {
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-hub-muted shrink-0">{formatTs(e.created_at)}</span>
+                      <span className="text-[10px] text-hub-muted shrink-0">{quandoLeggibile(e.created_at)}</span>
                     </div>
                   ))}
                 </div>

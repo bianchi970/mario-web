@@ -6,6 +6,7 @@ import { fetchAPI } from '@/lib/api/client';
 import { executeUiCommand } from '@/lib/api/ui-command';
 import { listRooms } from '@/lib/api/rooms';
 import { useProjectId } from '@/hooks/useProjectId';
+import CosaHoTrovato from '@/components/onboarding/CosaHoTrovato';
 import type { Room } from '@/lib/hub-types';
 
 // ── Tipi ─────────────────────────────────────────────────────────────────────
@@ -97,6 +98,8 @@ export default function OnboardingPage() {
   const [roomId, setRoomId]     = useState('');
   const [newRoomName, setNewRoomName] = useState('');
   const [testLog, setTestLog]   = useState<string[]>([]);
+  const [trovato, setTrovato]   = useState<{ name: string; comandabile: boolean } | null>(null);
+  const [stanzaDetta, setStanzaDetta] = useState('');
   const [errMsg, setErrMsg]     = useState('');
   const [timeLeft, setTimeLeft] = useState(SESSION_SECS);
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -317,8 +320,10 @@ export default function OnboardingPage() {
         targetRoomId = res.room.id;
       }
       if (targetRoomId) await assignRoom(projectId, targetRoomId, deviceId);
+      setStanzaDetta(newRoomName.trim() || rooms.find((r) => r.id === targetRoomId)?.name || '');
       setTestLog([]);
-      setStep('test');
+      // Un sensore non si accende: il test ON/OFF è per chi comanda qualcosa.
+      setStep(trovato && !trovato.comandabile ? 'done' : 'test');
     } catch (err) {
       setErrMsg(err instanceof Error ? err.message : 'Errore assegnazione stanza');
     }
@@ -343,6 +348,7 @@ export default function OnboardingPage() {
     setDskStatus('idle'); setDskMsg(''); setManName(''); setManBrand('');
     setManModel(''); setManIp(''); setManProtocol('http'); setNewRoomName('');
     setSessionExpired(false); setProbeOk(null);
+    setTrovato(null); setStanzaDetta('');
     setStep('idle');
   }
 
@@ -782,18 +788,11 @@ export default function OnboardingPage() {
             STEP: FOUND
         ═══════════════════════════════════════════════════════════════════ */}
         {step === 'found' && deviceId && (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-green-600/60 bg-green-900/20 p-4">
-              <p className="text-hub-green font-semibold mb-1">&#10003; Dispositivo trovato</p>
-              <p className="text-hub-muted text-xs font-mono">{deviceId}</p>
-            </div>
-            <button
-              onClick={() => { setRoomId(rooms[0]?.id ?? ''); setStep('room'); }}
-              className="w-full bg-hub-accent text-black font-semibold py-3 rounded-xl text-sm"
-            >
-              Continua &#8250;
-            </button>
-          </div>
+          <CosaHoTrovato
+            projectId={projectId}
+            deviceId={deviceId}
+            onDone={(info) => { setTrovato(info); setRoomId(rooms[0]?.id ?? ''); setStep('room'); }}
+          />
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -877,8 +876,8 @@ export default function OnboardingPage() {
           <div className="space-y-4">
             <div className="rounded-xl border border-green-600/60 bg-green-900/20 p-5 text-center space-y-1">
               <div className="text-3xl">&#10003;</div>
-              <p className="text-hub-green font-semibold">Dispositivo salvato</p>
-              <p className="text-hub-muted text-xs font-mono">{deviceId}</p>
+              <p className="text-hub-green font-semibold">{trovato?.name ?? 'Dispositivo'} salvato</p>
+              {stanzaDetta && <p className="text-hub-muted text-xs">in {stanzaDetta}</p>}
             </div>
             <button
               onClick={reset}

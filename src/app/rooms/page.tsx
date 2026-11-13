@@ -7,13 +7,16 @@ import RoomGrid from '@/components/rooms/RoomGrid';
 import { useProjectId } from '@/hooks/useProjectId';
 import { listRooms, createRoom } from '@/lib/api/rooms';
 import { listDevices } from '@/lib/api/devices';
-import { useInstallerMode } from '@/context/InstallerModeContext';
-import type { Room } from '@/lib/hub-types';
+import type { Device, Room } from '@/lib/hub-types';
 
+// Le stanze le crea, rinomina ed elimina chi abita la casa (13/11/2026): fino a
+// oggi «Aggiungi» compariva solo in modalità installatore, che è un interruttore
+// del browser e non un permesso. I permessi li decide l'Hub.
 export default function RoomsPage() {
   const projectId = useProjectId();
-  const { installerMode } = useInstallerMode();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [allDevices, setAllDevices] = useState<Device[]>([]);
+  const [reload, setReload] = useState(0);
   const [deviceCounts, setDeviceCounts] = useState<Record<string, { total: number; online: number }>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +44,7 @@ export default function RoomsPage() {
         ]);
         if (cancelled) return;
         setRooms(items);
+        setAllDevices(deviceItems);
         // Calcola conteggi online/totale per stanza
         const counts: Record<string, { total: number; online: number }> = {};
         for (const d of deviceItems) {
@@ -70,7 +74,7 @@ export default function RoomsPage() {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, reload]);
 
   async function handleCreateRoom(e: React.FormEvent) {
     e.preventDefault();
@@ -114,14 +118,8 @@ export default function RoomsPage() {
             </div>
             <p className="text-sm text-hub-text">{error}</p>
           </div>
-        ) : rooms.length === 0 && !installerMode ? (
-          <div className="card py-16 text-center text-hub-muted">
-            <p className="text-sm text-hub-text">Nessuna stanza configurata.</p>
-            <p className="mt-1 text-xs">Contatta l&apos;installatore per configurare le stanze.</p>
-          </div>
         ) : (
           <>
-            {installerMode && (
               <form onSubmit={handleCreateRoom} className="mb-4 flex gap-2">
                 <input
                   type="text"
@@ -138,7 +136,6 @@ export default function RoomsPage() {
                   {creating ? '...' : 'Aggiungi'}
                 </button>
               </form>
-            )}
             <div className="mb-4">
               <input
                 type="text"
@@ -148,7 +145,8 @@ export default function RoomsPage() {
                 className="w-full rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text placeholder:text-hub-muted focus:outline-none focus:ring-1 focus:ring-hub-accent"
               />
             </div>
-            <RoomGrid rooms={filtered} deviceCounts={deviceCounts} />
+            <RoomGrid rooms={filtered} deviceCounts={deviceCounts} allDevices={allDevices}
+              onChanged={() => setReload((n) => n + 1)} />
           </>
         )}
       </main>

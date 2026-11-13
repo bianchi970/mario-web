@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { Device, Room } from '@/lib/hub-types';
 import Badge from '@/components/ui/Badge';
 import StatusDot from '@/components/ui/StatusDot';
@@ -13,43 +14,101 @@ const ROOM_ICONS: Record<string, string> = {
   laundry: '\u{1FAE7}', cellar: '\u{1FAA3}', attic: '\u{1F3E0}',
 };
 
-export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: Room; devicesTotal?: number; devicesOnline?: number }) {
+// La stanza si gestisce da dove la si guarda (13/11/2026): dal telefono Romeo non
+// poteva eliminarla, rinominarla né metterci altri dispositivi, e dopo
+// l'associazione un dispositivo non si raggiungeva più. I permessi li decide
+// l'Hub (amministratore, installatore): qui si dice il suo «no», non si nasconde.
+type Props = {
+  room: Room;
+  devicesTotal?: number;
+  devicesOnline?: number;
+  /** Tutti i dispositivi della casa: da qui si sceglie chi aggiungere. */
+  allDevices?: Device[];
+  /** Qualcosa è cambiato (stanza, nome, dispositivi): la pagina ricarica. */
+  onChanged?: () => void;
+};
+
+export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices = [], onChanged }: Props) {
   const [open, setOpen] = useState(false);
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState(room.name);
+  const [error, setError] = useState<string | null>(null);
   const projectId = useProjectId();
 
   const icon = room.icon ? (ROOM_ICONS[room.icon] ?? room.icon) : '\u{1F3E0}';
+  const base = projectId ? `/api/hub/rooms/${encodeURIComponent(projectId)}/${encodeURIComponent(room.id)}` : null;
+
+  async function loadDevices() {
+    if (!base) { setDevices([]); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(`${base}/devices`);
+      const json = await res.json() as { devices: Device[] };
+      setDevices(json.devices ?? []);
+    } catch {
+      setDevices([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function toggle() {
     if (open) {
       setOpen(false);
       return;
     }
-
-    if (!devices) {
-      if (!projectId) {
-        setDevices([]);
-        setOpen(true);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `/api/hub/rooms/${encodeURIComponent(projectId)}/${encodeURIComponent(room.id)}/devices`,
-        );
-        const json = await res.json() as { devices: Device[] };
-        setDevices(json.devices ?? []);
-      } catch {
-        setDevices([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
+    if (!devices) await loadDevices();
     setOpen(true);
   }
+
+  /** Una chiamata all'Hub; il suo «no» diventa una frase. */
+  async function hub(url: string, method: string, body?: unknown): Promise<boolean> {
+    setError(null);
+    try {
+      const res = await fetch(url, {
+        method,
+        ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+      });
+      if (res.ok) return true;
+      setError(res.status === 401 || res.status === 403
+        ? 'Solo l\'amministratore o l\'installatore può farlo.'
+        : 'Non ci sono riuscito: l\'Hub ha detto di no.');
+    } catch {
+      setError('Non ci sono riuscito: l\'Hub non risponde.');
+    }
+    return false;
+  }
+
+  async function addDevice(deviceId: string) {
+    if (!base || !deviceId) return;
+    if (await hub(`${base}/devices/${encodeURIComponent(deviceId)}`, 'POST')) {
+      await loadDevices();
+      onChanged?.();
+    }
+  }
+
+  async function rename(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!base || !name) return;
+    if (await hub(base, 'PATCH', { name })) {
+      setRenaming(false);
+      onChanged?.();
+    }
+  }
+
+  async function remove() {
+    if (!base) return;
+    const n = devices?.length ?? devicesTotal ?? 0;
+    const cosa = n > 0 ? ` I ${n} dispositivi restano, senza stanza.` : '';
+    if (!window.confirm(`Eliminare la stanza «${room.name}»?${cosa}`)) return;
+    if (await hub(base, 'DELETE')) onChanged?.();
+  }
+
+  const qui = new Set((devices ?? []).map((d) => d.id));
+  const daAggiungere = allDevices.filter((d) => !qui.has(d.id) && d.room_id !== room.id);
 
   return (
     <div className="card cursor-pointer select-none" onClick={toggle}>
@@ -72,7 +131,7 @@ export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: 
       </div>
 
       {open && (
-        <div className="mt-3 pt-3 border-t border-hub-border/50 space-y-2" onClick={(event) => event.stopPropagation()}>
+        <div className="mt-3 pt-3 border-t border-hub-border/50 space-y-2 cursor-default" onClick={(event) => event.stopPropagation()}>
           {loading ? (
             <p className="text-xs text-hub-muted text-center py-3">Caricamento...</p>
           ) : !devices || devices.length === 0 ? (
@@ -82,7 +141,10 @@ export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: 
               <div key={device.id} className="rounded-lg bg-hub-bg p-2.5 space-y-2">
                 <div className="flex items-center gap-2">
                   <StatusDot online={device.online} pulse={false} />
-                  <span className="flex-1 text-sm text-hub-text truncate font-medium">{device.name}</span>
+                  <Link href={`/devices/${encodeURIComponent(device.id)}`}
+                    className="flex-1 text-sm text-hub-text truncate font-medium underline-offset-2 hover:underline">
+                    {device.name}
+                  </Link>
                   {!device.online && <Badge variant="red" className="shrink-0 text-xs">Offline</Badge>}
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -92,6 +154,38 @@ export default function RoomCard({ room, devicesTotal, devicesOnline }: { room: 
               </div>
             ))
           )}
+
+          {daAggiungere.length > 0 && (
+            <select
+              aria-label="Aggiungi dispositivo"
+              value=""
+              onChange={(e) => void addDevice(e.target.value)}
+              className="w-full rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text"
+            >
+              <option value="">+ Aggiungi dispositivo…</option>
+              {daAggiungere.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          )}
+
+          {renaming ? (
+            <form onSubmit={rename} className="flex gap-2">
+              <input
+                aria-label="Nuovo nome della stanza"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="flex-1 rounded-lg border border-hub-border bg-hub-bg px-3 py-2 text-sm text-hub-text"
+              />
+              <button type="submit" disabled={!newName.trim()} className="rounded-lg bg-hub-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-50">Salva</button>
+              <button type="button" onClick={() => { setRenaming(false); setNewName(room.name); }} className="rounded-lg border border-hub-border px-3 py-2 text-sm text-hub-text">Annulla</button>
+            </form>
+          ) : (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setRenaming(true)} className="flex-1 rounded-lg border border-hub-border px-3 py-2 text-sm text-hub-text">Rinomina</button>
+              <button type="button" onClick={() => void remove()} className="flex-1 rounded-lg border border-hub-red/40 px-3 py-2 text-sm text-hub-red">Elimina</button>
+            </div>
+          )}
+
+          {error && <p className="text-xs text-hub-red">{error}</p>}
         </div>
       )}
     </div>

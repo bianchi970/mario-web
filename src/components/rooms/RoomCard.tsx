@@ -28,9 +28,12 @@ type Props = {
   onChanged?: () => void;
   /** Scelta toccandola nella Casa (`/rooms?stanza=<id>`): si apre da sola. */
   aperta?: boolean;
+  /** I preferiti di chi è entrato (`null` = non si sa: niente stella), e come cambiarli. */
+  preferiti?: string[] | null;
+  cambiaPreferito?: (deviceId: string) => void;
 };
 
-export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices = [], onChanged, aperta = false }: Props) {
+export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices = [], onChanged, aperta = false, preferiti = null, cambiaPreferito }: Props) {
   const [open, setOpen] = useState(false);
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -164,6 +167,15 @@ export default function RoomCard({ room, devicesTotal, devicesOnline, allDevices
                     {device.name}
                   </Link>
                   {!device.online && <Badge variant="red" className="shrink-0 text-xs">Offline</Badge>}
+                  {preferiti !== null && cambiaPreferito && (
+                    <button type="button"
+                      aria-label={preferiti.includes(device.id) ? `Togli ${device.name} dai preferiti` : `Metti ${device.name} nei preferiti`}
+                      aria-pressed={preferiti.includes(device.id)}
+                      onClick={() => cambiaPreferito(device.id)}
+                      className="shrink-0 px-1 text-base leading-none text-primary-ink">
+                      {preferiti.includes(device.id) ? '★' : '☆'}
+                    </button>
+                  )}
                   <button type="button" aria-label={`Togli ${device.name} dalla stanza`}
                     onClick={() => void removeDevice(device.id)}
                     className="shrink-0 rounded-md border border-hub-border px-2 py-0.5 text-xs text-hub-muted">

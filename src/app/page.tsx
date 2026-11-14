@@ -28,6 +28,8 @@ import PushEnableBanner from '@/components/notifications/PushEnableBanner';
 import WeatherBanner from '@/components/dashboard/WeatherBanner';
 import { getWeatherData, type WeatherData } from '@/lib/api/weather';
 import NLCommandBar from '@/components/brain/NLCommandBar';
+import CommandButton, { AzioneButton } from '@/components/devices/CommandButton';
+import { usePreferiti } from '@/hooks/usePreferiti';
 import { getLetture } from '@/lib/api/history';
 import { quandoLeggibile } from '@/lib/ora';
 
@@ -136,6 +138,7 @@ export default function DashboardPage() {
   const { setProjectId } = useProject();
   const { installerMode } = useInstallerMode();
   const gestisce = useGestisce();
+  const { preferiti, cambia: cambiaPreferito } = usePreferiti();
   const [mounted, setMounted] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [devices, setDevices] = useState<Device[] | null>(null);
@@ -524,6 +527,35 @@ export default function DashboardPage() {
               );
             })()}
 
+            {/* Preferiti — proposta 2 (Romeo: sì, 14/11/2026): i device scelti da
+                chi è entrato, con i loro pulsanti. Si scelgono con ☆ in Stanze. */}
+            {(() => {
+              const miei = (preferiti ?? [])
+                .map((id) => (devices ?? []).find((d) => d.id === id))
+                .filter((d): d is Device => !!d);
+              if (miei.length === 0) return null;
+              return (
+                <div className="rounded-[24px] border border-primary/30 bg-surface p-4">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary-ink">
+                    Preferiti
+                  </div>
+                  <ul className="space-y-2">
+                    {miei.map((d) => (
+                      <li key={d.id} className="flex items-center gap-2">
+                        <button type="button" aria-label={`Togli ${d.name} dai preferiti`}
+                          onClick={() => void cambiaPreferito(d.id)}
+                          className="shrink-0 text-primary-ink">★</button>
+                        <Link href={`/devices/${encodeURIComponent(d.id)}`} className="flex-1 text-sm text-text truncate">
+                          {d.name}
+                        </Link>
+                        <CommandButton device={d} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+
             {/* Dispositivi accesi ora */}
             {(() => {
               // Acceso è chi sa spegnersi e dice `on` (`house-state.accesiOra`): fino al
@@ -540,6 +572,8 @@ export default function DashboardPage() {
                       <div key={d.id} className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-success shrink-0" />
                         <span className="flex-1 text-sm text-text truncate">{d.name}</span>
+                        {/* un tocco per spegnere (proposta 2, 14/11/2026) */}
+                        <AzioneButton device={d} action="turn_off" label="Spegni" />
                       </div>
                     ))}
                     {active.length > 5 && (

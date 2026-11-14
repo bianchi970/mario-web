@@ -7,7 +7,7 @@ import { useProjectId } from '@/hooks/useProjectId';
 import { ApiClientError } from '@/lib/api/client';
 import type { Device } from '@/lib/hub-types';
 import { executeUiCommand, esitoDetto } from '@/lib/api/ui-command';
-import { azioniDi, vuoleUnValore } from '@/lib/capacita';
+import { azioniDi, sa, vuoleUnValore } from '@/lib/capacita';
 
 const HUB_ERROR_CODES: Record<string, string> = {
   DEVICE_NOT_FOUND: 'Dispositivo non trovato',
@@ -130,6 +130,40 @@ function ThermostatControl({ device, projectId }: { device: Device; projectId: s
 
 interface Props {
   device: Device;
+}
+
+/**
+ * Un'azione sola, per chi la vuole a un tocco: «Spegni» accanto a ogni voce di
+ * «Accesi ora» in Casa (proposta 2, Romeo: sì, 14/11/2026). Stessa strada del
+ * pulsante pieno — `sendCommand`, quindi il Brain e il Gate —, stesse regole
+ * per il sistema offline. Se il device quell'azione non la dichiara, niente
+ * pulsante: non si offre ciò che non sa fare.
+ */
+export function AzioneButton({ device, action, label }: { device: Device; action: string; label: string }) {
+  const [loading, setLoading] = useState(false);
+  const [errore, setErrore] = useState<string | null>(null);
+  const { offlineMode, offlineModeLoading } = useOfflineMode();
+  const projectId = useProjectId();
+  if (!sa(device, action)) return null;
+  const spento = offlineMode || offlineModeLoading || !projectId;
+
+  async function premi() {
+    setLoading(true);
+    setErrore(null);
+    const { ok, errorMessage } = await sendCommand(device.id, projectId!, action);
+    setLoading(false);
+    if (!ok) { setErrore(errorMessage); setTimeout(() => setErrore(null), 3000); }
+  }
+
+  return (
+    <span className="flex flex-col items-end gap-0.5">
+      <Button size="sm" variant="secondary" loading={loading} disabled={spento}
+        aria-label={`${label} ${device.name}`} onClick={() => void premi()}>
+        {label}
+      </Button>
+      {errore && <span className="text-[11px] text-hub-red">{errore}</span>}
+    </span>
+  );
 }
 
 export default function CommandButton({ device }: Props) {

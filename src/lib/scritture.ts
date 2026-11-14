@@ -16,7 +16,6 @@
  *   - `projects/:id/mode`: il modo della casa è UNO, lo stato dell'allarme
  *     (`security/state`, qui sotto). Il modo del progetto è tolto dall'Hub
  *     (21/10/2026, «fuori casa = allarme inserito», decisione di Romeo);
- *   - `user-prefs/home-layout`: nessuna pagina la usa;
  *   - il resto di `zwave/`: `zwave/reset` CANCELLA la rete Z-Wave, e i
  *     parametri dei nodi non li tocca nessuna pagina. Passano solo i tre
  *     percorsi che la PWA usa (24/10/2026: fino ad allora `zwave/.+`).
@@ -48,6 +47,7 @@ export const SCRITTURE: Array<[string, RegExp]> = [
   ['PATCH',  new RegExp(`^projects/${SEG}/emergency-contact$`)], // contatto SOS della casa (7/11/2026)
   ['POST',   /^wireguard\/regenerate-qr$/],                   // accesso da fuori (solo admin)
   ['POST',   /^security\/state$/],                            // IL modo della casa: l'allarme
+  ['PUT',    /^user-prefs\/home-layout$/],                     // i preferiti di chi è entrato (14/11/2026)
 ];
 
 export function scritturaConsentita(method: string, path: string[]): boolean {

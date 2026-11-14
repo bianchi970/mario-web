@@ -111,6 +111,7 @@ describe('hub proxy — il confine', () => {
     ['DELETE', ['rooms', 'default', 'cucina', 'devices', '2-ep1']], // togliere un device dalla stanza
     ['PATCH',  ['notifications', 'default', 'n1', 'dismiss']],
     ['POST',   ['security', 'state']],                 // il modo della casa: l'allarme
+    ['PUT',    ['user-prefs', 'home-layout']],         // i preferiti (14/11/2026, proposta 2)
   ])('%s %j passa, con la persona', async (method, path) => {
     const res = await chiama(method, path as string[], 'jwt-romeo');
     expect(res.status).toBe(200);
@@ -122,7 +123,6 @@ describe('hub proxy — il confine', () => {
     ['POST',  ['command']],
     ['PATCH', ['devices', '2-ep1', 'command']],
     ['PUT',   ['projects', 'default', 'mode']],
-    ['PUT',   ['user-prefs', 'home-layout']],
     ['DELETE',['devices', '2-ep1']],                    // la risorsa device non si cancella così
     ['DELETE',['projects', 'default', 'devices']],      // né tutti insieme
     ['POST',  ['zwave', 'reset']],                      // cancella la rete Z-Wave

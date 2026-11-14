@@ -2,6 +2,7 @@
 
 import type { Device, Room } from '@/lib/hub-types';
 import RoomCard from './RoomCard';
+import { usePreferiti } from '@/hooks/usePreferiti';
 
 export default function RoomGrid({ rooms, deviceCounts = {}, allDevices = [], onChanged, aperta = null }: {
   rooms: Room[];
@@ -11,6 +12,8 @@ export default function RoomGrid({ rooms, deviceCounts = {}, allDevices = [], on
   /** La stanza toccata nella Casa. */
   aperta?: string | null;
 }) {
+  // Una lettura per la pagina, non una per stanza (proposta 2, 14/11/2026).
+  const { preferiti, cambia } = usePreferiti();
   if (rooms.length === 0) {
     return (
       <div className="card text-center py-16 text-hub-muted">
@@ -26,7 +29,7 @@ export default function RoomGrid({ rooms, deviceCounts = {}, allDevices = [], on
       {rooms.map((room) => (
         <RoomCard key={room.id} room={room} devicesTotal={deviceCounts[room.id]?.total}
           devicesOnline={deviceCounts[room.id]?.online} allDevices={allDevices} onChanged={onChanged}
-          aperta={room.id === aperta} />
+          aperta={room.id === aperta} preferiti={preferiti} cambiaPreferito={(id) => void cambia(id)} />
       ))}
     </div>
   );

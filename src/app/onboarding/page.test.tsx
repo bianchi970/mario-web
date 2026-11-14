@@ -50,3 +50,34 @@ describe('OnboardingPage', () => {
     expect(screen.queryByText('Fine')).not.toBeInTheDocument();
   });
 });
+
+// Proposta 5 (Romeo: sì, 14/11/2026): il QR del device inquadrato dal telefono
+// va all'Hub dentro la sessione aperta. Il lettore vero usa la camera: qui un
+// finto che «legge» subito un QR Z-Wave.
+jest.mock('@/components/onboarding/DeviceQRScanner', () => ({
+  __esModule: true,
+  default: ({ onScan }: { onScan: (raw: string) => void }) => (
+    <button onClick={() => onScan('9001327820035152535455')}>leggi QR finto</button>
+  ),
+}));
+
+describe('OnboardingPage — il QR del dispositivo', () => {
+  it('QW-01 «Inquadra il QR» manda la stringa alla sessione aperta', async () => {
+    const { fetchAPI } = jest.requireMock('@/lib/api/client') as { fetchAPI: jest.Mock };
+    fetchAPI.mockImplementation(async (url: string) =>
+      url === '/api/hub/onboarding/session'
+        ? { session_token: 'tok-1', session_id: 's1', expires_at: '' }
+        : { devices: [], success: true, data: [], status: 'waiting' });
+    const { fireEvent, findByRole } = await import('@testing-library/react');
+    render(<OnboardingPage />);
+    fireEvent.click(screen.getByTitle('Pairing Z-Wave/Radio'));
+    fireEvent.click(screen.getByText(/Avvia pairing Z-Wave/));
+    fireEvent.click(await findByRole(document.body, 'button', { name: 'Inquadra il QR del dispositivo' }));
+    fireEvent.click(await findByRole(document.body, 'button', { name: 'leggi QR finto' }));
+    await new Promise((r) => setTimeout(r, 0));
+    const qr = fetchAPI.mock.calls.find(([u]) => String(u).endsWith('/qr'));
+    expect(qr?.[0]).toBe('/api/hub/onboarding/session/tok-1/qr');
+    expect(JSON.parse(qr?.[1]?.body)).toEqual({ qr: '9001327820035152535455' });
+    expect(await screen.findByText(/Codice letto/)).toBeInTheDocument();
+  });
+});

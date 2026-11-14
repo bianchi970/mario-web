@@ -7,6 +7,7 @@ import { executeUiCommand } from '@/lib/api/ui-command';
 import { listRooms } from '@/lib/api/rooms';
 import { useProjectId } from '@/hooks/useProjectId';
 import CosaHoTrovato from '@/components/onboarding/CosaHoTrovato';
+import DeviceQRScanner from '@/components/onboarding/DeviceQRScanner';
 import type { Room } from '@/lib/hub-types';
 
 // ── Tipi ─────────────────────────────────────────────────────────────────────
@@ -109,6 +110,8 @@ export default function OnboardingPage() {
   const [dskInput, setDskInput]   = useState('');
   const [dskStatus, setDskStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
   const [dskMsg, setDskMsg]       = useState('');
+  // Il QR del device inquadrato (proposta 5, Romeo: sì, 14/11/2026)
+  const [qrOpen, setQrOpen]       = useState(false);
 
   // Form manuale
   const [manName,     setManName]     = useState('');
@@ -275,6 +278,30 @@ export default function OnboardingPage() {
     } catch (err) {
       setDskStatus('error');
       setDskMsg(err instanceof Error ? err.message : 'Errore SmartStart');
+    }
+  }
+
+  // ── Il QR del device, inquadrato ──────────────────────────────────────────
+  //
+  // Il lettore c'era e non lo usava nessuno: il codice Z-Wave si scriveva a
+  // mano. La stringa va all'Hub dentro la sessione aperta, e l'Hub la legge
+  // (`provisionFromQR`: DSK e classi di sicurezza dal QR stesso). Se il QR è di
+  // una lingua che da qui non si associa ancora, l'Hub lo dice e lo si mostra.
+  async function handleQR(raw: string) {
+    setQrOpen(false);
+    if (!session?.session_token) return;
+    setDskStatus('sending');
+    setDskMsg('');
+    try {
+      await fetchAPI(`/api/hub/onboarding/session/${encodeURIComponent(session.session_token)}/qr`, {
+        method: 'POST',
+        body: JSON.stringify({ qr: raw }),
+      });
+      setDskStatus('ok');
+      setDskMsg('Codice letto. Alimenta il dispositivo o premi il suo tasto: si include da solo.');
+    } catch (err) {
+      setDskStatus('error');
+      setDskMsg(err instanceof Error ? err.message : 'Non sono riuscito a leggere il codice.');
     }
   }
 
@@ -746,13 +773,27 @@ export default function OnboardingPage() {
                       </button>
                     </div>
                   </div>
+                ) : qrOpen ? (
+                  <DeviceQRScanner
+                    onScan={(raw) => void handleQR(raw)}
+                    onError={(m) => { setQrOpen(false); setDskStatus('error'); setDskMsg(m); }}
+                    onCancel={() => setQrOpen(false)}
+                  />
                 ) : (
-                  <button
-                    onClick={() => setDskOpen(true)}
-                    className="w-full bg-hub-surface border border-hub-border hover:border-hub-accent py-2.5 rounded-xl text-sm text-hub-text transition-colors"
-                  >
-                    Inserisci codice DSK (SmartStart)
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setQrOpen(true)}
+                      className="w-full bg-hub-accent/10 border border-hub-accent/40 py-2.5 rounded-xl text-sm text-hub-text font-medium"
+                    >
+                      Inquadra il QR del dispositivo
+                    </button>
+                    <button
+                      onClick={() => setDskOpen(true)}
+                      className="w-full bg-hub-surface border border-hub-border hover:border-hub-accent py-2.5 rounded-xl text-sm text-hub-text transition-colors"
+                    >
+                      Inserisci codice DSK (SmartStart)
+                    </button>
+                  </div>
                 ))}
 
                 {radio === RADIO.zwave ? (

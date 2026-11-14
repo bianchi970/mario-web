@@ -80,7 +80,7 @@ describe('Settings offline mode wiring', () => {
   it('mostra il toggle modalità installatore e lo persiste in localStorage', async () => {
     renderSettings();
 
-    const toggle = await screen.findByLabelText('Modalità installatore');
+    const toggle = await screen.findByLabelText('Dettagli tecnici');
     expect(toggle).not.toBeChecked();
     expect(window.localStorage.getItem('mario_installer_mode')).toBeNull();
 

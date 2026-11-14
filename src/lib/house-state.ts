@@ -175,6 +175,37 @@ export function allarmiAperti(
     .sort((a, b) => Number(a.prova) - Number(b.prova) || b.quando.localeCompare(a.quando));
 }
 
+/** Un allarme come lo riferisce l'Hub (`GET /security/alarms`). */
+export interface AllarmeStorico {
+  alert_id: string | null;
+  device_id: string;
+  device_name: string | null;
+  room: string | null;
+  type: string | null;
+  ts: string;
+  resolved_at: string | null;
+  auto: boolean | null;
+  chiuso_da: string | null;
+}
+
+const NOME_PERICOLO: Record<Pericolo, string> = { gas: 'Gas', fumo: 'Fumo', acqua: 'Acqua' };
+
+/**
+ * Una riga dello storico degli allarmi, in Sicurezza (proposta 3, Romeo: sì,
+ * 14/11/2026): cosa, dove, e com'è finito — «visto» non è «rientrato», e chi
+ * l'ha chiuso conta. Il tipo viene dalla stessa tabella degli allarmi aperti.
+ */
+export function storicoDetto(a: AllarmeStorico): { cosa: string; dove: string; esito: string; aperto: boolean } {
+  const p = a.type ? PERICOLI[`anomaly.${a.type}`] : undefined;
+  const cosa = p ? NOME_PERICOLO[p] : 'Allarme';
+  const dove = [a.device_name || 'Dispositivo senza nome', a.room].filter(Boolean).join(' — ');
+  if (!a.resolved_at) return { cosa, dove, esito: 'Ancora aperto', aperto: true };
+  const s = Math.max(0, Math.round((Date.parse(a.resolved_at) - Date.parse(a.ts)) / 1000));
+  const durata = s < 60 ? `${s} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`;
+  if (a.auto) return { cosa, dove, esito: `Rientrato da solo dopo ${durata}`, aperto: false };
+  return { cosa, dove, esito: a.chiuso_da ? `Chiuso da ${a.chiuso_da} dopo ${durata}` : `Chiuso dopo ${durata}`, aperto: false };
+}
+
 /**
  * «Cancella tutte» chiude anche gli allarmi di pericolo: con uno aperto si
  * chiede prima, e si dice quale (13/11/2026: chiudeva gas e acqua senza

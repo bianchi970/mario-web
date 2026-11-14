@@ -6,6 +6,7 @@ import TopBar from '@/components/layout/TopBar';
 import { useProjectId } from '@/hooks/useProjectId';
 import { fetchAPI } from '@/lib/api/client';
 import { quandoLeggibile } from '@/lib/ora';
+import { storicoDetto, type AllarmeStorico } from '@/lib/house-state';
 
 // ── Tipi ──────────────────────────────────────────────────────────────────────
 
@@ -86,6 +87,7 @@ export default function SecurityPage() {
 
   const [state,    setState]    = useState<SecurityState | null>(null);
   const [events,   setEvents]   = useState<SecurityEvent[]>([]);
+  const [allarmi,  setAllarmi]  = useState<AllarmeStorico[] | null>(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [changing, setChanging] = useState(false);
@@ -96,6 +98,11 @@ export default function SecurityPage() {
     setLoading(true);
     setError(null);
     try {
+      // Lo storico degli allarmi (acqua, gas, fumo): se l'Hub non lo sa dare,
+      // la pagina resta in piedi e lo dice — non diventa «nessun allarme».
+      fetchAPI<{ success: boolean; allarmi: AllarmeStorico[] }>(
+        `/api/hub/security/alarms?project_id=${encodeURIComponent(projectId)}&limit=30`,
+      ).then((r) => setAllarmi(r.allarmi ?? [])).catch(() => setAllarmi(null));
       const [stateRes, eventsRes] = await Promise.all([
         fetchAPI<{ success: boolean; mode: SecurityMode; updated_at: string | null }>(
           `/api/hub/security/state?project_id=${encodeURIComponent(projectId)}`,
@@ -250,14 +257,41 @@ export default function SecurityPage() {
               </div>
             </div>
 
-            {/* Eventi recenti */}
+            {/* Allarmi — proposta 3 (Romeo: sì, 14/11/2026): per tutti, con com'è finito */}
+            <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">
+                Allarmi
+              </div>
+              {allarmi === null ? (
+                <p className="text-sm text-hub-muted py-2">Non riesco a leggere lo storico degli allarmi.</p>
+              ) : allarmi.length === 0 ? (
+                <p className="text-sm text-hub-muted py-2">Nessun allarme registrato.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {allarmi.map((a) => {
+                    const r = storicoDetto(a);
+                    return (
+                      <li key={a.alert_id ?? a.ts} className="flex items-start gap-3 py-1.5 border-b border-hub-text/5 last:border-0">
+                        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${r.aperto ? 'bg-hub-red' : 'bg-hub-muted'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-hub-text">{r.cosa} · {r.dove}</div>
+                          <div className={`text-xs ${r.aperto ? 'text-hub-red font-medium' : 'text-hub-muted'}`}>{r.esito}</div>
+                        </div>
+                        <span className="text-[10px] text-hub-muted shrink-0">{quandoLeggibile(a.ts)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* Eventi recenti — solo se ce ne sono: `security_events` sul Pi è vuota,
+                e «Nessun evento registrato» sotto due allagamenti veri era falso. */}
+            {events.length > 0 && (
             <div className="rounded-[24px] border border-hub-text/10 bg-hub-surface p-4">
               <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-hub-muted">
                 Eventi recenti
               </div>
-              {events.length === 0 ? (
-                <p className="text-sm text-hub-muted py-2">Nessun evento registrato</p>
-              ) : (
                 <div className="space-y-2">
                   {events.map((e) => (
                     <div key={e.id} className="flex items-start gap-3 py-1.5 border-b border-hub-text/5 last:border-0">
@@ -274,8 +308,8 @@ export default function SecurityPage() {
                     </div>
                   ))}
                 </div>
-              )}
             </div>
+            )}
           </>
         )}
 

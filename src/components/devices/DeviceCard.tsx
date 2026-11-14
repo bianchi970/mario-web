@@ -10,6 +10,7 @@ import CommandButton from './CommandButton';
 import { fetchAPI } from '@/lib/api/client';
 import { executeUiCommand } from '@/lib/api/ui-command';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { useGestisce } from '@/hooks/useGestisce';
 import { dice, sa } from '@/lib/capacita';
 
 const DEVICE_ICONS: Record<string, string> = {
@@ -149,6 +150,7 @@ export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
   const icon = DEVICE_ICONS[device.type] ?? '◈';
   const lastSeen = formatLastSeen(device.last_seen ?? device.connectivity?.last_seen);
   const { installerMode } = useInstallerMode();
+  const gestisce = useGestisce();
 
   const [displayName, setDisplayName] = useState(device.name);
   const [editing, setEditing]         = useState(false);
@@ -292,7 +294,8 @@ export default function DeviceCard({ device, rooms = [], batteriaDellaRadio }: {
             : null
       ) : null}
 
-      {installerMode && rooms.length > 0 && (
+      {/* Spostare un device lo decide il ruolo (proposta 4, 14/11/2026), come l'Hub. */}
+      {gestisce && rooms.length > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-xs text-hub-muted shrink-0">Stanza</span>
           <select

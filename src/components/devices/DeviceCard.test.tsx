@@ -5,6 +5,13 @@ import { ProjectProvider } from '@/context/ProjectContext';
 import { OfflineModeProvider } from '@/components/layout/OfflineModeProvider';
 import type { Device, Room } from '@/lib/hub-types';
 
+// Chi può spostare un device lo dice il RUOLO (proposta 4, Romeo: sì,
+// 14/11/2026), come l'Hub — non la spunta installatore del browser.
+let mockRuolo: string | null = null;
+jest.mock('@/context/SessionContext', () => ({
+  useSession: () => ({ user: mockRuolo ? { id: 'u', username: 'romeo', role: mockRuolo, project_id: null } : null, loading: false, logout: async () => {} }),
+}));
+
 const device: Device = {
   id: 'dev-switch-1',
   project_id: 'proj-1',
@@ -23,10 +30,8 @@ const rooms: Room[] = [
   { id: 'room-2', project_id: 'proj-1', name: 'Cucina',    created_at: '2026-01-01T00:00:00Z' },
 ];
 
-function renderCard(installerMode = false, roomList = rooms) {
-  if (installerMode) {
-    window.localStorage.setItem('mario_installer_mode', 'true');
-  }
+function renderCard(gestisce = false, roomList = rooms) {
+  mockRuolo = gestisce ? 'admin' : 'utente';
   return render(
     <ProjectProvider>
       <InstallerModeProvider>
@@ -58,19 +63,25 @@ describe('DeviceCard — room assignment', () => {
     window.localStorage.clear();
   });
 
-  it('non mostra il select stanza in modalità cliente', () => {
+  it('non mostra il select stanza a chi abita (ruolo utente)', () => {
     renderCard(false);
     expect(screen.queryByLabelText('Assegna stanza')).not.toBeInTheDocument();
   });
 
-  it('mostra il select stanza in modalità installatore', () => {
+  it('RU-03 la spunta installatore da sola non lo mostra', () => {
+    window.localStorage.setItem('mario_installer_mode', 'true');
+    renderCard(false);
+    expect(screen.queryByLabelText('Assegna stanza')).not.toBeInTheDocument();
+  });
+
+  it('mostra il select stanza a chi gestisce (admin)', () => {
     renderCard(true);
     expect(screen.getByLabelText('Assegna stanza')).toBeInTheDocument();
     expect(screen.getByText('Soggiorno')).toBeInTheDocument();
     expect(screen.getByText('Cucina')).toBeInTheDocument();
   });
 
-  it('non mostra il select se rooms è vuoto anche in installer mode', () => {
+  it('non mostra il select se rooms è vuoto anche a chi gestisce', () => {
     renderCard(true, []);
     expect(screen.queryByLabelText('Assegna stanza')).not.toBeInTheDocument();
   });

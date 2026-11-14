@@ -5,6 +5,7 @@ import { quandoLeggibile } from '@/lib/ora';
 import TopBar from '@/components/layout/TopBar';
 import { useGateway, type GatewayEntry } from '@/context/GatewayContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { useGestisce } from '@/hooks/useGestisce';
 
 interface IdentityResponse {
   gateway_id: string;
@@ -40,6 +41,7 @@ function detectMode(): 'Locale' | 'VPN' {
 export default function GatewaysPage() {
   const { gateways, currentUrl, addGateway, updateGateway, removeGateway, goToGateway } = useGateway();
   const { installerMode } = useInstallerMode();
+  const gestisce = useGestisce();
 
   const [localIdentity, setLocalIdentity] = useState<IdentityResponse | null>(null);
   const [mode, setMode] = useState<'Locale' | 'VPN'>('Locale');
@@ -50,12 +52,12 @@ export default function GatewaysPage() {
   useEffect(() => { setMode(detectMode()); }, []);
 
   useEffect(() => {
-    if (!installerMode) return;
+    if (!gestisce) return;
     fetch('/api/hub/wireguard/status')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setWgStatus(d); })
       .catch(() => {});
-  }, [installerMode]);
+  }, [gestisce]);
 
   async function handleRegenQr() {
     setWgUpdating(true);
@@ -181,8 +183,8 @@ export default function GatewaysPage() {
           </div>
         )}
 
-        {/* VPN WireGuard — solo installatore */}
-        {installerMode && (
+        {/* VPN WireGuard — chi gestisce la casa (il ruolo, 14/11/2026) */}
+        {gestisce && (
           <div className="card space-y-3 border border-hub-accent/20">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium text-hub-text">VPN WireGuard</p>

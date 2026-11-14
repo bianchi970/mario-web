@@ -139,3 +139,26 @@ describe('confermaCancellaTutte', () => {
     expect(chiedi).not.toHaveBeenCalled();
   });
 });
+
+import { storicoDetto } from './house-state';
+
+// ── Lo storico degli allarmi in Sicurezza (proposta 3, 14/11/2026) ───────────
+describe('storicoDetto — cosa, dove, com\'è finito', () => {
+  const base = {
+    alert_id: 'a', device_id: '0xf0', device_name: 'Sensore allagamento depuratore', room: 'Cucina',
+    type: 'water.detected', ts: '2026-11-14T09:38:07.440Z', resolved_at: null, auto: null, chiuso_da: null,
+  };
+  it('SH-01 aperto: lo dice', () => {
+    expect(storicoDetto(base)).toEqual({ cosa: 'Acqua', dove: 'Sensore allagamento depuratore — Cucina', esito: 'Ancora aperto', aperto: true });
+  });
+  it('SH-02 rientrato da solo, e dopo quanto', () => {
+    expect(storicoDetto({ ...base, resolved_at: '2026-11-14T09:38:10.669Z', auto: true }).esito).toBe('Rientrato da solo dopo 3 s');
+  });
+  it('SH-03 chiuso da una persona: il suo nome', () => {
+    expect(storicoDetto({ ...base, type: 'gas.detected', resolved_at: '2026-11-14T09:48:07.440Z', auto: false, chiuso_da: 'romeo' }))
+      .toMatchObject({ cosa: 'Gas', esito: 'Chiuso da romeo dopo 10 min' });
+  });
+  it('SH-04 senza nome: mai l\'id', () => {
+    expect(storicoDetto({ ...base, device_name: null }).dove).not.toMatch(/0xf0/);
+  });
+});

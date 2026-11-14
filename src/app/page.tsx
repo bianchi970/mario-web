@@ -16,6 +16,7 @@ import TopBar from '@/components/layout/TopBar';
 import { useProjectId } from '@/hooks/useProjectId';
 import { useProject } from '@/context/ProjectContext';
 import { useInstallerMode } from '@/context/InstallerModeContext';
+import { useGestisce } from '@/hooks/useGestisce';
 import { ApiClientError } from '@/lib/api/client';
 import { listDevices } from '@/lib/api/devices';
 import { listRooms } from '@/lib/api/rooms';
@@ -134,6 +135,7 @@ export default function DashboardPage() {
   const projectId = useProjectId();
   const { setProjectId } = useProject();
   const { installerMode } = useInstallerMode();
+  const gestisce = useGestisce();
   const [mounted, setMounted] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [devices, setDevices] = useState<Device[] | null>(null);
@@ -589,7 +591,7 @@ export default function DashboardPage() {
             <div className="font-medium text-text">Sicurezza</div>
             <div className="text-xs text-text-2">Stato e allarmi</div>
           </Link>
-          {installerMode && (
+          {gestisce && (
             <>
               <Link
                 href="/onboarding"

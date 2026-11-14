@@ -225,15 +225,15 @@ export default function SettingsClient({
         <h2 className="text-sm font-medium text-hub-text">Modalità</h2>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <span className="text-sm text-hub-muted block">Modalità installatore</span>
-            <span className="text-xs text-hub-muted">Abilita voci tecniche: Dispositivi e Aggiungi dispositivo.</span>
+            <span className="text-sm text-hub-muted block">Dettagli tecnici</span>
+            <span className="text-xs text-hub-muted">Mostra id, versioni e stati grezzi. Cosa puoi fare lo decide il tuo ruolo, non questa spunta.</span>
           </div>
           <label className="flex items-center gap-2 text-sm text-hub-text">
             <input
               type="checkbox"
               checked={installerMode}
               onChange={(e) => setInstallerMode(e.target.checked)}
-              aria-label="Modalità installatore"
+              aria-label="Dettagli tecnici"
               className="h-4 w-4 accent-hub-accent"
             />
             {installerMode ? 'Attiva' : 'Disattiva'}

@@ -5,6 +5,7 @@
  * Bridge: /api/hub/brain/projects/:id/execution/execute-plan (via relay)
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { rispostaInoltrata } from '@/lib/inoltrata';
 import { personaDa } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
@@ -34,10 +35,7 @@ async function proxyLocal(projectId: string, body: unknown, persona: Record<stri
     },
   );
   const data = await res.text();
-  return new NextResponse(data, {
-    status: res.status,
-    headers: { 'Content-Type': res.headers.get('content-type') || 'application/json' },
-  });
+  return rispostaInoltrata(res.status, data, res.headers.get('content-type'));
 }
 
 async function proxyBridge(projectId: string, body: unknown, persona: Record<string, string>): Promise<Response> {
@@ -63,10 +61,7 @@ async function proxyBridge(projectId: string, body: unknown, persona: Record<str
     signal: AbortSignal.timeout(18_000),
   });
   const data = await res.text();
-  return new NextResponse(data, {
-    status: res.status,
-    headers: { 'Content-Type': res.headers.get('content-type') || 'application/json' },
-  });
+  return rispostaInoltrata(res.status, data, res.headers.get('content-type'));
 }
 
 export async function POST(req: NextRequest, { params }: RouteContext) {

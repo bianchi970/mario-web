@@ -19,6 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { tokenPersona } from '@/lib/persona';
+import { rispostaInoltrata } from '@/lib/inoltrata';
 import { scritturaConsentita } from '@/lib/scritture';
 
 const HUB_URL            = process.env.HUB_URL            || 'http://localhost:4001';
@@ -147,12 +148,7 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   }
 
   const responseBody = await upstreamRes.text();
-  return new NextResponse(responseBody, {
-    status:  upstreamRes.status,
-    headers: {
-      'Content-Type': upstreamRes.headers.get('content-type') || 'application/json',
-    },
-  });
+  return rispostaInoltrata(upstreamRes.status, responseBody, upstreamRes.headers.get('content-type'));
 }
 
 // ── Modalità remota (bridge) ─────────────────────────────────────────────────
@@ -187,12 +183,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
   if (relayRes.status === 503) return bridgeUnavailableResponse();
 
   const responseBody = await relayRes.text();
-  return new NextResponse(responseBody, {
-    status:  relayRes.status,
-    headers: {
-      'Content-Type': relayRes.headers.get('content-type') || 'application/json',
-    },
-  });
+  return rispostaInoltrata(relayRes.status, responseBody, relayRes.headers.get('content-type'));
 }
 
 // ── Dispatcher ───────────────────────────────────────────────────────────────

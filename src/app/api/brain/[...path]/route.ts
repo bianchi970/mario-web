@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { rispostaInoltrata } from '@/lib/inoltrata';
 import { personaDa, tokenPersona } from '@/lib/persona';
 
 const BRAIN_URL          = process.env.BRAIN_URL          || 'http://localhost:4000';
@@ -65,10 +66,7 @@ async function proxyLocal(req: NextRequest, path: string[]): Promise<Response> {
   });
 
   const responseBody = await upstreamRes.text();
-  return new NextResponse(responseBody, {
-    status:  upstreamRes.status,
-    headers: { 'Content-Type': upstreamRes.headers.get('content-type') || 'application/json' },
-  });
+  return rispostaInoltrata(upstreamRes.status, responseBody, upstreamRes.headers.get('content-type'));
 }
 
 async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> {
@@ -102,10 +100,7 @@ async function proxyBridge(req: NextRequest, path: string[]): Promise<Response> 
   });
 
   const responseBody = await relayRes.text();
-  return new NextResponse(responseBody, {
-    status:  relayRes.status,
-    headers: { 'Content-Type': relayRes.headers.get('content-type') || 'application/json' },
-  });
+  return rispostaInoltrata(relayRes.status, responseBody, relayRes.headers.get('content-type'));
 }
 
 async function proxy(req: NextRequest, path: string[]): Promise<Response> {

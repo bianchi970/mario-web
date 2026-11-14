@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, Bell, BellOff, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, Mic, MicOff, RotateCcw, Send, Stethoscope, XCircle } from 'lucide-react';
 import { useConversationSession } from '@/hooks/useConversationSession';
 import { brainInterpret, brainDiagnose, brainLearn, type BrainInterpretResult, type BrainDiagnoseResult } from '@/lib/api/brain';
 import { executeUiCommand, executeCompoundPlan, getExecution, pollExecution, esitoDetto, esitoPiano, type ExecutionRun } from '@/lib/api/ui-command';
@@ -115,7 +115,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
   const voiceTimeoutRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pushStatus, setPushStatus] = useState<'checking' | 'idle' | 'denied' | 'subscribed' | 'unsupported'>('checking');
 
   async function startVoiceRecording() {
     if (voiceRecording) return;
@@ -249,53 +248,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     mediaRecorderRef.current = null;
   }
 
-
-  // Controlla stato notifiche push al mount
-  // Timeout 3s: se serviceWorker.ready non risponde, mostra banner comunque
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPushStatus((prev) => prev === 'checking' ? 'idle' : prev);
-    }, 3000);
-    try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        clearTimeout(timer);
-        setPushStatus('unsupported');
-        return;
-      }
-      if (Notification.permission === 'denied') { clearTimeout(timer); setPushStatus('denied'); return; }
-      navigator.serviceWorker.ready
-        .then((reg) => reg.pushManager.getSubscription())
-        .then((sub) => { clearTimeout(timer); setPushStatus(sub ? 'subscribed' : 'idle'); })
-        .catch(() => { clearTimeout(timer); setPushStatus('idle'); });
-    } catch { clearTimeout(timer); setPushStatus('unsupported'); }
-    return () => clearTimeout(timer);
-  }, []);
-
-  async function handlePushSubscribe() {
-    try {
-      const vapidRes = await fetch('/api/hub/push/vapid-public');
-      if (!vapidRes.ok) return;
-      const { publicKey } = (await vapidRes.json()) as { publicKey: string };
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') { setPushStatus('denied'); return; }
-      const reg = await navigator.serviceWorker.ready;
-      const padding = '='.repeat((4 - (publicKey.length % 4)) % 4);
-      const b64 = (publicKey + padding).replace(/-/g, '+').replace(/_/g, '/');
-      const raw = atob(b64);
-      const key = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i);
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key.buffer });
-      const subJson = sub.toJSON();
-      const res = await fetch(`/api/hub/push/${projectId}/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...subJson, role: 'user', label: 'PWA' }),
-      });
-      if (res.ok) setPushStatus('subscribed');
-    } catch {
-      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') setPushStatus('denied');
-    }
-  }
 
   // Recovery esecuzione composta dopo refresh di pagina
   useEffect(() => {
@@ -673,26 +625,6 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Banner notifiche push — idle o denied */}
-      {pushStatus === 'idle' && (
-        <div className="flex items-center gap-3 rounded-[20px] border border-primary/20 bg-primary/[0.06] px-4 py-2.5">
-          <Bell className="h-3.5 w-3.5 shrink-0 text-primary-ink" />
-          <span className="flex-1 text-xs text-text-2">Abilita notifiche push per MARIO</span>
-          <button
-            onClick={() => void handlePushSubscribe()}
-            className="rounded-xl border border-primary/30 bg-primary/20 px-3 py-1 text-xs text-primary-ink active:bg-primary/30"
-          >
-            Abilita
-          </button>
-        </div>
-      )}
-      {pushStatus === 'denied' && (
-        <div className="flex items-center gap-2 rounded-[20px] border border-border bg-surface-2 px-4 py-2">
-          <BellOff className="h-3.5 w-3.5 shrink-0 text-text-2/60" />
-          <span className="text-xs text-text-2/60">Notifiche bloccate — abilita nelle impostazioni browser</span>
         </div>
       )}
 

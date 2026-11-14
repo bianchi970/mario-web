@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, BellOff, X } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { listNotifications, dismissNotification, dismissAllNotifications } from '@/lib/api/notifications';
 import type { HubNotification } from '@/lib/api/notifications';
 import { quandoLeggibile } from '@/lib/ora';
@@ -172,24 +172,6 @@ export default function NotificationCenter({
           </button>
         </div>
       ))}
-    </div>
-  );
-}
-
-/* ─── Empty state (utility) ─────────────────────────────────────────────── */
-
-export function NotificationsBell({
-  count,
-}: {
-  count: number;
-}) {
-  if (count === 0) return <BellOff className="h-5 w-5 text-text-2" />;
-  return (
-    <div className="relative">
-      <div className="h-5 w-5 text-text">🔔</div>
-      <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-        {count > 9 ? '9+' : count}
-      </span>
     </div>
   );
 }

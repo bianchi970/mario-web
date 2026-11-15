@@ -206,9 +206,13 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
           }
           return;
         }
-        const data = (await res.json()) as { success: boolean; data?: { text: string } };
+        const data = (await res.json()) as { success: boolean; data?: { text: string; troppo_piano?: boolean } };
         const transcript = data.data?.text?.trim() ?? '';
-        if (transcript) {
+        if (data.data?.troppo_piano) {
+          // L'orecchio non ha trascritto perché l'audio era troppo debole
+          // (15/11/2026: dal PC −34…−55 dB, e Qwen3 inventava frasi).
+          setVoiceError('Ti sento troppo piano: avvicinati al microfono o alza il suo volume.');
+        } else if (transcript) {
           setText(transcript);
           setVoiceError('');
           // ── Parlare e gia chiedere ──────────────────────────────────────

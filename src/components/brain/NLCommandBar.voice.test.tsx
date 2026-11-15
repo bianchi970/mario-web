@@ -295,6 +295,25 @@ describe('NLCommandBar — flusso voce', () => {
     );
   });
 
+  // ── 8b. Troppo piano (15/11/2026): il microfono del PC arrivava a −34…−55 dB
+  // e l'orecchio inventava frasi. Il Brain ora lo dice; la PWA dice cosa fare.
+  it('8b — «troppo piano» dice di avvicinarsi, e non manda niente a MARIO', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: { text: '', troppo_piano: true, livello_db: -35 } }),
+    });
+
+    render(<NLCommandBar projectId="test" />);
+    await clickMic();
+    await simulateRecording(recorderInstance);
+
+    await waitFor(() =>
+      expect(screen.getByText(/Ti sento troppo piano/i)).toBeInTheDocument(),
+    );
+    expect((global.fetch as jest.Mock).mock.calls.length).toBe(1);
+  });
+
   // ── 9. 401 ─────────────────────────────────────────────────────────────
 
   it('9 — mostra errore accesso specifico su 401', async () => {

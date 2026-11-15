@@ -314,6 +314,28 @@ describe('NLCommandBar — flusso voce', () => {
     expect((global.fetch as jest.Mock).mock.calls.length).toBe(1);
   });
 
+  // ── 8c. Gradino 1 (15/11/2026): dopo una PROPOSTA di MARIO la voce che segue
+  // è una risposta, e l'orecchio lo deve sapere (dal telefono «sì» → «See.»).
+  it('8c — dopo una proposta di MARIO la registrazione parte con atteso: true', async () => {
+    const { brainInterpret } = jest.requireMock('@/lib/api/brain');
+    (brainInterpret as jest.Mock).mockResolvedValue({
+      dispatchable: false, _v2: { outcome: 'propose', risposte: [] }, explanation: 'Accendi presa studio.',
+    });
+
+    render(<NLCommandBar projectId="test" />);
+    await clickMic();
+    await simulateRecording(recorderInstance);
+    await waitFor(() => expect(brainInterpret).toHaveBeenCalledTimes(1));
+
+    await clickMic();
+    await simulateRecording(recorderInstance);
+    await waitFor(() => expect((global.fetch as jest.Mock).mock.calls.length).toBe(2));
+
+    const corpo = (n: number) => JSON.parse((global.fetch as jest.Mock).mock.calls[n][1].body);
+    expect(corpo(0).atteso).toBe(false);
+    expect(corpo(1).atteso).toBe(true);
+  });
+
   // ── 9. 401 ─────────────────────────────────────────────────────────────
 
   it('9 — mostra errore accesso specifico su 401', async () => {

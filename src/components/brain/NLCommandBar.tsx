@@ -115,6 +115,18 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
   const voiceTimeoutRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ── MARIO aspetta una risposta? (gradino 1, 15/11/2026) ───────────────────
+  // Dopo una proposta o una domanda la voce che segue è una risposta («sì»),
+  // e l'orecchio la sente anche con Qwen3, solo italiano: dal telefono
+  // Parakeet ha sentito «sì» come «See.». Vale 2 minuti; un esito che chiude
+  // (execute, abstain, ignore) la toglie, un «non ho capito» no.
+  const attesaDaRef = useRef(0);
+  function segnaAttesa(r: BrainInterpretResult | null) {
+    const o = r?._v2?.outcome;
+    if (o === 'propose' || o === 'ask') attesaDaRef.current = Date.now();
+    else if (o === 'execute' || o === 'abstain' || o === 'ignore') attesaDaRef.current = 0;
+  }
+  const marioAspetta = () => attesaDaRef.current > 0 && Date.now() - attesaDaRef.current < 120_000;
 
   async function startVoiceRecording() {
     if (voiceRecording) return;
@@ -193,7 +205,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
         const res = await fetch('/api/brain/voice/transcribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audio_base64, mime: actualMime, lang: 'it' }),
+          body: JSON.stringify({ audio_base64, mime: actualMime, lang: 'it', atteso: marioAspetta() }),
         });
         if (!res.ok) {
           const status = res.status;
@@ -293,6 +305,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     try {
       const r = await brainInterpret(cmd, { project_id: projectId, devices, session_id: sessionId });
       setResult(r);
+      segnaAttesa(r);
       parla(fraseDa(r));
       const canDispatch = r.dispatchable || _isCompoundDispatchable(r);
       if (!canDispatch) { setPhase('preview'); return; }
@@ -323,6 +336,7 @@ export default function NLCommandBar({ projectId, devices = [] }: Props) {
     try {
       const r = await brainInterpret(trimmed, { project_id: projectId, devices, session_id: sessionId, ...(daVoce ? { origine: 'voce' } : {}) });
       setResult(r);
+      segnaAttesa(r);
       parla(fraseDa(r));
       const canDispatch = r.dispatchable || _isCompoundDispatchable(r);
       if (!canDispatch) {
